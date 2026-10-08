@@ -30,6 +30,11 @@ app.get('/api/test', (req, res) => {
     res.send('Server is running successfully!');
 });
 
+// Root Route to serve frontend
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/public/index.html');
+});
+
 // Task APIs
 // Get all tasks (সব টাস্ক দেখতে পাওয়ার এপিআই)
 app.get('/api/tasks', async (req, res) => {
