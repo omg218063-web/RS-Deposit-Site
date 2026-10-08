@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const Task = require('./models/Task');
@@ -12,8 +13,8 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cors());
 
-// Static Files
-app.use(express.static('public'));
+// Static Files with proper path
+app.use(express.static(path.join(__dirname, 'public')));
 
 // MongoDB Connection
 const MONGO_URI = process.env.MONGO_URI || 'YOUR_MONGODB_CONNECTION_STRING';
@@ -30,13 +31,12 @@ app.get('/api/test', (req, res) => {
     res.send('Server is running successfully!');
 });
 
-// Root Route to serve frontend
+// Root Route to serve frontend with proper path
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/public/index.html');
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Task APIs
-// Get all tasks (সব টাস্ক দেখতে পাওয়ার এপিআই)
 app.get('/api/tasks', async (req, res) => {
     try {
         const tasks = await Task.find();
@@ -46,7 +46,6 @@ app.get('/api/tasks', async (req, res) => {
     }
 });
 
-// Create a new task (নতুন টাস্ক যোগ করার এপিআই)
 app.post('/api/tasks', async (req, res) => {
     try {
         const newTask = new Task(req.body);
