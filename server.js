@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
+const Task = require('./models/Task');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -10,7 +12,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cors());
 
-// Static Files (এটি আপনার ১৫০০ লাইনের ফ্রন্টএন্ড কোড ব্রাউজারে দেখানোর জন্য যুক্ত করা হয়েছে)
+// Static Files
 app.use(express.static('public'));
 
 // MongoDB Connection
@@ -26,6 +28,28 @@ mongoose.connect(MONGO_URI, {
 // Basic Route
 app.get('/api/test', (req, res) => {
     res.send('Server is running successfully!');
+});
+
+// Task APIs
+// Get all tasks (সব টাস্ক দেখতে পাওয়ার এপিআই)
+app.get('/api/tasks', async (req, res) => {
+    try {
+        const tasks = await Task.find();
+        res.json(tasks);
+    } catch (err) {
+        res.status(500).json({ error: 'Server Error' });
+    }
+});
+
+// Create a new task (নতুন টাস্ক যোগ করার এপিআই)
+app.post('/api/tasks', async (req, res) => {
+    try {
+        const newTask = new Task(req.body);
+        const savedTask = await newTask.save();
+        res.status(201).json(savedTask);
+    } catch (err) {
+        res.status(400).json({ error: 'Invalid data' });
+    }
 });
 
 // Start Server
