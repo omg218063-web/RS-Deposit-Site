@@ -1130,7 +1130,6 @@ app.get('/', (req, res) => {
             let currentTime = new Date().getTime();
             let twentyFourHours = 24 * 60 * 60 * 1000;
 
-            // Filter claims within last 24 hours
             claimsData = claimsData.filter(time => currentTime - time < twentyFourHours);
 
             if (claimsData.length >= 2) {
@@ -1255,7 +1254,6 @@ app.get('/', (req, res) => {
                     let daysLeft = Math.max(0, 30 - daysPassed);
 
                     if(timeLeft <= 0) {
-                        // 30 days completed! Open Calculator Modal
                         openCalculatorModal(p);
                         delete purchasedPackages[p.id];
                         saveAllState();
@@ -1302,7 +1300,6 @@ app.get('/', (req, res) => {
             container.innerHTML = html;
         }
 
-        // Packages can ONLY be purchased via Deposit balance check or prompt
         function buyPackageViaDeposit(price, title) {
             document.getElementById('pkgPopupMsg').innerText = \`⚠️ নিয়ম অনুযায়ী অ্যাকাউন্ট ব্যালেন্স দিয়ে প্যাকেজ কেনা যায় না। '\${title}' (৳\${price}) কিনতে সরাসরি ডিপোজিট করুন।\`;
             openModal('pkgDepositPopupModal');
@@ -1321,8 +1318,8 @@ app.get('/', (req, res) => {
         function executeCoinConversion() {
             if(pendingPkgToUnlock) {
                 let pId = pendingPkgToUnlock.id;
-                let earned = 50000; // Simulated 1M / 5M rate calculation
-                let convertedBDT = 500; // Converted BDT
+                let earned = 50000;
+                let convertedBDT = 500;
                 userBalance += convertedBDT;
                 totalTransactionsCount += 1;
 
@@ -1500,9 +1497,6 @@ app.get('/', (req, res) => {
             renderHistoryLists();
             renderAdminLiveLists();
 
-            // Check if this deposit matches a package unlock request
-            let matchingPkgId = Object.keys(purchasedPackages).find(id => id == amt);
-            // If buying a new package via deposit:
             let targetPkgPrice = amt;
             if ([200, 500, 700, 1000, 1500, 2000, 2500, 3000].includes(targetPkgPrice)) {
                 let startTime = new Date().getTime();
