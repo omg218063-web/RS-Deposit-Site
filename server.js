@@ -1,4 +1,4 @@
-require('express');
+const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 
@@ -717,6 +717,7 @@ app.get('/', (req, res) => {
             </div>
         </div>
     </div>
+
     <div class="modal" id="taskDetailModal">
         <div class="modal-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
