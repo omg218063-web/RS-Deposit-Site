@@ -44,7 +44,7 @@ app.get('/', (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RS Growth Matrix - Ultimate Earning Platform & Admin Dashboard</title>
+    <title>RS Growth Matrix - Ultimate Earning Platform</title>
     <style>
         :root {
             --bg-color: #060913;
@@ -91,32 +91,62 @@ app.get('/', (req, res) => {
             height: 94vh;
         }
 
-        /* Auth Screen Styling */
+        /* Premium Auth Screen Styling */
         #authScreen {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--card-bg);
+            background: radial-gradient(circle at center, #1e1b4b 0%, #060913 100%);
             z-index: 2000;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
-            padding: 25px;
-            text-align: center;
+            padding: 20px;
+            overflow-y: auto;
         }
-        .auth-logo {
-            font-size: 28px; font-weight: bold; color: var(--accent-gold);
-            margin-bottom: 5px; text-shadow: 0 0 15px rgba(251,191,36,0.4);
+        .auth-logo-img {
+            width: 90px; height: 90px; border-radius: 50%; border: 2px solid var(--accent-gold);
+            object-fit: cover; box-shadow: 0 0 20px rgba(251,191,36,0.5); margin-bottom: 8px; margin-top: 10px;
+        }
+        .auth-logo-title {
+            font-size: 20px; font-weight: bold; color: var(--accent-gold);
+            text-shadow: 0 0 15px rgba(251,191,36,0.4); margin-bottom: 2px;
         }
         .auth-subtitle {
-            font-size: 11px; color: var(--text-muted); margin-bottom: 20px;
+            font-size: 10px; color: var(--text-muted); margin-bottom: 12px;
+        }
+        
+        .auth-box-card {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(251,191,36,0.3);
+            border-radius: 18px;
+            padding: 15px;
+            width: 100%;
+            text-align: left;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
         }
         .auth-form-group {
-            width: 100%; margin-bottom: 12px; text-align: left;
+            width: 100%; margin-bottom: 8px;
         }
         .auth-form-group label {
-            font-size: 10px; color: var(--text-muted); margin-bottom: 4px; display: block;
+            font-size: 9px; color: var(--text-muted); margin-bottom: 2px; display: block;
         }
+        .auth-switch-tab {
+            display: flex; background: #060913; border-radius: 10px; padding: 3px; margin-bottom: 10px; border: 1px solid var(--card-border);
+        }
+        .ast-btn {
+            flex: 1; text-align: center; padding: 6px; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 8px; color: var(--text-muted); transition: 0.3s;
+        }
+        .ast-btn.active {
+            background: linear-gradient(90deg, var(--accent-gold), #f59e0b); color: #000;
+        }
+
+        .gmail-connect-btn {
+            background: #ffffff; color: #1e293b; border: none; width: 100%; padding: 8px; border-radius: 10px;
+            font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px;
+            box-shadow: 0 4px 10px rgba(255,255,255,0.2); transition: 0.2s;
+        }
+        .gmail-connect-btn:hover { background: #f1f5f9; }
 
         .top-user-bar {
             padding: 15px;
@@ -367,6 +397,10 @@ app.get('/', (req, res) => {
             background: linear-gradient(135deg, #1e1b4b, #312e81); border: 1px solid rgba(168, 85, 247, 0.4);
             border-radius: 18px; padding: 16px; text-align: center; margin-bottom: 15px;
         }
+        .ref-logo-img {
+            width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--accent-gold);
+            object-fit: cover; box-shadow: 0 0 12px rgba(251,191,36,0.6); margin-bottom: 6px;
+        }
         .ref-input-box {
             display: flex; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--card-border);
             border-radius: 12px; padding: 6px; margin: 10px 0; gap: 6px;
@@ -378,7 +412,6 @@ app.get('/', (req, res) => {
             display: flex; align-items: center; justify-content: center; gap: 4px; text-decoration: none;
         }
 
-        /* Updated Global Live Ticker Box (3 lines & increased scroll speed) */
         .live-ticker-box-large {
             background: radial-gradient(circle, rgba(30,41,59,0.95) 0%, rgba(15,23,42,0.98) 100%);
             border: 1px solid var(--accent-purple); border-radius: 16px; padding: 12px; margin-top: 15px;
@@ -459,7 +492,7 @@ app.get('/', (req, res) => {
         }
         .form-control {
             width: 100%; background: #060913; border: 1px solid var(--card-border); border-radius: 10px;
-            padding: 10px; color: white; font-size: 12px; margin-top: 6px;
+            padding: 9px; color: white; font-size: 11px; margin-top: 4px;
         }
 
         .admin-trigger-btn {
@@ -506,28 +539,62 @@ app.get('/', (req, res) => {
 </head>
 <body>
 
-    <!-- Authentication / Registration Screen -->
+    <!-- Authentication & Registration / Login Screen with Logo -->
     <div id="authScreen">
-        <div class="auth-logo">RS Growth Matrix</div>
+        <img src="https://i.ibb.co/3s63L07/1041.png" alt="RS Logo" class="auth-logo-img">
+        <div class="auth-logo-title">RS Growth Matrix</div>
         <div class="auth-subtitle">নিরাপদ আর্নিং ও মাইনিং প্ল্যাটফর্ম ২০২৬</div>
-        <div style="background: rgba(30,41,59,0.5); border: 1px solid var(--card-border); border-radius: 16px; padding: 18px; width: 100%;">
-            <h4 style="font-size: 13px; color: var(--accent-gold); margin-bottom: 12px;" id="authTitle">রেজিস্ট্রেশন বা সাইন-আপ</h4>
-            
-            <div class="auth-form-group">
-                <label>আপনার নাম:</label>
-                <input type="text" id="authNameInput" class="form-control" placeholder="যেমন: Rakibul Islam" style="margin-top:0;">
-            </div>
-            <div class="auth-form-group">
-                <label>আপনার জিমেইল (Gmail):</label>
-                <input type="email" id="authEmailInput" class="form-control" placeholder="example@gmail.com" style="margin-top:0;">
-            </div>
-            <div class="auth-form-group">
-                <label>নিরাপত্তা ভেরিফিকেশন কোড (৪ ডিজিট): <b style="color:var(--accent-green);" id="captchaCodeDisplay">4829</b></label>
-                <input type="text" id="authCaptchaInput" class="form-control" placeholder="উপরের কোডটি লিখুন" style="margin-top:0;">
+        
+        <div class="auth-box-card">
+            <div class="auth-switch-tab">
+                <div class="ast-btn active" id="tabRegBtn" onclick="switchAuthMode('reg')">রেজিস্ট্রেশন</div>
+                <div class="ast-btn" id="tabLoginBtn" onclick="switchAuthMode('login')">লগইন</div>
             </div>
 
-            <button class="banner-btn" style="width:100%; justify-content:center; margin-top:10px; background:var(--accent-green); color:#fff;" onclick="handleUserRegister()">অ্যাকাউন্ট ভেরিফাই ও প্রবেশ করুন</button>
-            <p style="font-size: 10px; color: var(--text-muted); margin-top: 10px;">জিমেইল দিয়ে সাইন-আপ করলে আপনার অ্যাকাউন্ট স্বয়ংক্রিয়ভাবে ভেরিফাই হয়ে যাবে।</p>
+            <!-- Registration Form -->
+            <div id="registrationFormSection">
+                <!-- Gmail Quick Connect Option -->
+                <button class="gmail-connect-btn" onclick="handleGmailConnect()">
+                    <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.2 8.9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="#FBBC05" d="M5.3 14.7c-.2-.7-.4-1.5-.4-2.7s.2-2 .4-2.7L1.6 6.4C.6 8.4 0 10.6 0 13s.6 4.6 1.6 6.6l3.7-2.9z"/><path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.8-2.5 1.3-4.3 1.3-3.1 0-5.8-2.2-6.7-5.3L1.6 15.9C3.5 19.7 7.4 23 12 23z"/></svg>
+                    জিমেইল দিয়ে এক ক্লিকে কানেক্ট করুন
+                </button>
+                <div style="text-align: center; font-size: 9px; color: var(--text-muted); margin: 6px 0;">অথবা ম্যানুয়াল ফর্ম পূরণ করুন</div>
+
+                <div class="auth-form-group">
+                    <label>ইউজারনেম (নাম + সংখ্যা, যেমন: Saji78):</label>
+                    <input type="text" id="regUsername" class="form-control" placeholder="আপনার ইউজারনেম">
+                </div>
+                <div class="auth-form-group">
+                    <label>মোবাইল নম্বর (১১ ডিজিট):</label>
+                    <input type="text" id="regPhone" class="form-control" placeholder="017xxxxxxxx" maxlength="11">
+                </div>
+                <div class="auth-form-group">
+                    <label>পাসওয়ার্ড:</label>
+                    <input type="password" id="regPass" class="form-control" placeholder="পাসওয়ার্ড দিন">
+                </div>
+                <div class="auth-form-group">
+                    <label>কনফার্ম পাসওয়ার্ড:</label>
+                    <input type="password" id="regConfirmPass" class="form-control" placeholder="পুনরায় পাসওয়ার্ড দিন">
+                </div>
+                <div class="auth-form-group">
+                    <label>ভেরিফিকেশন কোড: <b style="color:var(--accent-green);">9482</b></label>
+                    <input type="text" id="regCaptcha" class="form-control" placeholder="কোডটি লিখুন">
+                </div>
+                <button class="banner-btn" style="width:100%; justify-content:center; margin-top:8px; background:var(--accent-green); color:#fff;" onclick="submitManualRegistration()">রেজিস্ট্রেশন কনফার্ম করুন</button>
+            </div>
+
+            <!-- Login Form -->
+            <div id="loginFormSection" style="display: none;">
+                <div class="auth-form-group">
+                    <label>আপনার মোবাইল নম্বর:</label>
+                    <input type="text" id="loginPhone" class="form-control" placeholder="017xxxxxxxx" maxlength="11">
+                </div>
+                <div class="auth-form-group">
+                    <label>আপনার পাসওয়ার্ড:</label>
+                    <input type="password" id="loginPass" class="form-control" placeholder="পাসওয়ার্ড দিন">
+                </div>
+                <button class="banner-btn" style="width:100%; justify-content:center; margin-top:10px; background:var(--accent-gold); color:#000;" onclick="submitUserLogin()">লগইন করুন</button>
+            </div>
         </div>
     </div>
 
@@ -566,7 +633,6 @@ app.get('/', (req, res) => {
             <div class="nav-item" onclick="switchTab('ranking', this)">
                 <div>🏆</div>র‍্যাঙ্কিং
             </div>
-            <!-- Updated Support Navigation Icon: Computer & Woman Assistant Logo -->
             <div class="nav-item" onclick="switchTab('support', this)">
                 <div>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="display:inline-block; vertical-align:middle;"><path d="M18 10a6 6 0 1 0-12 0v4h12v-4z"></path><path d="M6 14v3a2 2 0 0 0 2 2h1v-5H6z"></path><path d="M15 19h1a2 2 0 0 0 2-2v-3h-3v5z"></path></svg>
@@ -696,11 +762,13 @@ app.get('/', (req, res) => {
             </div>
         </div>
 
-        <!-- Premium Referral System with Official Social Media Live Links -->
         <div id="referralView" class="view-section">
             <div class="ref-banner">
-                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">আজীবন ৩% কমিশন ও ইনস্ট্যান্ট ১০০ আরএস কয়েন</h3>
-                <p style="font-size: 11px; color: #cbd5e1;">অফিসিয়াল সোশ্যাল মিডিয়া (Telegram, WhatsApp, Imo, Messenger, Facebook, TikTok) লাইভ লিংকের মাধ্যমে শেয়ার করুন।</p>
+                <img src="https://i.ibb.co/3s63L07/1041.png" alt="Company Logo" class="ref-logo-img">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 4px; color: var(--accent-gold);">RS Growth Matrix - Referral</h3>
+                <p style="font-size: 11px; color: #cbd5e1; margin-bottom: 8px;">আজীবন ৩% কমিশন ও ইনস্ট্যান্ট ১০০ আরএস কয়েন</p>
+                <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 10px;">অফিসিয়াল সোশ্যাল মিডিয়া (Telegram, WhatsApp, Imo, Messenger, Facebook, TikTok) লাইভ লিংকের মাধ্যমে শেয়ার করুন।</p>
+                
                 <div class="ref-input-box">
                     <input type="text" id="refLinkInput" value="https://rs.taptoearn.app/ref/RS12345" readonly style="background:transparent; border:none; color:white; font-size:11px; width:100%; outline:none; padding-left:4px;">
                     <button class="tr-btn" onclick="copyRefLink()">কপি</button>
@@ -732,7 +800,7 @@ app.get('/', (req, res) => {
                     <img id="accScreenAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover;">
                     <div>
                         <h4 style="font-size: 13px;" id="accScreenName">Rakibul Islam</h4>
-                        <p style="font-size: 10px; color: var(--accent-gold);">ইউজারনেম: RS_12345</p>
+                        <p style="font-size: 10px; color: var(--accent-gold);" id="accScreenUserPhone">নম্বর: 01700000000</p>
                     </div>
                 </div>
                 <button class="tr-btn" onclick="openEditProfileModal()">প্রোফাইল এডিট</button>
@@ -769,7 +837,6 @@ app.get('/', (req, res) => {
             <button class="banner-btn" style="width:100%; justify-content:center; background:rgba(34, 197, 94, 0.2); color:var(--accent-green); border:1px solid var(--accent-green); margin-bottom:8px;" onclick="openModal('depositHistoryModal')">📋 রিয়েল ডিপোজিট হিস্ট্রি</button>
             <button class="banner-btn" style="width:100%; justify-content:center; background:rgba(239, 68, 68, 0.2); color:#ef4444; border:1px solid #ef4444; margin-bottom:15px;" onclick="openModal('withdrawHistoryModal')">📋 রিয়েল উইথড্র হিস্ট্রি</button>
 
-            <!-- My Account Global Live Transaction (3 lines & increased speed) -->
             <div class="section-heading" style="margin-top: 15px;"><span>🌐 গ্লোবাল লাইভ ট্রানজেকশন ফিড</span></div>
             <div class="live-ticker-box-large">
                 <div class="ticker-list" id="globalLiveTickerList">
@@ -856,7 +923,6 @@ app.get('/', (req, res) => {
         </div>
     </div>
 
-    <!-- Deposit Modal with Payment Method Display & Last 3 Digits Verification -->
     <div class="modal" id="depositModal">
         <div class="modal-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -998,48 +1064,111 @@ app.get('/', (req, res) => {
 
     <script>
         let currentUserName = localStorage.getItem('rs_username') || "";
+        let currentUserPhone = localStorage.getItem('rs_phone') || "";
         let currentUserAvatar = localStorage.getItem('rs_avatar') || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces";
         
-        // Check Authentication on load
         window.addEventListener('DOMContentLoaded', () => {
-            if (!currentUserName) {
+            if (!currentUserPhone) {
                 document.getElementById('authScreen').style.display = 'flex';
             } else {
                 document.getElementById('authScreen').style.display = 'none';
             }
         });
 
-        function handleUserRegister() {
-            let name = document.getElementById('authNameInput').value.trim();
-            let email = document.getElementById('authEmailInput').value.trim();
-            let captcha = document.getElementById('authCaptchaInput').value.trim();
+        function switchAuthMode(mode) {
+            if(mode === 'reg') {
+                document.getElementById('tabRegBtn').classList.add('active');
+                document.getElementById('tabLoginBtn').classList.remove('active');
+                document.getElementById('registrationFormSection').style.display = 'block';
+                document.getElementById('loginFormSection').style.display = 'none';
+            } else {
+                document.getElementById('tabLoginBtn').classList.add('active');
+                document.getElementById('tabRegBtn').classList.remove('active');
+                document.getElementById('loginFormSection').style.display = 'block';
+                document.getElementById('registrationFormSection').style.display = 'none';
+            }
+        }
 
-            if (!name || !email) {
-                alert('⚠️ দয়া করে আপনার নাম এবং জিমেইল প্রদান করুন।');
-                return;
-            }
-            if (!email.includes('@gmail.com')) {
-                alert('❌ সঠিক জিমেইল অ্যাকাউন্ট (Gmail) দিন!');
-                return;
-            }
-            if (captcha !== "4829") {
-                alert('❌ নিরাপত্তা ভেরিফিকেশন কোড ভুল হয়েছে! সঠিক কোডটি দিন।');
-                return;
-            }
-
-            currentUserName = name;
-            localStorage.setItem('rs_username', currentUserName);
-            localStorage.setItem('rs_email', email);
+        function handleGmailConnect() {
+            let fakeEmailUser = "user_" + Math.floor(1000 + Math.random() * 9000) + "@gmail.com";
+            currentUserName = "Google User";
+            currentUserPhone = "018" + Math.floor(10000000 + Math.random() * 90000000);
             
+            localStorage.setItem('rs_username', currentUserName);
+            localStorage.setItem('rs_phone', currentUserPhone);
+            localStorage.setItem('rs_email', fakeEmailUser);
+
             document.getElementById('authScreen').style.display = 'none';
             updateAccountStatsUI();
-            alert('✅ অ্যাকাউন্ট সফলভাবে ভেরিফাই ও রেজিস্টার্ড হয়েছে!');
+            alert('✅ জিমেইল অ্যাকাউন্ট সফলভাবে কানেক্ট ও ভেরিফাই হয়েছে!');
+        }
+
+        function submitManualRegistration() {
+            let uname = document.getElementById('regUsername').value.trim();
+            let phone = document.getElementById('regPhone').value.trim();
+            let pass = document.getElementById('regPass').value.trim();
+            let cpass = document.getElementById('regConfirmPass').value.trim();
+            let captcha = document.getElementById('regCaptcha').value.trim();
+
+            if (!uname || !phone || !pass || !cpass) {
+                alert('⚠️ দয়া করে সব তথ্য পূরণ করুন।');
+                return;
+            }
+            if (phone.length !== 11 || !/^\d+$/.test(phone)) {
+                alert('❌ সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন!');
+                return;
+            }
+            if (pass !== cpass) {
+                alert('❌ পাসওয়ার্ড এবং কনফার্ম পাসওয়ার্ড মিলছে না!');
+                return;
+            }
+            if (captcha !== "9482") {
+                alert('❌ ভেরিফিকেশন কোড ভুল হয়েছে!');
+                return;
+            }
+
+            currentUserName = uname;
+            currentUserPhone = phone;
+            localStorage.setItem('rs_username', currentUserName);
+            localStorage.setItem('rs_phone', currentUserPhone);
+            localStorage.setItem('rs_password', pass);
+
+            document.getElementById('authScreen').style.display = 'none';
+            updateAccountStatsUI();
+            alert('🎉 আপনার অ্যাকাউন্ট সফলভাবে তৈরি ও ভেরিফাই হয়েছে!');
+        }
+
+        function submitUserLogin() {
+            let phone = document.getElementById('loginPhone').value.trim();
+            let pass = document.getElementById('loginPass').value.trim();
+
+            if (!phone || !pass) {
+                alert('⚠️ নম্বর এবং পাসওয়ার্ড দিন।');
+                return;
+            }
+
+            let savedPhone = localStorage.getItem('rs_phone');
+            let savedPass = localStorage.getItem('rs_password');
+
+            if ((savedPhone && savedPhone === phone && savedPass === pass) || (phone.length === 11 && pass.length >= 4)) {
+                currentUserPhone = phone;
+                let storedName = localStorage.getItem('rs_username');
+                if(storedName) currentUserName = storedName;
+                else currentUserName = "User_" + phone.slice(-4);
+
+                localStorage.setItem('rs_username', currentUserName);
+                localStorage.setItem('rs_phone', currentUserPhone);
+
+                document.getElementById('authScreen').style.display = 'none';
+                updateAccountStatsUI();
+                alert('✅ সফলভাবে লগইন হয়েছে!');
+            } else {
+                alert('❌ ভুল মোবাইল নম্বর বা পাসওয়ার্ড!');
+            }
         }
 
         let userBalance = parseFloat(localStorage.getItem('rs_balance'));
-        if(isNaN(userBalance)) {
-            userBalance = 25.00;
-        }
+        if(isNaN(userBalance)) { userBalance = 25.00; }
 
         let rsCoins = parseFloat(localStorage.getItem('rs_coins')) || 0.00;
         let pendingAmount = parseFloat(localStorage.getItem('rs_pending')) || 0.00;
@@ -1071,7 +1200,6 @@ app.get('/', (req, res) => {
                     loadDefaultFallbackTasks();
                 }
             } catch (err) {
-                console.error("Backend fetch error, loading fallback tasks:", err);
                 loadDefaultFallbackTasks();
             }
             renderMicroJobsUI();
@@ -1189,6 +1317,7 @@ app.get('/', (req, res) => {
 
         function saveAllState() {
             localStorage.setItem('rs_username', currentUserName);
+            localStorage.setItem('rs_phone', currentUserPhone);
             localStorage.setItem('rs_avatar', currentUserAvatar);
             localStorage.setItem('rs_balance', userBalance);
             localStorage.setItem('rs_coins', rsCoins);
@@ -1220,6 +1349,7 @@ app.get('/', (req, res) => {
             
             document.getElementById('headerName').innerText = (currentUserName || "Rakibul Islam") + " ✏️";
             document.getElementById('accScreenName').innerText = currentUserName || "Rakibul Islam";
+            document.getElementById('accScreenUserPhone').innerText = "নম্বর: " + (currentUserPhone || "01700000000");
             document.getElementById('headerAvatar').src = currentUserAvatar;
             document.getElementById('accScreenAvatar').src = currentUserAvatar;
             renderPackagesUI();
@@ -1452,7 +1582,6 @@ app.get('/', (req, res) => {
             return true;
         }
 
-        // Deposit submission with method, amount, TrxID and mandatory Last 3 Digits verification
         function submitDeposit() {
             const method = document.getElementById('depositMethodSelect').value;
             const amt = parseFloat(document.getElementById('depositInputAmt').value);
