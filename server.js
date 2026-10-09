@@ -1,4 +1,4 @@
-const express = require('express');
+Const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 
@@ -375,16 +375,17 @@ app.get('/', (req, res) => {
         .ss-btn {
             background: rgba(30, 41, 59, 0.8); border: 1px solid var(--card-border); border-radius: 10px;
             padding: 8px; text-align: center; font-size: 11px; cursor: pointer; color: var(--text-main);
-            display: flex; align-items: center; justify-content: center; gap: 4px;
+            display: flex; align-items: center; justify-content: center; gap: 4px; text-decoration: none;
         }
 
+        /* Updated Global Live Ticker Box (3 lines & increased scroll speed) */
         .live-ticker-box-large {
             background: radial-gradient(circle, rgba(30,41,59,0.95) 0%, rgba(15,23,42,0.98) 100%);
             border: 1px solid var(--accent-purple); border-radius: 16px; padding: 12px; margin-top: 15px;
-            height: 160px; overflow: hidden; position: relative;
+            height: 110px; overflow: hidden; position: relative;
         }
         .ticker-list {
-            display: flex; flex-direction: column; gap: 8px; animation: scrollTicker 16s linear infinite;
+            display: flex; flex-direction: column; gap: 8px; animation: scrollTicker 4s linear infinite;
         }
         .ticker-list:hover { animation-play-state: paused; }
         @keyframes scrollTicker {
@@ -432,6 +433,7 @@ app.get('/', (req, res) => {
         }
         .nav-item:hover {
             color: var(--accent-blue);
+            transform: translateY(-3px) rotate(1deg);
         }
         .nav-item.active { 
             color: var(--accent-gold); 
@@ -440,10 +442,10 @@ app.get('/', (req, res) => {
         }
         @keyframes navPulse {
             0% { transform: translateY(0) scale(1); filter: brightness(1); }
-            100% { transform: translateY(-2px) scale(1.05); filter: brightness(1.2); }
+            100% { transform: translateY(-4px) scale(1.08) rotate(2deg); filter: brightness(1.2); }
         }
         .nav-item.active div {
-            transform: translateY(-2px) scale(1.1);
+            transform: translateY(-3px) scale(1.1);
         }
 
         .modal {
@@ -564,8 +566,11 @@ app.get('/', (req, res) => {
             <div class="nav-item" onclick="switchTab('ranking', this)">
                 <div>🏆</div>র‍্যাঙ্কিং
             </div>
+            <!-- Updated Support Navigation Icon: Computer & Woman Assistant Logo -->
             <div class="nav-item" onclick="switchTab('support', this)">
-                <div>🎧</div>সাপোর্ট
+                <div>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="display:inline-block; vertical-align:middle;"><path d="M18 10a6 6 0 1 0-12 0v4h12v-4z"></path><path d="M6 14v3a2 2 0 0 0 2 2h1v-5H6z"></path><path d="M15 19h1a2 2 0 0 0 2-2v-3h-3v5z"></path></svg>
+                </div>সাপোর্ট
             </div>
             <div class="nav-item" onclick="switchTab('referral', this)">
                 <div>👥</div>রেফার
@@ -691,18 +696,22 @@ app.get('/', (req, res) => {
             </div>
         </div>
 
+        <!-- Premium Referral System with Official Social Media Live Links -->
         <div id="referralView" class="view-section">
             <div class="ref-banner">
                 <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">আজীবন ৩% কমিশন ও ইনস্ট্যান্ট ১০০ আরএস কয়েন</h3>
-                <p style="font-size: 11px; color: #cbd5e1;">অফিসিয়াল সোশ্যাল মিডিয়া (TikTok, Facebook, YouTube) ইমেজ ব্যবহার করে রেফার করুন।</p>
+                <p style="font-size: 11px; color: #cbd5e1;">অফিসিয়াল সোশ্যাল মিডিয়া (Telegram, WhatsApp, Imo, Messenger, Facebook, TikTok) লাইভ লিংকের মাধ্যমে শেয়ার করুন।</p>
                 <div class="ref-input-box">
                     <input type="text" id="refLinkInput" value="https://rs.taptoearn.app/ref/RS12345" readonly style="background:transparent; border:none; color:white; font-size:11px; width:100%; outline:none; padding-left:4px;">
                     <button class="tr-btn" onclick="copyRefLink()">কপি</button>
                 </div>
-                <div class="social-share-row">
-                    <div class="ss-btn" onclick="alert('টিকটক অফিশিয়াল ইমেজ শেয়ার লিংক কপি হয়েছে')">🎵 টিকটক</div>
-                    <div class="ss-btn" onclick="alert('ফেসবুক অফিশিয়াল ইমেজ শেয়ার লিংক কপি হয়েছে')">📘 ফেসবুক</div>
-                    <div class="ss-btn" onclick="alert('ইউটিউব অফিশিয়াল ইমেজ শেয়ার লিংক কপি হয়েছে')">▶️ ইউটিউব</div>
+                <div class="social-share-row" style="grid-template-columns: repeat(3, 1fr);">
+                    <a href="https://t.me/share/url?url=https://rs.taptoearn.app/ref/RS12345&text=Join%20RS%20Growth%20Matrix" target="_blank" class="ss-btn">✈️ টেলিগ্রাম</a>
+                    <a href="https://api.whatsapp.com/send?text=Join%20RS%20Growth%20Matrix:%20https://rs.taptoearn.app/ref/RS12345" target="_blank" class="ss-btn">💬 হোয়াটসঅ্যাপ</a>
+                    <a href="https://imo.im/" target="_blank" class="ss-btn">📞 ইমো</a>
+                    <a href="fb-messenger://share?link=https://rs.taptoearn.app/ref/RS12345" target="_blank" class="ss-btn">⚡ মেসেঞ্জার</a>
+                    <a href="https://www.facebook.com/sharer/sharer.php?u=https://rs.taptoearn.app/ref/RS12345" target="_blank" class="ss-btn">📘 ফেসবুক</a>
+                    <a href="https://www.tiktok.com/" target="_blank" class="ss-btn">🎵 টিকটক</a>
                 </div>
             </div>
 
@@ -760,11 +769,13 @@ app.get('/', (req, res) => {
             <button class="banner-btn" style="width:100%; justify-content:center; background:rgba(34, 197, 94, 0.2); color:var(--accent-green); border:1px solid var(--accent-green); margin-bottom:8px;" onclick="openModal('depositHistoryModal')">📋 রিয়েল ডিপোজিট হিস্ট্রি</button>
             <button class="banner-btn" style="width:100%; justify-content:center; background:rgba(239, 68, 68, 0.2); color:#ef4444; border:1px solid #ef4444; margin-bottom:15px;" onclick="openModal('withdrawHistoryModal')">📋 রিয়েল উইথড্র হিস্ট্রি</button>
 
+            <!-- My Account Global Live Transaction (3 lines & increased speed) -->
             <div class="section-heading" style="margin-top: 15px;"><span>🌐 গ্লোবাল লাইভ ট্রানজেকশন ফিড</span></div>
             <div class="live-ticker-box-large">
                 <div class="ticker-list" id="globalLiveTickerList">
                     <div class="ticker-item"><span class="t-dep">📥 ডিপোজিট (বিকাশ): +৳ ১,০০০.০০ (Success)</span><span style="font-size:9px; color:var(--text-muted)">017****94</span></div>
                     <div class="ticker-item"><span class="t-wd">📤 উইথড্র (নগদ): -৳ ৫০০.০০ (Success)</span><span style="font-size:9px; color:var(--text-muted)">018****22</span></div>
+                    <div class="ticker-item"><span class="t-bon">🎁 বোনাস অর্জন: +৫০০ RS (Success)</span><span style="font-size:9px; color:var(--text-muted)">019****11</span></div>
                 </div>
             </div>
         </div>
@@ -845,6 +856,7 @@ app.get('/', (req, res) => {
         </div>
     </div>
 
+    <!-- Deposit Modal with Payment Method Display & Last 3 Digits Verification -->
     <div class="modal" id="depositModal">
         <div class="modal-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -881,6 +893,9 @@ app.get('/', (req, res) => {
             
             <label style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">ট্রানজাকশন আইডি (TrxID):</label>
             <input type="text" id="depositTrxId" class="form-control" placeholder="যেমন: 7A3B2C1D4E">
+
+            <label style="font-size: 10px; color: var(--text-muted); margin-top: 6px;">পেমেন্ট নাম্বারের শেষ ৩ ডিজিট দিন (বাধ্যতামূলক):</label>
+            <input type="text" id="depositLast3Digits" class="form-control" placeholder="যেমন: 460" maxlength="3">
             
             <button class="banner-btn" style="width:100%; justify-content:center; margin-top:12px; background:var(--accent-green); color:#fff;" onclick="submitDeposit()">ডিপোজিট নিশ্চিত করুন</button>
         </div>
@@ -1064,8 +1079,8 @@ app.get('/', (req, res) => {
 
         function loadDefaultFallbackTasks() {
             microJobsList = [
-                {id: 1, title: "MicroTask #1: YouTube Channel Subscribe & Watch", reward: 50, icon: "▶️", color: "#FF0000", desc: "১. দেওয়া লিংকে ক্লিক করে ইউটিউব চ্যানেল সাবস্ক্রাইব করুন।\\n২. ভিডিওটি সম্পূর্ণ দেখে একটি লাইক দিন।\\n৩. আপনার ইউটিউব ইউজারনেম প্রুফ হিসেবে নিচে লিখুন।", link: "https://youtube.com/@SproutGigsTaskOfficial"},
-                {id: 2, title: "MicroTask #2: Facebook Page Like & Follow", reward: 40, icon: "📘", color: "#1877F2", desc: "১. ফেসবুক পেজে প্রবেশ করে লাইক ও ফলো করুন।\\n২. আপনার ফেসবুক প্রোফাইল লিংক বা নাম প্রুফ দিন।", link: "https://facebook.com/SproutGigsOfficialTask"}
+                {id: 1, title: "MicroTask #1: YouTube Channel Subscribe & Watch", reward: 50, icon: "▶️", color: "#FF0000", desc: "১. দেওয়া লিংকে ক্লিক করে ইউটিউব চ্যানেল সাবস্ক্রাইব করুন।\n২. ভিডিওটি সম্পূর্ণ দেখে একটি লাইক দিন।\n৩. আপনার ইউটিউব ইউজারনেম প্রুফ হিসেবে নিচে লিখুন।", link: "https://youtube.com/@SproutGigsTaskOfficial"},
+                {id: 2, title: "MicroTask #2: Facebook Page Like & Follow", reward: 40, icon: "📘", color: "#1877F2", desc: "১. ফেসবুক পেজে প্রবেশ করে লাইক ও ফলো করুন।\n২. আপনার ফেসবুক প্রোফাইল লিংক বা নাম প্রুফ দিন।", link: "https://facebook.com/SproutGigsOfficialTask"}
             ];
         }
 
@@ -1375,10 +1390,10 @@ app.get('/', (req, res) => {
             const descEl = document.getElementById('supportPopupDesc');
             if(type === 'deposit') {
                 titleEl.innerText = "💳 ডিপোজিট সংক্রান্ত সমস্যা ও সমাধান";
-                descEl.innerText = "১. ডিপোজিট সীমা ২০০ থেকে ৩০০০ টাকা।\\n২. সঠিক TrxID প্রদান করুন।";
+                descEl.innerText = "১. ডিপোজিট সীমা ২০০ থেকে ৩০০০ টাকা।\n২. সঠিক TrxID ও শেষ ৩ ডিজিট প্রদান করুন।";
             } else if(type === 'withdraw') {
                 titleEl.innerText = "🏦 উইথড্র সংক্রান্ত সমস্যা ও সমাধান";
-                descEl.innerText = "১. উইথড্র সীমা ৩০০ থেকে ৫০০০ টাকা।\\n২. অ্যাকাউন্টে নির্দিষ্ট পরিমাণের বেশি ব্যালেন্স থাকতে হবে।";
+                descEl.innerText = "১. উইথড্র সীমা ৩০০ থেকে ৫০০০ টাকা।\n২. অ্যাকাউন্টে নির্দিষ্ট পরিমাণের বেশি ব্যালেন্স থাকতে হবে।";
             } else if(type === 'bonus') {
                 titleEl.innerText = "🎁 বোনাস সংক্রান্ত তথ্য";
                 descEl.innerText = "১. রেফারেল ইনস্ট্যান্ট ১০০ কয়েন ও আজীবন ৩% কমিশন।";
@@ -1433,31 +1448,35 @@ app.get('/', (req, res) => {
 
         function isValidTrxId(trx) {
             if (!trx || trx.length < 4) return false;
-            if (/^\\d+$/.test(trx)) return false;
+            if (/^\d+$/.test(trx)) return false;
             return true;
         }
 
+        // Deposit submission with method, amount, TrxID and mandatory Last 3 Digits verification
         function submitDeposit() {
             const method = document.getElementById('depositMethodSelect').value;
             const amt = parseFloat(document.getElementById('depositInputAmt').value);
             const trx = document.getElementById('depositTrxId').value.trim();
+            const last3 = document.getElementById('depositLast3Digits').value.trim();
             
             if(isNaN(amt) || amt < 200 || amt > 3000) { alert('⚠️ ডিপোজিট সীমা ২০০ টাকা থেকে ৩০০০ টাকার মধ্যে হতে হবে।'); return; }
             if(!isValidTrxId(trx)) { alert('❌ ভুল TrxID!'); return; }
+            if(!last3 || last3.length !== 3 || !/^\d+$/.test(last3)) { alert('❌ পেমেন্ট নাম্বারের সঠিক শেষ ৩ ডিজিট প্রদান করা বাধ্যতামূলক!'); return; }
 
             pendingAmount += amt;
             totalTransactionsCount += 1;
 
-            const newTx = { method, amt, trx, status: 'Pending', time: 'Just now', user: currentUserName };
+            const newTx = { method, amt, trx, last3, status: 'Pending', time: 'Just now', user: currentUserName };
             userDepositHistory.unshift(newTx);
             updateAccountStatsUI();
             renderHistoryLists();
             renderAdminLiveLists();
 
-            alert(\`✅ সফল! \${method} মাধ্যমে ৳\${amt} ডিপোজিট রিকোয়েস্ট পেন্ডিং আছে।\`);
+            alert(\`✅ সফল! \${method} মাধ্যমে ৳\${amt} ডিপোজিট রিকোয়েস্ট (শেষ ৩ ডিজিট: \${last3}) পেন্ডিং আছে।\`);
             closeModal('depositModal');
             document.getElementById('depositInputAmt').value = '';
             document.getElementById('depositTrxId').value = '';
+            document.getElementById('depositLast3Digits').value = '';
         }
 
         function submitWithdraw() {
@@ -1467,7 +1486,7 @@ app.get('/', (req, res) => {
 
             if(isNaN(amt) || amt < 300 || amt > 5000) { alert('⚠️ উইথড্র সীমা ৩০০ টাকা থেকে ৫০০০ টাকার মধ্যে হতে হবে।'); return; }
             if(amt > userBalance) { alert('❌ অ্যাকাউন্টে পর্যাপ্ত ব্যালেন্স নেই!'); return; }
-            if(!phone || phone.length !== 11 || !/^\\d+$/.test(phone)) { alert('❌ সঠিক ১১ ডিজিটের নম্বর দিন।'); return; }
+            if(!phone || phone.length !== 11 || !/^\d+$/.test(phone)) { alert('❌ সঠিক ১১ ডিজিটের নম্বর দিন।'); return; }
 
             userBalance -= amt;
             pendingAmount += amt;
@@ -1505,7 +1524,7 @@ app.get('/', (req, res) => {
                 pendingDeps.forEach((d, idx) => {
                     html += \`
                         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; background: rgba(30,41,59,0.7); padding: 6px 8px; border-radius: 8px; margin-bottom: 6px;">
-                            <span style="color:var(--text-main);">\${d.user}: ৳\${d.amt} [Trx: \${d.trx}]</span>
+                            <span style="color:var(--text-main);">\${d.user} [\${d.method}]: ৳\${d.amt} [Trx: \${d.trx}] <b style="color:var(--accent-gold);">[3Digit: \${d.last3}]</b></span>
                             <div style="display:flex; gap:4px;">
                                 <button class="tr-btn" style="padding: 3px 6px; font-size: 9px;" onclick="navigator.clipboard.writeText('\${d.trx}'); alert('কপি হয়েছে');">কপি</button>
                                 <button class="tr-btn" style="padding: 3px 6px; font-size: 9px; background: var(--accent-green); color:#fff;" onclick="approveDeposit(\${idx})">সাবমিট</button>
@@ -1579,7 +1598,7 @@ app.get('/', (req, res) => {
             } else {
                 let html = '';
                 userDepositHistory.forEach(item => {
-                    html += \`<div class="ticker-item"><span class="t-dep">📥 (\${item.method}): +৳ \${item.amt.toLocaleString()}</span><span style="font-size:9px; color:var(--accent-gold);">\${item.status}</span></div>\`;
+                    html += \`<div class="ticker-item"><span class="t-dep">📥 (\${item.method}): +৳ \${item.amt.toLocaleString()} [3D: \${item.last3}]</span><span style="font-size:9px; color:var(--accent-gold);">\${item.status}</span></div>\`;
                 });
                 depContent.innerHTML = html;
             }
