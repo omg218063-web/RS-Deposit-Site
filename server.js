@@ -558,31 +558,17 @@ app.get('/', (req, res) => {
 
             <!-- Registration Form -->
             <div id="registrationFormSection">
-                <button type="button" class="gmail-connect-btn" onclick="handleGmailConnect()">
-                    <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.2 8.9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="#FBBC05" d="M5.3 14.7c-.2-.7-.4-1.5-.4-2.7s.2-2 .4-2.7L1.6 6.4C.6 8.4 0 10.6 0 13s.6 4.6 1.6 6.6l3.7-2.9z"/><path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.8-2.5 1.3-4.3 1.3-3.1 0-5.8-2.2-6.7-5.3L1.6 15.9C3.5 19.7 7.4 23 12 23z"/></svg>
-                    জিমেইল দিয়ে এক ক্লিকে কানেক্ট করুন
-                </button>
-                <div style="text-align: center; font-size: 9px; color: var(--text-muted); margin: 6px 0;">অথবা ম্যানুয়াল ফর্ম পূরণ করুন</div>
-
                 <div class="auth-form-group">
-                    <label>ইউজারনেম (নাম + সংখ্যা, যেমন: Saji78):</label>
-                    <input type="text" id="regUsername" class="form-control" placeholder="আপনার ইউজারনেম">
+                    <label>আপনার নাম:</label>
+                    <input type="text" id="regName" class="form-control" placeholder="আপনার নাম লিখুন">
                 </div>
                 <div class="auth-form-group">
                     <label>মোবাইল নম্বর (১১ ডিজিট):</label>
                     <input type="text" id="regPhone" class="form-control" placeholder="017xxxxxxxx" maxlength="11">
                 </div>
                 <div class="auth-form-group">
-                    <label>পাসওয়ার্ড:</label>
-                    <input type="password" id="regPass" class="form-control" placeholder="পাসওয়ার্ড দিন">
-                </div>
-                <div class="auth-form-group">
-                    <label>কনফার্ম পাসওয়ার্ড:</label>
-                    <input type="password" id="regConfirmPass" class="form-control" placeholder="পুনরায় পাসওয়ার্ড দিন">
-                </div>
-                <div class="auth-form-group">
-                    <label>ভেরিফিকেশন কোড: <b style="color:var(--accent-green);">9482</b></label>
-                    <input type="text" id="regCaptcha" class="form-control" placeholder="কোডটি লিখুন">
+                    <label>পাসওয়ার্ড (কমপক্ষে ২ সংখ্যা):</label>
+                    <input type="password" id="regPass" class="form-control" placeholder="পাসওয়ার্ড দিন" maxlength="6">
                 </div>
                 <button type="button" class="banner-btn" style="width:100%; justify-content:center; margin-top:8px; background:var(--accent-green); color:#fff;" onclick="submitManualRegistration()">রেজিস্ট্রেশন কনফার্ম করুন</button>
             </div>
@@ -595,7 +581,7 @@ app.get('/', (req, res) => {
                 </div>
                 <div class="auth-form-group">
                     <label>আপনার পাসওয়ার্ড:</label>
-                    <input type="password" id="loginPass" class="form-control" placeholder="পাসওয়ার্ড দিন">
+                    <input type="password" id="loginPass" class="form-control" placeholder="পাসওয়ার্ড দিন" maxlength="6">
                 </div>
                 <button type="button" class="banner-btn" style="width:100%; justify-content:center; margin-top:10px; background:var(--accent-gold); color:#000;" onclick="submitUserLogin()">লগইন করুন</button>
             </div>
@@ -1077,6 +1063,7 @@ app.get('/', (req, res) => {
             } else {
                 document.getElementById('authScreen').style.display = 'none';
                 updateAccountStatsUI();
+                fetchServerTasks();
             }
         });
 
@@ -1094,46 +1081,21 @@ app.get('/', (req, res) => {
             }
         }
 
-        function handleGmailConnect() {
-            let userEmail = prompt("আপনার জিমেইল অ্যাকাউন্ট দিন (যেমন: yourname@gmail.com):");
-            if (userEmail && userEmail.includes("@")) {
-                currentUserName = userEmail.split('@')[0];
-                currentUserPhone = "018" + Math.floor(10000000 + Math.random() * 90000000);
-                
-                localStorage.setItem('rs_username', currentUserName);
-                localStorage.setItem('rs_phone', currentUserPhone);
-                localStorage.setItem('rs_email', userEmail);
-                localStorage.setItem('rs_password', "google_auth");
-
-                document.getElementById('authScreen').style.display = 'none';
-                updateAccountStatsUI();
-                alert('🎉 আপনার জিমেইল অ্যাকাউন্ট সফলভাবে কানেক্ট ও ভেরিফাই হয়েছে!');
-            } else if (userEmail !== null) {
-                alert('❌ দয়া করে একটি সঠিক জিমেইল অ্যাকাউন্ট দিন!');
-            }
-        }
-
         function submitManualRegistration() {
-            let uname = document.getElementById('regUsername').value.trim();
+            let uname = document.getElementById('regName').value.trim();
             let phone = document.getElementById('regPhone').value.trim();
             let pass = document.getElementById('regPass').value.trim();
-            let cpass = document.getElementById('regConfirmPass').value.trim();
-            let captcha = document.getElementById('regCaptcha').value.trim();
 
-            if (!uname || !phone || !pass || !cpass) {
-                alert('⚠️ দয়া করে সব তথ্য পূরণ করুন।');
+            if (!uname || !phone || !pass) {
+                alert('⚠️ দয়া করে নাম, মোবাইল নম্বর এবং পাসওয়ার্ড দিন।');
                 return;
             }
             if (phone.length !== 11 || !/^\d+$/.test(phone)) {
                 alert('❌ সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন!');
                 return;
             }
-            if (pass !== cpass) {
-                alert('❌ পাসওয়ার্ড এবং কনফার্ম পাসওয়ার্ড মিলছে না!');
-                return;
-            }
-            if (captcha !== "9482") {
-                alert('❌ ভেরিফিকেশন কোড ভুল হয়েছে!');
+            if (pass.length < 2) {
+                alert('❌ পাসওয়ার্ড অন্তত ২ সংখ্যার হতে হবে!');
                 return;
             }
 
@@ -1145,7 +1107,8 @@ app.get('/', (req, res) => {
 
             document.getElementById('authScreen').style.display = 'none';
             updateAccountStatsUI();
-            alert('🎉 আপনার অ্যাকাউন্ট সাকসেসফুলি ভেরিফাই ও তৈরি হয়েছে!');
+            fetchServerTasks();
+            alert('🎉 আপনার রেজিস্ট্রেশন সফল হয়েছে!');
         }
 
         function submitUserLogin() {
@@ -1153,35 +1116,27 @@ app.get('/', (req, res) => {
             let pass = document.getElementById('loginPass').value.trim();
 
             if (!phone || !pass) {
-                alert('⚠️ নম্বর এবং পাসওয়ার্ড দিন।');
+                alert('⚠️ মোবাইল নম্বর এবং পাসওয়ার্ড দিন।');
+                return;
+            }
+            if (phone.length !== 11) {
+                alert('❌ সঠিক ১১ ডিজিটের নম্বর দিন।');
                 return;
             }
 
-            let savedPhone = localStorage.getItem('rs_phone');
-            let savedPass = localStorage.getItem('rs_password');
+            currentUserPhone = phone;
+            let storedName = localStorage.getItem('rs_username');
+            if(storedName) currentUserName = storedName;
+            else currentUserName = "User_" + phone.slice(-4);
 
-            if ((savedPhone && savedPhone === phone && savedPass === pass) || (phone.length === 11 && pass.length >= 4)) {
-                currentUserPhone = phone;
-                let storedName = localStorage.getItem('rs_username');
-                if(storedName) currentUserName = storedName;
-                else currentUserName = "User_" + phone.slice(-4);
+            localStorage.setItem('rs_username', currentUserName);
+            localStorage.setItem('rs_phone', currentUserPhone);
+            localStorage.setItem('rs_password', pass);
 
-                localStorage.setItem('rs_username', currentUserName);
-                localStorage.setItem('rs_phone', currentUserPhone);
-
-                document.getElementById('authScreen').style.display = 'none';
-                updateAccountStatsUI();
-                alert('✅ সফলভাবে লগইন হয়েছে!');
-            } else {
-                currentUserPhone = phone;
-                currentUserName = "User_" + phone.slice(-4);
-                localStorage.setItem('rs_username', currentUserName);
-                localStorage.setItem('rs_phone', currentUserPhone);
-                localStorage.setItem('rs_password', pass);
-                document.getElementById('authScreen').style.display = 'none';
-                updateAccountStatsUI();
-                alert('✅ সফলভাবে লগইন ও অ্যাকাউন্ট প্রবেশ সম্পন্ন হয়েছে!');
-            }
+            document.getElementById('authScreen').style.display = 'none';
+            updateAccountStatsUI();
+            fetchServerTasks();
+            alert('✅ সফলভাবে লগইন হয়েছে!');
         }
 
         let userBalance = parseFloat(localStorage.getItem('rs_balance'));
