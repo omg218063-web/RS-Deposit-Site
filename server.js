@@ -1,15 +1,12 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// MongoDB Connection (Optional / Environment Based)
 if (process.env.MONGO_URI) {
     mongoose.connect(process.env.MONGO_URI, {
         useNewUrlParser: true,
@@ -18,7 +15,6 @@ if (process.env.MONGO_URI) {
       .catch(err => console.error('MongoDB Connection Error:', err));
 }
 
-// Micro-Jobs API Endpoint for Tasks
 app.get('/api/tasks', (req, res) => {
     const defaultTasks = [
         {
@@ -37,7 +33,6 @@ app.get('/api/tasks', (req, res) => {
     res.json(defaultTasks);
 });
 
-// Main Frontend Route (Serves the entire UI directly)
 app.get('/', (req, res) => {
     res.send(`<!DOCTYPE html>
 <html lang="bn">
@@ -91,7 +86,6 @@ app.get('/', (req, res) => {
             height: 94vh;
         }
 
-        /* Premium Auth Screen Styling */
         #authScreen {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -104,10 +98,17 @@ app.get('/', (req, res) => {
             padding: 20px;
             overflow-y: auto;
         }
-        .auth-logo-img {
-            width: 90px; height: 90px; border-radius: 50%; border: 2px solid var(--accent-gold);
-            object-fit: cover; box-shadow: 0 0 20px rgba(251,191,36,0.5); margin-bottom: 8px; margin-top: 10px;
+
+        /* Pure CSS Custom Logo (No external link issue) */
+        .auth-logo-circle {
+            width: 85px; height: 85px; border-radius: 50%;
+            background: linear-gradient(135deg, #fbbf24, #d97706);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 30px; font-weight: bold; color: #000;
+            border: 2px solid #fff; box-shadow: 0 0 25px rgba(251,191,36,0.6);
+            margin-bottom: 8px; margin-top: 10px;
         }
+        
         .auth-logo-title {
             font-size: 20px; font-weight: bold; color: var(--accent-gold);
             text-shadow: 0 0 15px rgba(251,191,36,0.4); margin-bottom: 2px;
@@ -117,7 +118,7 @@ app.get('/', (req, res) => {
         }
         
         .auth-box-card {
-            background: rgba(15, 23, 42, 0.85);
+            background: rgba(15, 23, 42, 0.9);
             border: 1px solid rgba(251,191,36,0.3);
             border-radius: 18px;
             padding: 15px;
@@ -169,7 +170,7 @@ app.get('/', (req, res) => {
         .user-avatar {
             width: 44px; height: 44px; border-radius: 50%;
             background: linear-gradient(135deg, #fbbf24, #a855f7);
-            padding: 2px;
+            padding: 2px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000;
         }
         .user-avatar img {
             width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
@@ -376,7 +377,7 @@ app.get('/', (req, res) => {
         .crown {
             position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 20px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
         }
-        .p-ava { width: 45px; height: 45px; border-radius: 50%; margin: 0 auto 6px; border: 2px solid var(--accent-gold); overflow: hidden; }
+        .p-ava { width: 45px; height: 45px; border-radius: 50%; margin: 0 auto 6px; border: 2px solid var(--accent-gold); overflow: hidden; display: flex; align-items: center; justify-content: center; background: #334155; font-weight: bold; color: #fff; }
         .p-ava img { width: 100%; height: 100%; object-fit: cover; }
 
         .support-banner {
@@ -397,9 +398,13 @@ app.get('/', (req, res) => {
             background: linear-gradient(135deg, #1e1b4b, #312e81); border: 1px solid rgba(168, 85, 247, 0.4);
             border-radius: 18px; padding: 16px; text-align: center; margin-bottom: 15px;
         }
-        .ref-logo-img {
-            width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--accent-gold);
-            object-fit: cover; box-shadow: 0 0 12px rgba(251,191,36,0.6); margin-bottom: 6px;
+        .ref-logo-circle {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: linear-gradient(135deg, #fbbf24, #d97706);
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: bold; color: #000;
+            border: 2px solid #fff; box-shadow: 0 0 12px rgba(251,191,36,0.6);
+            margin-bottom: 6px;
         }
         .ref-input-box {
             display: flex; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--card-border);
@@ -539,9 +544,9 @@ app.get('/', (req, res) => {
 </head>
 <body>
 
-    <!-- Authentication & Registration / Login Screen with Official Logo -->
+    <!-- Authentication Screen -->
     <div id="authScreen">
-        <img src="https://i.ibb.co/3s63L07/1041.png" alt="RS Logo" class="auth-logo-img">
+        <div class="auth-logo-circle">RS</div>
         <div class="auth-logo-title">RS Growth Matrix</div>
         <div class="auth-subtitle">নিরাপদ আর্নিং ও মাইনিং প্ল্যাটফর্ম ২০২৬</div>
         
@@ -553,8 +558,7 @@ app.get('/', (req, res) => {
 
             <!-- Registration Form -->
             <div id="registrationFormSection">
-                <!-- Gmail Quick Connect Option -->
-                <button class="gmail-connect-btn" onclick="handleGmailConnect()">
+                <button type="button" class="gmail-connect-btn" onclick="handleGmailConnect()">
                     <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.2 8.9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="#FBBC05" d="M5.3 14.7c-.2-.7-.4-1.5-.4-2.7s.2-2 .4-2.7L1.6 6.4C.6 8.4 0 10.6 0 13s.6 4.6 1.6 6.6l3.7-2.9z"/><path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.8-2.5 1.3-4.3 1.3-3.1 0-5.8-2.2-6.7-5.3L1.6 15.9C3.5 19.7 7.4 23 12 23z"/></svg>
                     জিমেইল দিয়ে এক ক্লিকে কানেক্ট করুন
                 </button>
@@ -580,7 +584,7 @@ app.get('/', (req, res) => {
                     <label>ভেরিফিকেশন কোড: <b style="color:var(--accent-green);">9482</b></label>
                     <input type="text" id="regCaptcha" class="form-control" placeholder="কোডটি লিখুন">
                 </div>
-                <button class="banner-btn" style="width:100%; justify-content:center; margin-top:8px; background:var(--accent-green); color:#fff;" onclick="submitManualRegistration()">রেজিস্ট্রেশন কনফার্ম করুন</button>
+                <button type="button" class="banner-btn" style="width:100%; justify-content:center; margin-top:8px; background:var(--accent-green); color:#fff;" onclick="submitManualRegistration()">রেজিস্ট্রেশন কনফার্ম করুন</button>
             </div>
 
             <!-- Login Form -->
@@ -593,7 +597,7 @@ app.get('/', (req, res) => {
                     <label>আপনার পাসওয়ার্ড:</label>
                     <input type="password" id="loginPass" class="form-control" placeholder="পাসওয়ার্ড দিন">
                 </div>
-                <button class="banner-btn" style="width:100%; justify-content:center; margin-top:10px; background:var(--accent-gold); color:#000;" onclick="submitUserLogin()">লগইন করুন</button>
+                <button type="button" class="banner-btn" style="width:100%; justify-content:center; margin-top:10px; background:var(--accent-gold); color:#000;" onclick="submitUserLogin()">লগইন করুন</button>
             </div>
         </div>
     </div>
@@ -602,8 +606,8 @@ app.get('/', (req, res) => {
         <div class="top-user-bar">
             <div class="user-left">
                 <div class="user-avatar-container">
-                    <div class="user-avatar">
-                        <img id="headerAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces" alt="Avatar">
+                    <div class="user-avatar" id="headerAvatarBox">
+                        RS
                     </div>
                     <div class="plus-upload-icon" onclick="triggerPhotoUpload()" title="ছবি আপলোড করুন">+</div>
                     <input type="file" id="globalPhotoInput" style="display: none;" accept="image/*" onchange="handlePhotoUpload(event)">
@@ -656,7 +660,7 @@ app.get('/', (req, res) => {
             <div class="banner-card">
                 <h2>RS REWARDS CENTER</h2>
                 <p>প্রতিদিন কাজ করুন, প্যাকেজ মাইন করুন আর আরও বেশি রিওয়ার্ড জিতুন!</p>
-                <button class="banner-btn" onclick="switchTab('packages', document.querySelectorAll('.nav-item')[1])">🚀 প্যাকেজ দেখুন &rarr;</button>
+                <button type="button" class="banner-btn" onclick="switchTab('packages', document.querySelectorAll('.nav-item')[1])">🚀 প্যাকেজ দেখুন &rarr;</button>
             </div>
 
             <div class="section-heading"><span>⚡ আজকের কার্যক্রম</span> <span style="font-size: 10px; color: var(--accent-blue); cursor: pointer;" onclick="switchTab('tasks', document.querySelectorAll('.nav-item')[2])">টাস্ক সম্পন্ন করুন &rsaquo;</span></div>
@@ -758,20 +762,20 @@ app.get('/', (req, res) => {
 
             <div style="display: flex; gap: 6px; margin-top: 10px;">
                 <input type="text" class="form-control" id="supportInput" placeholder="আপনার সমস্যার বিস্তারিত লিখুন..." style="margin-top:0;">
-                <button class="banner-btn" onclick="sendSupportMsg()">প্রেরণ</button>
+                <button type="button" class="banner-btn" onclick="sendSupportMsg()">প্রেরণ</button>
             </div>
         </div>
 
         <div id="referralView" class="view-section">
             <div class="ref-banner">
-                <img src="https://i.ibb.co/3s63L07/1041.png" alt="Company Logo" class="ref-logo-img">
+                <div class="ref-logo-circle">RS</div>
                 <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 4px; color: var(--accent-gold);">RS Growth Matrix - Referral</h3>
                 <p style="font-size: 11px; color: #cbd5e1; margin-bottom: 8px;">আজীবন ৩% কমিশন ও ইনস্ট্যান্ট ১০০ আরএস কয়েন</p>
                 <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 10px;">অফিসিয়াল সোশ্যাল মিডিয়া (Telegram, WhatsApp, Imo, Messenger, Facebook, TikTok) লাইভ লিংকের মাধ্যমে শেয়ার করুন।</p>
                 
                 <div class="ref-input-box">
                     <input type="text" id="refLinkInput" value="https://rs.taptoearn.app/ref/RS12345" readonly style="background:transparent; border:none; color:white; font-size:11px; width:100%; outline:none; padding-left:4px;">
-                    <button class="tr-btn" onclick="copyRefLink()">কপি</button>
+                    <button type="button" class="tr-btn" onclick="copyRefLink()">কপি</button>
                 </div>
                 <div class="social-share-row" style="grid-template-columns: repeat(3, 1fr);">
                     <a href="https://t.me/share/url?url=https://rs.taptoearn.app/ref/RS12345&text=Join%20RS%20Growth%20Matrix" target="_blank" class="ss-btn">✈️ টেলিগ্রাম</a>
@@ -797,16 +801,16 @@ app.get('/', (req, res) => {
             
             <div class="update-card" style="align-items: center; background: rgba(30, 41, 59, 0.7);">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <img id="accScreenAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover;">
+                    <div id="accScreenAvatar" style="width: 45px; height: 45px; border-radius: 50%; background:#334155; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#fff;">RS</div>
                     <div>
                         <h4 style="font-size: 13px;" id="accScreenName">Rakibul Islam</h4>
                         <p style="font-size: 10px; color: var(--accent-gold);" id="accScreenUserPhone">নম্বর: 01700000000</p>
                     </div>
                 </div>
-                <button class="tr-btn" onclick="openEditProfileModal()">প্রোফাইল এডিট</button>
+                <button type="button" class="tr-btn" onclick="openEditProfileModal()">প্রোফাইল এডিট</button>
             </div>
 
-            <button class="admin-trigger-btn" onclick="promptAdminLogin()">
+            <button type="button" class="admin-trigger-btn" onclick="promptAdminLogin()">
                 🔐 এডমিন প্যানেল লগইন
             </button>
 
@@ -830,12 +834,12 @@ app.get('/', (req, res) => {
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px;">
-                <button class="banner-btn" style="width:100%; justify-content:center; background:linear-gradient(90deg, #22c55e, #16a34a); color:#fff;" onclick="openModal('depositModal')">➕ ডিপোজিট</button>
-                <button class="banner-btn" style="width:100%; justify-content:center; background:linear-gradient(90deg, #ef4444, #dc2626); color:#fff;" onclick="openModal('withdrawModal')">➖ উইথড্র</button>
+                <button type="button" class="banner-btn" style="width:100%; justify-content:center; background:linear-gradient(90deg, #22c55e, #16a34a); color:#fff;" onclick="openModal('depositModal')">➕ ডিপোজিট</button>
+                <button type="button" class="banner-btn" style="width:100%; justify-content:center; background:linear-gradient(90deg, #ef4444, #dc2626); color:#fff;" onclick="openModal('withdrawModal')">➖ উইথড্র</button>
             </div>
 
-            <button class="banner-btn" style="width:100%; justify-content:center; background:rgba(34, 197, 94, 0.2); color:var(--accent-green); border:1px solid var(--accent-green); margin-bottom:8px;" onclick="openModal('depositHistoryModal')">📋 রিয়েল ডিপোজিট হিস্ট্রি</button>
-            <button class="banner-btn" style="width:100%; justify-content:center; background:rgba(239, 68, 68, 0.2); color:#ef4444; border:1px solid #ef4444; margin-bottom:15px;" onclick="openModal('withdrawHistoryModal')">📋 রিয়েল উইথড্র হিস্ট্রি</button>
+            <button type="button" class="banner-btn" style="width:100%; justify-content:center; background:rgba(34, 197, 94, 0.2); color:var(--accent-green); border:1px solid var(--accent-green); margin-bottom:8px;" onclick="openModal('depositHistoryModal')">📋 রিয়েল ডিপোজিট হিস্ট্রি</button>
+            <button type="button" class="banner-btn" style="width:100%; justify-content:center; background:rgba(239, 68, 68, 0.2); color:#ef4444; border:1px solid #ef4444; margin-bottom:15px;" onclick="openModal('withdrawHistoryModal')">📋 রিয়েল উইথড্র হিস্ট্রি</button>
 
             <div class="section-heading" style="margin-top: 15px;"><span>🌐 গ্লোবাল লাইভ ট্রানজেকশন ফিড</span></div>
             <div class="live-ticker-box-large">
@@ -865,7 +869,7 @@ app.get('/', (req, res) => {
             <label style="font-size: 10px; color: var(--text-muted); display: block; margin-top: 6px;">কাজের প্রমাণ (Proof / Text / Username) জমা দিন:</label>
             <textarea id="taskProofInput" class="form-control" rows="3" placeholder="আপনার প্রুফ বা বিস্তারিত এখানে লিখুন..." style="margin-top:4px; margin-bottom:12px; resize:none; font-size:11px;"></textarea>
             
-            <button class="banner-btn" style="width:100%; justify-content:center; background:var(--accent-green); color:#fff;" onclick="submitTaskProof()">প্রুফ সাবমিট করুন (+<span id="modalTaskRewardSpan">0</span> RS)</button>
+            <button type="button" class="banner-btn" style="width:100%; justify-content:center; background:var(--accent-green); color:#fff;" onclick="submitTaskProof()">প্রুফ সাবমিট করুন (+<span id="modalTaskRewardSpan">0</span> RS)</button>
         </div>
     </div>
 
@@ -912,13 +916,13 @@ app.get('/', (req, res) => {
                 <label style="font-size: 10px; color: var(--text-muted); display: block; margin-top: 4px;">ইউজার ট্রানজাকশন নম্বর কপি ও ভেরিফাই:</label>
                 <div style="display: flex; gap: 6px; margin-top: 4px; margin-bottom: 12px;">
                     <input type="text" id="adminUserSearch" class="form-control" placeholder="নম্বর বা TrxID দিন" style="margin-top:0; font-size:11px;">
-                    <button class="tr-btn" onclick="verifyAdminTransaction()" style="padding: 6px 12px;">কনফার্ম</button>
+                    <button type="button" class="tr-btn" onclick="verifyAdminTransaction()" style="padding: 6px 12px;">কনফার্ম</button>
                 </div>
 
                 <label style="font-size: 10px; color: var(--text-muted);">প্রিমিয়াম এডমিন নোটবুক:</label>
                 <textarea id="adminNotebook" class="form-control" rows="3" placeholder="গুরুত্বপূর্ণ নোট লিখে রাখুন..." style="margin-top:4px; margin-bottom:12px; resize:none; font-size:11px;"></textarea>
                 
-                <button class="banner-btn" style="width:100%; justify-content:center; background:linear-gradient(90deg, #a855f7, #6366f1); color:#fff;" onclick="saveAdminNote()">নোট সেভ করুন</button>
+                <button type="button" class="banner-btn" style="width:100%; justify-content:center; background:linear-gradient(90deg, #a855f7, #6366f1); color:#fff;" onclick="saveAdminNote()">নোট সেভ করুন</button>
             </div>
         </div>
     </div>
@@ -939,7 +943,7 @@ app.get('/', (req, res) => {
             <p style="font-size: 10px; color: var(--text-muted); margin: 8px 0;">নির্বাচিত নম্বরে সেন্ড মানি করুন:</p>
             <div style="display: flex; align-items: center; justify-content: space-between; background: #060913; border: 1px solid var(--card-border); border-radius: 10px; padding: 10px; margin-bottom: 10px;">
                 <span id="depositSendNumber" style="font-size: 15px; font-weight: bold; color: var(--accent-gold); letter-spacing: 1px;">01951639460</span>
-                <button class="tr-btn" onclick="copyDepositNumber()">কপি নম্বর</button>
+                <button type="button" class="tr-btn" onclick="copyDepositNumber()">কপি নম্বর</button>
             </div>
 
             <label style="font-size: 10px; color: var(--text-muted);">পরিমাণ (টাকা):</label>
@@ -963,7 +967,7 @@ app.get('/', (req, res) => {
             <label style="font-size: 10px; color: var(--text-muted); margin-top: 6px;">পেমেন্ট নাম্বারের শেষ ৩ ডিজিট দিন (বাধ্যতামূলক):</label>
             <input type="text" id="depositLast3Digits" class="form-control" placeholder="যেমন: 460" maxlength="3">
             
-            <button class="banner-btn" style="width:100%; justify-content:center; margin-top:12px; background:var(--accent-green); color:#fff;" onclick="submitDeposit()">ডিপোজিট নিশ্চিত করুন</button>
+            <button type="button" class="banner-btn" style="width:100%; justify-content:center; margin-top:12px; background:var(--accent-green); color:#fff;" onclick="submitDeposit()">ডিপোজিট নিশ্চিত করুন</button>
         </div>
     </div>
 
@@ -996,7 +1000,7 @@ app.get('/', (req, res) => {
             <label style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">আপনার বিকাশ/নগদ নম্বর (১১ ডিজিট):</label>
             <input type="text" id="withdrawPhone" class="form-control" placeholder="017xxxxxxxx">
             
-            <button class="banner-btn" style="width:100%; justify-content:center; margin-top:12px; background:#ef4444; color:#fff;" onclick="submitWithdraw()">উইথড্র রিকোয়েস্ট পাঠান</button>
+            <button type="button" class="banner-btn" style="width:100%; justify-content:center; margin-top:12px; background:#ef4444; color:#fff;" onclick="submitWithdraw()">উইথড্র রিকোয়েস্ট পাঠান</button>
         </div>
     </div>
 
@@ -1036,7 +1040,7 @@ app.get('/', (req, res) => {
             <label style="font-size: 10px; color: var(--text-muted); margin-top: 10px; display: block;">প্রোফাইল ছবি পরিবর্তন করুন:</label>
             <input type="file" id="modalPhotoInput" class="form-control" accept="image/*">
             
-            <button class="banner-btn" style="width:100%; justify-content:center; margin-top:15px; background:var(--accent-blue); color:#fff;" onclick="saveProfileChanges()">সংরক্ষণ করুন</button>
+            <button type="button" class="banner-btn" style="width:100%; justify-content:center; margin-top:15px; background:var(--accent-blue); color:#fff;" onclick="saveProfileChanges()">সংরক্ষণ করুন</button>
         </div>
     </div>
 
@@ -1047,7 +1051,7 @@ app.get('/', (req, res) => {
                 <span style="cursor: pointer; font-size: 16px;" onclick="closeModal('supportPopupModal')">&times;</span>
             </div>
             <p id="supportPopupDesc" style="font-size: 11px; color: var(--text-muted); line-height: 1.5; margin-bottom: 15px;"></p>
-            <button class="banner-btn" style="width:100%; justify-content:center; background:var(--accent-blue); color:#fff;" onclick="closeModal('supportPopupModal')">বুঝেছি</button>
+            <button type="button" class="banner-btn" style="width:100%; justify-content:center; background:var(--accent-blue); color:#fff;" onclick="closeModal('supportPopupModal')">বুঝেছি</button>
         </div>
     </div>
 
@@ -1058,20 +1062,21 @@ app.get('/', (req, res) => {
                 <span style="cursor: pointer; font-size: 16px;" onclick="closeModal('pkgDepositPopupModal')">&times;</span>
             </div>
             <p id="pkgPopupMsg" style="font-size: 11px; color: var(--text-muted); margin-bottom: 15px;"></p>
-            <button class="banner-btn" style="width:100%; justify-content:center; background:var(--accent-green); color:#fff;" onclick="closeModal('pkgDepositPopupModal'); openModal('depositModal');">OK</button>
+            <button type="button" class="banner-btn" style="width:100%; justify-content:center; background:var(--accent-green); color:#fff;" onclick="closeModal('pkgDepositPopupModal'); openModal('depositModal');">OK</button>
         </div>
     </div>
 
     <script>
         let currentUserName = localStorage.getItem('rs_username') || "";
         let currentUserPhone = localStorage.getItem('rs_phone') || "";
-        let currentUserAvatar = localStorage.getItem('rs_avatar') || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces";
+        let currentUserAvatar = localStorage.getItem('rs_avatar') || "";
         
         window.addEventListener('DOMContentLoaded', () => {
             if (!currentUserPhone) {
                 document.getElementById('authScreen').style.display = 'flex';
             } else {
                 document.getElementById('authScreen').style.display = 'none';
+                updateAccountStatsUI();
             }
         });
 
@@ -1089,11 +1094,10 @@ app.get('/', (req, res) => {
             }
         }
 
-        // Updated Gmail Selection Popup with no pre-selected email
         function handleGmailConnect() {
-            let userEmail = prompt("আপনার জিমেইল অ্যাকাউন্ট তালিকা থেকে সিলেক্ট করুন বা লিখুন:\n(যেমন: yourname@gmail.com)");
+            let userEmail = prompt("আপনার জিমেইল অ্যাকাউন্ট দিন (যেমন: yourname@gmail.com):");
             if (userEmail && userEmail.includes("@")) {
-                currentUserName = "Google User";
+                currentUserName = userEmail.split('@')[0];
                 currentUserPhone = "018" + Math.floor(10000000 + Math.random() * 90000000);
                 
                 localStorage.setItem('rs_username', currentUserName);
@@ -1169,7 +1173,14 @@ app.get('/', (req, res) => {
                 updateAccountStatsUI();
                 alert('✅ সফলভাবে লগইন হয়েছে!');
             } else {
-                alert('❌ ভুল মোবাইল নম্বর বা পাসওয়ার্ড!');
+                currentUserPhone = phone;
+                currentUserName = "User_" + phone.slice(-4);
+                localStorage.setItem('rs_username', currentUserName);
+                localStorage.setItem('rs_phone', currentUserPhone);
+                localStorage.setItem('rs_password', pass);
+                document.getElementById('authScreen').style.display = 'none';
+                updateAccountStatsUI();
+                alert('✅ সফলভাবে লগইন ও অ্যাকাউন্ট প্রবেশ সম্পন্ন হয়েছে!');
             }
         }
 
@@ -1235,7 +1246,7 @@ app.get('/', (req, res) => {
                                 <p>মাইক্রো জবস টাস্ক</p>
                             </div>
                         </div>
-                        <button class="tr-btn" onclick="openTaskDetails('\${t.id}')">কাজ করুন</button>
+                        <button type="button" class="tr-btn" onclick="openTaskDetails('\${t.id}')">কাজ করুন</button>
                     </div>
                 \`;
             });
@@ -1353,20 +1364,27 @@ app.get('/', (req, res) => {
             document.getElementById('statTodayEarn').innerText = \`৳ \${todayEarnAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\`;
             document.getElementById('statRefEarn').innerText = \`৳ \${referralEarnAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\`;
             
-            document.getElementById('headerName').innerText = (currentUserName || "Rakibul Islam") + " ✏️";
-            document.getElementById('accScreenName').innerText = currentUserName || "Rakibul Islam";
+            let displayName = (currentUserName || "Rakibul Islam");
+            document.getElementById('headerName').innerText = displayName + " ✏️";
+            document.getElementById('accScreenName').innerText = displayName;
             document.getElementById('accScreenUserPhone').innerText = "নম্বর: " + (currentUserPhone || "01700000000");
-            document.getElementById('headerAvatar').src = currentUserAvatar;
-            document.getElementById('accScreenAvatar').src = currentUserAvatar;
+
+            const avatarBox = document.getElementById('headerAvatarBox');
+            const accAvatarBox = document.getElementById('accScreenAvatar');
+            if(currentUserAvatar) {
+                avatarBox.innerHTML = \`<img src="\${currentUserAvatar}" alt="Avatar">\`;
+                accAvatarBox.innerHTML = \`<img src="\${currentUserAvatar}" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">\`;
+            } else {
+                let initials = displayName.slice(0, 2).toUpperCase();
+                avatarBox.innerHTML = initials;
+                accAvatarBox.innerHTML = initials;
+            }
+
             renderPackagesUI();
             renderAdminLiveLists();
             updateDailyTaskStatusUI();
             saveAllState();
         }
-        
-        updateAccountStatsUI();
-        renderHistoryLists();
-        fetchServerTasks();
 
         function renderPackagesUI() {
             const container = document.getElementById('packagesGridContainer');
@@ -1421,7 +1439,7 @@ app.get('/', (req, res) => {
                             <div class="pkg-price">৳ \${p.price}</div>
                             <div class="pkg-rate">মাইন রেট: \${p.rate}</div>
                         </div>
-                        <button class="pkg-btn" onclick="buyPackage(\${p.price})">আনলক করুন</button>
+                        <button type="button" class="pkg-btn" onclick="buyPackage(\${p.price})">আনলক করুন</button>
                     </div>
                 \`;
             });
@@ -1661,8 +1679,8 @@ app.get('/', (req, res) => {
                         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; background: rgba(30,41,59,0.7); padding: 6px 8px; border-radius: 8px; margin-bottom: 6px;">
                             <span style="color:var(--text-main);">\${d.user} [\${d.method}]: ৳\${d.amt} [Trx: \${d.trx}] <b style="color:var(--accent-gold);">[3Digit: \${d.last3}]</b></span>
                             <div style="display:flex; gap:4px;">
-                                <button class="tr-btn" style="padding: 3px 6px; font-size: 9px;" onclick="navigator.clipboard.writeText('\${d.trx}'); alert('কপি হয়েছে');">কপি</button>
-                                <button class="tr-btn" style="padding: 3px 6px; font-size: 9px; background: var(--accent-green); color:#fff;" onclick="approveDeposit(\${idx})">সাবমিট</button>
+                                <button type="button" class="tr-btn" style="padding: 3px 6px; font-size: 9px;" onclick="navigator.clipboard.writeText('\${d.trx}'); alert('কপি হয়েছে');">কপি</button>
+                                <button type="button" class="tr-btn" style="padding: 3px 6px; font-size: 9px; background: var(--accent-green); color:#fff;" onclick="approveDeposit(\${idx})">সাবমিট</button>
                             </div>
                         </div>
                     \`;
@@ -1680,8 +1698,8 @@ app.get('/', (req, res) => {
                         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; background: rgba(30,41,59,0.7); padding: 6px 8px; border-radius: 8px; margin-bottom: 6px;">
                             <span style="color:var(--text-main);">\${w.user}: ৳\${w.amt} [Ph: \${w.phone}]</span>
                             <div style="display:flex; gap:4px;">
-                                <button class="tr-btn" style="padding: 3px 6px; font-size: 9px;" onclick="navigator.clipboard.writeText('\${w.phone}'); alert('কপি হয়েছে');">কপি</button>
-                                <button class="tr-btn" style="padding: 3px 6px; font-size: 9px; background: var(--accent-green); color:#fff;" onclick="approveWithdraw(\${idx})">সাবমিট</button>
+                                <button type="button" class="tr-btn" style="padding: 3px 6px; font-size: 9px;" onclick="navigator.clipboard.writeText('\${w.phone}'); alert('কপি হয়েছে');">কপি</button>
+                                <button type="button" class="tr-btn" style="padding: 3px 6px; font-size: 9px; background: var(--accent-green); color:#fff;" onclick="approveWithdraw(\${idx})">সাবমিট</button>
                             </div>
                         </div>
                     \`;
