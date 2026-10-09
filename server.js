@@ -1124,7 +1124,6 @@ app.get('/', (req, res) => {
             }
         }, 15000);
 
-        // Daily Task: Claimable 2 times every 24 hours (+50 RS each)
         function claimDailyTask() {
             let claimsData = JSON.parse(localStorage.getItem('rs_daily_task_claims')) || [];
             let currentTime = new Date().getTime();
@@ -1151,7 +1150,6 @@ app.get('/', (req, res) => {
             alert(\`🎉 সফল! ডেইলি টাস্ক থেকে +\${rewardCoins} RS কয়েন আপনার অ্যাকাউন্টে যোগ হয়েছে।\`);
         }
 
-        // Daily Check-In: Claimable 1 time per day (+100 RS)
         function checkInDaily() {
             let lastCheckIn = parseInt(localStorage.getItem('rs_last_checkin')) || 0;
             let currentTime = new Date().getTime();
@@ -1338,8 +1336,12 @@ app.get('/', (req, res) => {
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             
             const targetView = document.getElementById(tabName + 'View');
-            if(targetView) targetView.classList.add('active');
-            if(el) el.classList.add('active');
+            if(targetView) {
+                targetView.classList.add('active');
+            }
+            if(el) {
+                el.classList.add('active');
+            }
         }
 
         function triggerPhotoUpload() { document.getElementById('globalPhotoInput').click(); }
