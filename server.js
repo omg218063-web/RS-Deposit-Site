@@ -99,7 +99,6 @@ app.get('/', (req, res) => {
             overflow-y: auto;
         }
 
-        /* Pure CSS Custom Logo (No external link issue) */
         .auth-logo-circle {
             width: 85px; height: 85px; border-radius: 50%;
             background: linear-gradient(135deg, #fbbf24, #d97706);
@@ -141,13 +140,6 @@ app.get('/', (req, res) => {
         .ast-btn.active {
             background: linear-gradient(90deg, var(--accent-gold), #f59e0b); color: #000;
         }
-
-        .gmail-connect-btn {
-            background: #ffffff; color: #1e293b; border: none; width: 100%; padding: 8px; border-radius: 10px;
-            font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px;
-            box-shadow: 0 4px 10px rgba(255,255,255,0.2); transition: 0.2s;
-        }
-        .gmail-connect-btn:hover { background: #f1f5f9; }
 
         .top-user-bar {
             padding: 15px;
@@ -556,7 +548,7 @@ app.get('/', (req, res) => {
                 <div class="ast-btn" id="tabLoginBtn" onclick="switchAuthMode('login')">লগইন</div>
             </div>
 
-            <!-- Registration Form -->
+            <!-- Registration Form (FIXED ID: regName) -->
             <div id="registrationFormSection">
                 <div class="auth-form-group">
                     <label>আপনার নাম:</label>
