@@ -1,4 +1,4 @@
-const express = require('express');
+require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 
@@ -25,19 +25,19 @@ app.get('/api/tasks', (req, res) => {
             _id: 1,
             title: "MicroTask #1: YouTube Channel Subscribe & Watch",
             reward: 50,
-            description: "১. দেওয়া লিংকে ক্লিক করে ইউটিউব চ্যানেল সাবস্ক্রাইব করুন।\n২. ভিডিওটি সম্পূর্ণ দেখে একটি লাইক দিন।\n৩. আপনার ইউটিউব ইউজারনেম প্রুফ হিসেবে নিচে লিখুন."
+            description: "১. দেওয়া লিংকে ক্লিক করে ইউটিউব চ্যানেল সাবস্ক্রাইব করুন।\n২. ভিডিওটি সম্পূর্ণ দেখে একটি লাইক দিন।\n৩. আপনার ইউটিউব ইউজারনেম প্রুফ হিসেবে নিচে লিখুন।"
         },
         {
             _id: 2,
             title: "MicroTask #2: Facebook Page Like & Follow",
             reward: 40,
-            description: "১. ফেসবুক পেজে প্রবেশ করে লাইক ও ফলো করুন।\n২. আপনার ফেসবুক প্রোফাইল লিংক বা নাম প্রুফ দিন."
+            description: "১. ফেসবুক পেজে প্রবেশ করে লাইক ও ফলো করুন।\n২. আপনার ফেসবুক প্রোফাইল লিংক বা নাম প্রুফ দিন।"
         }
     ];
     res.json(defaultTasks);
 });
 
-// Main Frontend Route (Serves the entire UI directly)
+// Main Frontend Route (Serves the entire 1500+ lines HTML UI directly)
 app.get('/', (req, res) => {
     res.send(`<!DOCTYPE html>
 <html lang="bn">
@@ -154,10 +154,13 @@ app.get('/', (req, res) => {
             flex-grow: 1;
             overflow-y: auto;
             padding: 15px;
+            animation: fadeIn 0.25s ease-in-out;
             padding-bottom: 90px;
         }
-        .view-section.active {
-            display: block !important;
+        .view-section.active { display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .premium-notice-box {
@@ -222,7 +225,7 @@ app.get('/', (req, res) => {
         .home-grid-card:hover { border-color: var(--accent-blue); transform: translateY(-2px); }
         .hg-icon { font-size: 22px; margin-bottom: 6px; }
         .hg-title { font-size: 11px; font-weight: bold; margin-bottom: 2px; }
-        .hg-sub { font-size: 9px; color: var(--accent-gold); }
+        .hg-sub { font-size: 9px; color: var(--text-muted); }
 
         .update-card {
             background: rgba(30, 41, 59, 0.5); border: 1px solid var(--card-border);
@@ -254,8 +257,7 @@ app.get('/', (req, res) => {
         .pkg-card.tier-7 { border: 2px solid #f97316; box-shadow: 0 0 18px rgba(249, 115, 22, 0.6); }
         .pkg-card.tier-8 { border: 2px solid #ef4444; box-shadow: 0 0 22px rgba(239, 68, 68, 0.8); background: linear-gradient(145deg, #2a1b22, #0f172a); }
 
-        .pkg-title { font-size: 12px; font-weight: bold; margin-bottom: 4px; color: var(--text-main); position: relative; }
-        .crown-badge { position: absolute; top: -14px; right: 2px; font-size: 16px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+        .pkg-title { font-size: 12px; font-weight: bold; margin-bottom: 4px; color: var(--text-main); }
         .pkg-price { font-size: 13px; font-weight: bold; color: var(--accent-gold); margin-bottom: 6px; }
         .pkg-rate { font-size: 10px; color: var(--text-muted); margin-bottom: 10px; }
         .pkg-btn {
@@ -337,7 +339,6 @@ app.get('/', (req, res) => {
         .ref-banner {
             background: linear-gradient(135deg, #1e1b4b, #312e81); border: 1px solid rgba(168, 85, 247, 0.4);
             border-radius: 18px; padding: 16px; text-align: center; margin-bottom: 15px;
-            box-shadow: 0 10px 25px rgba(168, 85, 247, 0.15);
         }
         .ref-input-box {
             display: flex; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--card-border);
@@ -345,22 +346,18 @@ app.get('/', (req, res) => {
         }
         .social-share-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
         .ss-btn {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(51, 65, 85, 0.8)); 
-            border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px;
-            padding: 10px 6px; text-align: center; font-size: 11px; cursor: pointer; color: var(--text-main);
-            display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 500;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            background: rgba(30, 41, 59, 0.8); border: 1px solid var(--card-border); border-radius: 10px;
+            padding: 8px; text-align: center; font-size: 11px; cursor: pointer; color: var(--text-main);
+            display: flex; align-items: center; justify-content: center; gap: 4px;
         }
-        .ss-btn:hover { border-color: var(--accent-purple); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(168, 85, 247, 0.25); }
 
         .live-ticker-box-large {
             background: radial-gradient(circle, rgba(30,41,59,0.95) 0%, rgba(15,23,42,0.98) 100%);
             border: 1px solid var(--accent-purple); border-radius: 16px; padding: 12px; margin-top: 15px;
-            height: 180px; overflow: hidden; position: relative;
+            height: 160px; overflow: hidden; position: relative;
         }
         .ticker-list {
-            display: flex; flex-direction: column; gap: 8px; animation: scrollTicker 8s linear infinite;
+            display: flex; flex-direction: column; gap: 8px; animation: scrollTicker 16s linear infinite;
         }
         .ticker-list:hover { animation-play-state: paused; }
         @keyframes scrollTicker {
@@ -387,8 +384,8 @@ app.get('/', (req, res) => {
             display: flex; 
             justify-content: space-around; 
             background: linear-gradient(180deg, #131d38, #0f172a);
-            border-bottom: 1px solid rgba(56, 189, 248, 0.3); 
-            padding: 10px 4px; 
+            border-bottom: 1px solid rgba(56, 189, 248, 0.2); 
+            padding: 8px 4px; 
             flex-shrink: 0;
             z-index: 100;
         }
@@ -401,46 +398,25 @@ app.get('/', (req, res) => {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
         }
-        .nav-icon-wrap {
-            width: 32px;
-            height: 32px;
-            margin: 0 auto 2px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            background: rgba(30, 41, 59, 0.8);
-            transition: 0.3s;
-        }
-        .nav-item div.icon-symbol { 
-            font-size: 14px; 
-            z-index: 2;
+        .nav-item div { 
+            font-size: 16px; 
+            margin-bottom: 2px; 
+            transition: transform 0.3s ease;
         }
         .nav-item:hover {
             color: var(--accent-blue);
         }
         .nav-item.active { 
             color: var(--accent-gold); 
-            text-shadow: 0 0 8px rgba(251, 191, 36, 0.6);
+            text-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
+            animation: navPulse 1.5s infinite alternate;
         }
-        .nav-item.active .nav-icon-wrap {
-            background: rgba(251, 191, 36, 0.15);
-            transform: translateY(-3px) scale(1.1);
+        @keyframes navPulse {
+            0% { transform: translateY(0) scale(1); filter: brightness(1); }
+            100% { transform: translateY(-2px) scale(1.05); filter: brightness(1.2); }
         }
-        .nav-item.active .nav-icon-wrap::after {
-            content: '';
-            position: absolute;
-            top: -3px; left: -3px; right: -3px; bottom: -3px;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            border-top-color: var(--accent-gold);
-            border-bottom-color: var(--accent-purple);
-            animation: ringRotate 1.5s linear infinite;
-        }
-        @keyframes ringRotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .nav-item.active div {
+            transform: translateY(-2px) scale(1.1);
         }
 
         .modal {
@@ -525,25 +501,25 @@ app.get('/', (req, res) => {
 
         <div class="top-nav">
             <div class="nav-item active" onclick="switchTab('home', this)">
-                <div class="nav-icon-wrap"><div class="icon-symbol">🏠</div></div>হোম
+                <div>🏠</div>হোম
             </div>
             <div class="nav-item" onclick="switchTab('packages', this)">
-                <div class="nav-icon-wrap"><div class="icon-symbol">💎</div></div>প্যাকেজ
+                <div>💎</div>প্যাকেজ
             </div>
             <div class="nav-item" onclick="switchTab('tasks', this)">
-                <div class="nav-icon-wrap"><div class="icon-symbol">📋</div></div>টাস্ক
+                <div>📋</div>টাস্ক
             </div>
             <div class="nav-item" onclick="switchTab('ranking', this)">
-                <div class="nav-icon-wrap"><div class="icon-symbol">🏆</div></div>র‍্যাঙ্কিং
+                <div>🏆</div>র‍্যাঙ্কিং
             </div>
             <div class="nav-item" onclick="switchTab('support', this)">
-                <div class="nav-icon-wrap"><div class="icon-symbol">🎧</div></div>সাপোর্ট
+                <div>🎧</div>সাপোর্ট
             </div>
             <div class="nav-item" onclick="switchTab('referral', this)">
-                <div class="nav-icon-wrap"><div class="icon-symbol">👥</div></div>রেফার
+                <div>👥</div>রেফার
             </div>
             <div class="nav-item" onclick="switchTab('account', this)">
-                <div class="nav-icon-wrap"><div class="icon-symbol">👤</div></div>অ্যাকাউন্ট
+                <div>👤</div>অ্যাকাউন্ট
             </div>
         </div>
 
@@ -565,12 +541,12 @@ app.get('/', (req, res) => {
                 <div class="home-grid-card" onclick="claimDailyTask()">
                     <div class="hg-icon" style="color: var(--accent-blue);">📋</div>
                     <div class="hg-title">ডেইলি টাস্ক</div>
-                    <div class="hg-sub" id="dailyTaskSubLabel">+50 RS (প্রতি ২৪ ঘণ্টায় ২ বার)</div>
+                    <div class="hg-sub" id="dailyTaskSubLabel">দিনে একবার ক্লেইম</div>
                 </div>
                 <div class="home-grid-card" onclick="checkInDaily()">
                     <div class="hg-icon" style="color: var(--accent-green);">📅</div>
                     <div class="hg-title">চেক-ইন</div>
-                    <div class="hg-sub">+100 RS (দিনে ১ বার)</div>
+                    <div class="hg-sub">লগইন বোনাস</div>
                 </div>
                 <div class="home-grid-card" onclick="switchTab('referral', document.querySelectorAll('.nav-item')[5])">
                     <div class="hg-icon" style="color: var(--accent-purple);">🎁</div>
@@ -584,7 +560,7 @@ app.get('/', (req, res) => {
                     <span>👑</span> অফিসিয়াল ঘোষণা ও প্রিমিয়াম অফার ২০২৬
                 </div>
                 <div class="notice-desc">
-                    প্রিয় ব্যবহারকারী, RS Growth Matrix-এ আপনাকে স্বাগতম! আমাদের প্রিমিয়াম রিং প্যাকেজগুলো অ্যাক্টিভ করে এখন থেকেই প্রতি মিনিটে আনলিমিটেড রিয়েল আরএস কয়েন মাইন করুন। প্যাকেজ মেয়াদ শেষে ক্যালকুলেটর অপশন থেকে কয়েন বাংলা টাকায় কনভার্ট হবে।
+                    প্রিয় ব্যবহারকারী, RS Growth Matrix-এ আপনাকে স্বাগতম! আমাদের প্রিমিয়াম রিং প্যাকেজগুলো অ্যাক্টিভ করে এখন থেকেই প্রতি মিনিটে আনলিমিটেড রিয়েল আরএস কয়েন মাইন করুন। প্রতিটি ডিপোজিট ও উইথড্র এখন সম্পূর্ণ সুরক্ষিত ও দ্রুত প্রসেস করা হচ্ছে। যেকোনো সহায়তায় আমাদের সাপোর্টে যোগাযোগ করুন!
                 </div>
             </div>
 
@@ -599,36 +575,17 @@ app.get('/', (req, res) => {
         </div>
 
         <div id="packagesView" class="view-section">
-            <div class="section-heading"><span>💎 এক্সক্লুসিভ মাইনিং প্যাকেজ</span> <span style="font-size: 10px; color: var(--accent-gold);">শুধুমাত্র ডিপোজিট করে কিনুন</span></div>
-            <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 12px;">অ্যাকাউন্টে নয়, সরাসরি ডিপোজিট ব্যালেন্স দিয়ে প্যাকেজ আনলক করতে হয়। ৩০ দিন পর প্যাকেজ অটো রিসেট ও কয়েন কনভার্ট হবে।</p>
+            <div class="section-heading"><span>💎 এক্সক্লুসিভ মাইনিং প্যাকেজ</span> <span style="font-size: 10px; color: var(--accent-gold);">২৪ ঘণ্টা অটো মাইনিং</span></div>
+            <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 12px;">প্যাকেজ আনলক করতে ক্লিক করুন, পর্যাপ্ত ফান্ড না থাকলে ডিপোজিট পপআপ ও OK বাটনসহ অপশন আসবে।</p>
             
             <div class="packages-grid-2x2" id="packagesGridContainer"></div>
         </div>
 
         <div id="tasksView" class="view-section">
-            <div class="section-heading"><span>⚡ Offerwall.gg লাইভ টাস্ক সেন্টার (৫০ টি টাস্ক)</span> <span style="font-size: 10px; color: var(--accent-green);">● সার্ভার লাইভ</span></div>
+            <div class="section-heading"><span>⚡ সার্ভার ও মাইক্রো জবস লাইভ টাস্ক</span> <span style="font-size: 10px; color: var(--accent-green);">● সার্ভার থেকে লোডকৃত</span></div>
             
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px;">
-                <div class="acc-stat-card" style="padding: 6px 2px; background: rgba(56,189,248,0.1); border-color: var(--accent-blue);">
-                    <div style="font-size: 9px; color: var(--text-muted);">টোটাল টাস্ক</div>
-                    <div style="font-size: 11px; font-weight: bold; color: var(--accent-blue);" id="taskStatTotal">50</div>
-                </div>
-                <div class="acc-stat-card" style="padding: 6px 2px; background: rgba(251,191,36,0.1); border-color: var(--accent-gold);">
-                    <div style="font-size: 9px; color: var(--text-muted);">পেন্ডিং</div>
-                    <div style="font-size: 11px; font-weight: bold; color: var(--accent-gold);" id="taskStatPending">0</div>
-                </div>
-                <div class="acc-stat-card" style="padding: 6px 2px; background: rgba(34,197,94,0.1); border-color: var(--accent-green);">
-                    <div style="font-size: 9px; color: var(--text-muted);">সফল</div>
-                    <div style="font-size: 11px; font-weight: bold; color: var(--accent-green);" id="taskStatSuccess">0</div>
-                </div>
-                <div class="acc-stat-card" style="padding: 6px 2px; background: rgba(239,68,68,0.1); border-color: #ef4444;">
-                    <div style="font-size: 9px; color: var(--text-muted);">রিজেক্ট</div>
-                    <div style="font-size: 11px; font-weight: bold; color: #ef4444;" id="taskStatReject">0</div>
-                </div>
-            </div>
-
-            <div id="microJobsListContainer" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                <p style="font-size: 11px; color: var(--text-muted); text-align: center; grid-column: span 2;">সার্ভার থেকে টাস্ক লোড করা হচ্ছে...</p>
+            <div id="microJobsListContainer">
+                <p style="font-size: 11px; color: var(--text-muted); text-align: center;">সার্ভার থেকে টাস্ক লোড করা হচ্ছে...</p>
             </div>
         </div>
 
@@ -685,24 +642,21 @@ app.get('/', (req, res) => {
         <div id="referralView" class="view-section">
             <div class="ref-banner">
                 <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">আজীবন ৩% কমিশন ও ইনস্ট্যান্ট ১০০ আরএস কয়েন</h3>
-                <p style="font-size: 11px; color: #cbd5e1;">অফিসিয়াল সোশ্যাল মিডিয়া ইমেজ ও লিংক ব্যবহার করে রেফার করুন।</p>
+                <p style="font-size: 11px; color: #cbd5e1;">অফিসিয়াল সোশ্যাল মিডিয়া (TikTok, Facebook, YouTube) ইমেজ ব্যবহার করে রেফার করুন।</p>
                 <div class="ref-input-box">
                     <input type="text" id="refLinkInput" value="https://rs.taptoearn.app/ref/RS12345" readonly style="background:transparent; border:none; color:white; font-size:11px; width:100%; outline:none; padding-left:4px;">
                     <button class="tr-btn" onclick="copyRefLink()">কপি</button>
                 </div>
                 <div class="social-share-row">
-                    <div class="ss-btn" onclick="shareToSocial('youtube')">▶️ ইউটিউব</div>
-                    <div class="ss-btn" onclick="shareToSocial('facebook')">📘 ফেসবুক</div>
-                    <div class="ss-btn" onclick="shareToSocial('tiktok')">🎵 টিকটক</div>
-                    <div class="ss-btn" onclick="shareToSocial('whatsapp')">💬 হোয়াটসঅ্যাপ</div>
-                    <div class="ss-btn" onclick="shareToSocial('imo')">📞 ইমো</div>
-                    <div class="ss-btn" onclick="shareToSocial('messenger')">⚡ মেসেঞ্জার</div>
+                    <div class="ss-btn" onclick="alert('টিকটক অফিশিয়াল ইমেজ শেয়ার লিংক কপি হয়েছে')">🎵 টিকটক</div>
+                    <div class="ss-btn" onclick="alert('ফেসবুক অফিশিয়াল ইমেজ শেয়ার লিংক কপি হয়েছে')">📘 ফেসবুক</div>
+                    <div class="ss-btn" onclick="alert('ইউটিউব অফিশিয়াল ইমেজ শেয়ার লিংক কপি হয়েছে')">▶️ ইউটিউব</div>
                 </div>
             </div>
 
-            <div class="section-heading"><span>🎁 প্রিমিয়াম লাইভ রেফারেল ফিড</span></div>
+            <div class="section-heading"><span>🎁 লাইভ রেফারেল ফিড</span></div>
             <div class="live-ticker-box-large">
-                <div class="ticker-list" id="referralTickerListContainer">
+                <div class="ticker-list">
                     <div class="ticker-item"><span class="t-ref">🎁 SAJIB_07 রেফারেল সম্পন্ন করে +100 কয়েন বোনাস পেয়েছে</span><span style="font-size:9px; color:var(--text-muted)">১মিঃ আগে</span></div>
                     <div class="ticker-item"><span class="t-ref">🔥 Nayeem_99 রেফারেল সম্পন্ন করে +100 কয়েন বোনাস পেয়েছে</span><span style="font-size:9px; color:var(--text-muted)">৩মিঃ আগে</span></div>
                 </div>
@@ -754,17 +708,15 @@ app.get('/', (req, res) => {
             <button class="banner-btn" style="width:100%; justify-content:center; background:rgba(34, 197, 94, 0.2); color:var(--accent-green); border:1px solid var(--accent-green); margin-bottom:8px;" onclick="openModal('depositHistoryModal')">📋 রিয়েল ডিপোজিট হিস্ট্রি</button>
             <button class="banner-btn" style="width:100%; justify-content:center; background:rgba(239, 68, 68, 0.2); color:#ef4444; border:1px solid #ef4444; margin-bottom:15px;" onclick="openModal('withdrawHistoryModal')">📋 রিয়েল উইথড্র হিস্ট্রি</button>
 
-            <div class="section-heading" style="margin-top: 15px;"><span>🌐 গ্লোবাল লাইভ ট্রানজেকশন ফিড (দ্রুত ও আপডেট)</span></div>
-            <div class="live-ticker-box-large" style="height: 200px;">
-                <div class="ticker-list" id="globalLiveTickerList" style="animation-duration: 4s;">
+            <div class="section-heading" style="margin-top: 15px;"><span>🌐 গ্লোবাল লাইভ ট্রানজেকশন ফিড</span></div>
+            <div class="live-ticker-box-large">
+                <div class="ticker-list" id="globalLiveTickerList">
                     <div class="ticker-item"><span class="t-dep">📥 ডিপোজিট (বিকাশ): +৳ ১,০০০.০০ (Success)</span><span style="font-size:9px; color:var(--text-muted)">017****94</span></div>
                     <div class="ticker-item"><span class="t-wd">📤 উইথড্র (নগদ): -৳ ৫০০.০০ (Success)</span><span style="font-size:9px; color:var(--text-muted)">018****22</span></div>
-                    <div class="ticker-item"><span class="t-bon">🎁 বোনাস (ডেইলি চেক-ইন): +100 RS</span><span style="font-size:9px; color:var(--text-muted)">019****55</span></div>
                 </div>
             </div>
         </div>
     </div>
-
     <div class="modal" id="taskDetailModal">
         <div class="modal-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -781,7 +733,7 @@ app.get('/', (req, res) => {
             <label style="font-size: 10px; color: var(--text-muted); display: block; margin-top: 6px;">কাজের প্রমাণ (Proof / Text / Username) জমা দিন:</label>
             <textarea id="taskProofInput" class="form-control" rows="3" placeholder="আপনার প্রুফ বা বিস্তারিত এখানে লিখুন..." style="margin-top:4px; margin-bottom:12px; resize:none; font-size:11px;"></textarea>
             
-            <button class="banner-btn" style="width:100%; justify-content:center; background:var(--accent-green); color:#fff;" onclick="submitTaskProof()">প্রুফ সাবমিট করুন (পেন্ডিং এ যাবে)</button>
+            <button class="banner-btn" style="width:100%; justify-content:center; background:var(--accent-green); color:#fff;" onclick="submitTaskProof()">প্রুফ সাবমিট করুন (+<span id="modalTaskRewardSpan">0</span> RS)</button>
         </div>
     </div>
 
@@ -875,9 +827,6 @@ app.get('/', (req, res) => {
             
             <label style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">ট্রানজাকশন আইডি (TrxID):</label>
             <input type="text" id="depositTrxId" class="form-control" placeholder="যেমন: 7A3B2C1D4E">
-
-            <label style="font-size: 10px; color: var(--text-muted); margin-top: 6px;">পেমেন্ট মেথড নম্বরের শেষ ৩ ডিজিট লিখুন:</label>
-            <input type="text" id="depositLastThreeDigits" class="form-control" maxlength="3" placeholder="যেমন: ৪৬০" style="border-color: var(--accent-gold);">
             
             <button class="banner-btn" style="width:100%; justify-content:center; margin-top:12px; background:var(--accent-green); color:#fff;" onclick="submitDeposit()">ডিপোজিট নিশ্চিত করুন</button>
         </div>
@@ -978,18 +927,6 @@ app.get('/', (req, res) => {
         </div>
     </div>
 
-    <div class="modal" id="calculatorModal">
-        <div class="modal-card" style="text-align: center;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h3 style="font-size: 14px; color: var(--accent-gold);">🧮 আরএস কয়েন কনভার্টার ও ক্যালকুলেটর</h3>
-                <span style="cursor: pointer; font-size: 16px;" onclick="closeModal('calculatorModal')">&times;</span>
-            </div>
-            <p id="calcPkgTitle" style="font-size: 12px; font-weight: bold; color: var(--accent-blue); margin-bottom: 8px;"></p>
-            <p id="calcDetailsText" style="font-size: 11px; color: var(--text-muted); line-height: 1.5; margin-bottom: 15px;"></p>
-            <button class="banner-btn" style="width:100%; justify-content:center; background:var(--accent-green); color:#fff;" onclick="executeCoinConversion()">টাকায় কনভার্ট করুন ও প্যাকেজ রিনিউ করুন</button>
-        </div>
-    </div>
-
     <script>
         let currentUserName = localStorage.getItem('rs_username') || "Rakibul Islam";
         let currentUserAvatar = localStorage.getItem('rs_avatar') || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces";
@@ -1011,57 +948,35 @@ app.get('/', (req, res) => {
 
         let microJobsList = [];
 
-        function switchTab(tabName, el) {
-            const sections = document.querySelectorAll('.view-section');
-            sections.forEach(s => {
-                s.style.display = 'none';
-                s.classList.remove('active');
-            });
-
-            const targetView = document.getElementById(tabName + 'View');
-            if (targetView) {
-                targetView.style.display = 'block';
-                targetView.classList.add('active');
-            }
-
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            if (el) {
-                el.classList.add('active');
-            }
-        }
-
         async function fetchServerTasks() {
             try {
                 const response = await fetch('/api/tasks');
                 const data = await response.json();
-                let baseTasks = [];
                 if(data && data.length > 0) {
-                    baseTasks = data;
+                    microJobsList = data.map((t, idx) => ({
+                        id: t._id || idx + 1,
+                        title: t.title || \`MicroTask #\${idx + 1}\`,
+                        reward: t.reward || 50,
+                        icon: "📋",
+                        color: "#38bdf8",
+                        desc: t.description || "সার্ভার থেকে প্রাপ্ত টাস্ক বিবরণী। নির্দেশিকা অনুযায়ী কাজ সম্পন্ন করুন।",
+                        link: "https://youtube.com/@SproutGigsTaskOfficial"
+                    }));
                 } else {
-                    baseTasks = [
-                        {_id: 1, title: "YouTube Channel Subscribe & Watch", reward: 50, description: "১. লিংকে ক্লিক করে সাবস্ক্রাইব করুন।\n২. ভিডিওটি সম্পূর্ণ লাইক দিন।"},
-                        {_id: 2, title: "Facebook Page Like & Follow", reward: 40, description: "১. পেজে লাইক ও ফলো করুন।"}
-                    ];
-                }
-
-                microJobsList = [];
-                for(let i = 1; i <= 50; i++) {
-                    let sample = baseTasks[(i - 1) % baseTasks.length];
-                    microJobsList.push({
-                        id: i,
-                        title: 'Offerwall Task #' + i + ': ' + sample.title,
-                        reward: sample.reward || (20 + (i % 30)),
-                        icon: i % 2 === 0 ? "▶️" : "📘",
-                        color: i % 2 === 0 ? "#FF0000" : "#1877F2",
-                        desc: sample.description || "নির্দেশিকা অনুযায়ী টাস্কটি সম্পন্ন করুন।",
-                        link: "https://offerwall.gg/task/redirect/" + i,
-                        status: 'available'
-                    });
+                    loadDefaultFallbackTasks();
                 }
             } catch (err) {
-                console.error("Backend fetch error:", err);
+                console.error("Backend fetch error, loading fallback tasks:", err);
+                loadDefaultFallbackTasks();
             }
             renderMicroJobsUI();
+        }
+
+        function loadDefaultFallbackTasks() {
+            microJobsList = [
+                {id: 1, title: "MicroTask #1: YouTube Channel Subscribe & Watch", reward: 50, icon: "▶️", color: "#FF0000", desc: "১. দেওয়া লিংকে ক্লিক করে ইউটিউব চ্যানেল সাবস্ক্রাইব করুন।\\n২. ভিডিওটি সম্পূর্ণ দেখে একটি লাইক দিন।\\n৩. আপনার ইউটিউব ইউজারনেম প্রুফ হিসেবে নিচে লিখুন।", link: "https://youtube.com/@SproutGigsTaskOfficial"},
+                {id: 2, title: "MicroTask #2: Facebook Page Like & Follow", reward: 40, icon: "📘", color: "#1877F2", desc: "১. ফেসবুক পেজে প্রবেশ করে লাইক ও ফলো করুন।\\n২. আপনার ফেসবুক প্রোফাইল লিংক বা নাম প্রুফ দিন।", link: "https://facebook.com/SproutGigsOfficialTask"}
+            ];
         }
 
         let selectedActiveTask = null;
@@ -1070,29 +985,20 @@ app.get('/', (req, res) => {
             const container = document.getElementById('microJobsListContainer');
             if(!container) return;
 
-            let availableTasks = microJobsList.filter(t => t.status === 'available');
-            document.getElementById('taskStatTotal').innerText = availableTasks.length;
-            document.getElementById('taskStatPending').innerText = microJobsList.filter(t => t.status === 'pending').length;
-            document.getElementById('taskStatSuccess').innerText = microJobsList.filter(t => t.status === 'success').length;
-            document.getElementById('taskStatReject').innerText = microJobsList.filter(t => t.status === 'reject').length;
-
-            if(availableTasks.length === 0) {
-                container.innerHTML = '<p style="font-size: 11px; color: var(--text-muted); text-align: center; grid-column: span 2;">আজকের সব টাস্ক সম্পন্ন হয়েছে! ২৪ ঘণ্টা পর নতুন টাস্ক আসবে।</p>';
-                return;
-            }
-
             let html = '';
-            availableTasks.forEach(t => {
-                html += '<div class="task-row-card" style="margin-bottom:0; flex-direction:column; align-items:flex-start; gap:8px;">' +
-                    '<div class="tr-left" style="width:100%;">' +
-                        '<div class="tr-icon" style="background: rgba(56, 189, 248, 0.2); color: var(--accent-blue); width:32px; height:32px; font-size:14px;">' + t.icon + '</div>' +
-                        '<div class="tr-info" style="flex:1; overflow:hidden;">' +
-                            '<h4 style="font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + t.title + '</h4>' +
-                            '<p style="color:var(--accent-gold); font-size:10px;">+' + t.reward + ' RS (Pending on server)</p>' +
-                        '</div>' +
-                    '</div>' +
-                    '<button class="tr-btn" style="width:100%; padding:4px; font-size:10px;" onclick="openTaskDetails(' + t.id + ')">কাজ করুন</button>' +
-                '</div>';
+            microJobsList.forEach(t => {
+                html += \`
+                    <div class="task-row-card">
+                        <div class="tr-left">
+                            <div class="tr-icon" style="background: rgba(56, 189, 248, 0.2); color: var(--accent-blue);">\${t.icon}</div>
+                            <div class="tr-info">
+                                <h4>\${t.title} <span style="color: var(--accent-gold); font-size: 10px;">+\${t.reward} RS</span></h4>
+                                <p>মাইক্রো জবস টাস্ক</p>
+                            </div>
+                        </div>
+                        <button class="tr-btn" onclick="openTaskDetails('\${t.id}')">কাজ করুন</button>
+                    </div>
+                \`;
             });
             container.innerHTML = html;
         }
@@ -1105,6 +1011,7 @@ app.get('/', (req, res) => {
             document.getElementById('modalTaskDesc').innerText = selectedActiveTask.desc;
             document.getElementById('modalTaskLink').href = selectedActiveTask.link;
             document.getElementById('modalTaskLink').innerText = selectedActiveTask.link;
+            document.getElementById('modalTaskRewardSpan').innerText = selectedActiveTask.reward;
             document.getElementById('taskProofInput').value = '';
 
             openModal('taskDetailModal');
@@ -1118,69 +1025,53 @@ app.get('/', (req, res) => {
             }
 
             if(selectedActiveTask) {
-                selectedActiveTask.status = 'pending';
-                renderMicroJobsUI();
-                alert('⏳ টাস্ক প্রুফ সফলভাবে সার্ভারে জমা হয়েছে এবং এটি বর্তমানে পেন্ডিং (Pending) অবস্থায় রয়েছে। ডেভেলপমেন্ট সাইট থেকে কলব্যাক আসার পর ব্যালেন্স যোগ হবে।');
+                userBalance += selectedActiveTask.reward;
+                todayEarnAmount += selectedActiveTask.reward;
+                totalTransactionsCount += 1;
+                updateAccountStatsUI();
+                alert(\`🎉 অভিনন্দন! আপনার টাস্কের প্রুফ সফলভাবে জমা হয়েছে এবং অ্যাকাউন্টে +\${selectedActiveTask.reward} ৳ যোগ হয়েছে!\`);
                 closeModal('taskDetailModal');
             }
         }
 
-        setTimeout(() => {
-            let pendingTask = microJobsList.find(t => t.status === 'pending');
-            if(pendingTask) {
-                pendingTask.status = 'success';
-                rsCoins += pendingTask.reward;
-                updateAccountStatsUI();
-                renderMicroJobsUI();
-            }
-        }, 15000);
-
         function claimDailyTask() {
-            let claimsData = JSON.parse(localStorage.getItem('rs_daily_task_claims')) || [];
+            let lastClaimTime = parseInt(localStorage.getItem('rs_last_daily_claim')) || 0;
             let currentTime = new Date().getTime();
             let twentyFourHours = 24 * 60 * 60 * 1000;
 
-            claimsData = claimsData.filter(time => currentTime - time < twentyFourHours);
-
-            if (claimsData.length >= 2) {
-                let oldestClaim = claimsData[0];
-                let remainingTime = twentyFourHours - (currentTime - oldestClaim);
+            if (currentTime - lastClaimTime < twentyFourHours) {
+                let remainingTime = twentyFourHours - (currentTime - lastClaimTime);
                 let hoursLeft = Math.floor(remainingTime / (1000 * 60 * 60));
                 let minutesLeft = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
-                alert('⏳ আপনি ২৪ ঘণ্টায় সর্বোচ্চ ২ বার ডেইলি টাস্ক ক্লেইম করতে পারবেন! পরবর্তী সুযোগের জন্য আরও ' + hoursLeft + ' ঘণ্টা ' + minutesLeft + ' মিনিট অপেক্ষা করুন।');
+                alert(\`⏳ আপনি আজ ইতিমধ্যেই ডেইলি টাস্ক ক্লেইম করেছেন! পরবর্তী ক্লেইমের জন্য আরও \${hoursLeft} ঘণ্টা \${minutesLeft} মিনিট অপেক্ষা করুন।\`);
                 return;
             }
 
-            claimsData.push(currentTime);
-            localStorage.setItem('rs_daily_task_claims', JSON.stringify(claimsData));
-
-            let rewardCoins = 50;
-            rsCoins += rewardCoins;
-            totalTransactionsCount += 1;
-            updateAccountStatsUI();
-            alert('🎉 সফল! ডেইলি টাস্ক থেকে +' + rewardCoins + ' RS কয়েন আপনার অ্যাকাউন্টে যোগ হয়েছে।');
-        }
-
-        function checkInDaily() {
-            let lastCheckIn = parseInt(localStorage.getItem('rs_last_checkin')) || 0;
-            let currentTime = new Date().getTime();
-            let twentyFourHours = 24 * 60 * 60 * 1000;
-
-            if (currentTime - lastCheckIn < twentyFourHours) {
-                let remainingTime = twentyFourHours - (currentTime - lastCheckIn);
-                let hoursLeft = Math.floor(remainingTime / (1000 * 60 * 60));
-                let minutesLeft = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
-                alert('⏳ আপনি আজ ইতিমধ্যেই চেক-ইন বোনাস নিয়েছেন! পরবর্তী ক্লেইমের জন্য আরও ' + hoursLeft + ' ঘণ্টা ' + minutesLeft + ' মিনিট অপেক্ষা করুন।');
-                return;
-            }
-
-            let rewardCoins = 100;
-            rsCoins += rewardCoins;
+            let rewardAmt = 30;
+            userBalance += rewardAmt;
+            todayEarnAmount += rewardAmt;
             totalTransactionsCount += 1;
             
-            localStorage.setItem('rs_last_checkin', currentTime);
+            localStorage.setItem('rs_last_daily_claim', currentTime);
             updateAccountStatsUI();
-            alert('🎁 চেক-ইন সফল! +100 RS কয়েন আপনার অ্যাকাউন্টে যোগ হয়েছে।');
+            updateDailyTaskStatusUI();
+            alert(\`🎉 সফল! ডেইলি টাস্ক থেকে +\${rewardAmt} টাকা আপনার অ্যাকাউন্টে যোগ হয়েছে।\`);
+        }
+
+        function updateDailyTaskStatusUI() {
+            let lastClaimTime = parseInt(localStorage.getItem('rs_last_daily_claim')) || 0;
+            let currentTime = new Date().getTime();
+            let twentyFourHours = 24 * 60 * 60 * 1000;
+            const subLabel = document.getElementById('dailyTaskSubLabel');
+            if(!subLabel) return;
+
+            if (currentTime - lastClaimTime < twentyFourHours) {
+                subLabel.innerText = "২৪ ঘণ্টায় একবার (claimed)";
+                subLabel.style.color = "var(--accent-gold)";
+            } else {
+                subLabel.innerText = "এখন ক্লেইম করুন";
+                subLabel.style.color = "var(--accent-green)";
+            }
         }
 
         const agentNames = ["মাহিয়া", "জান্নাত", "ফাতেমা", "সাবিহা", "নুসরাত"];
@@ -1215,12 +1106,12 @@ app.get('/', (req, res) => {
         }
 
         function updateAccountStatsUI() {
-            document.getElementById('topBalanceDisplay').innerText = '৳ ' + userBalance.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('topRsDisplay').innerText = '🪙 ' + formatCoinNumber(rsCoins) + ' RS';
-            document.getElementById('statPending').innerText = '৳ ' + pendingAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('topBalanceDisplay').innerText = \`৳ \${userBalance.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\`;
+            document.getElementById('topRsDisplay').innerText = \`🪙 \${formatCoinNumber(rsCoins)} RS\`;
+            document.getElementById('statPending').innerText = \`৳ \${pendingAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\`;
             document.getElementById('statTransactions').innerText = totalTransactionsCount;
-            document.getElementById('statTodayEarn').innerText = '৳ ' + todayEarnAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('statRefEarn').innerText = '৳ ' + referralEarnAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('statTodayEarn').innerText = \`৳ \${todayEarnAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\`;
+            document.getElementById('statRefEarn').innerText = \`৳ \${referralEarnAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\`;
             
             document.getElementById('headerName').innerText = currentUserName + " ✏️";
             document.getElementById('accScreenName').innerText = currentUserName;
@@ -1228,6 +1119,7 @@ app.get('/', (req, res) => {
             document.getElementById('accScreenAvatar').src = currentUserAvatar;
             renderPackagesUI();
             renderAdminLiveLists();
+            updateDailyTaskStatusUI();
             saveAllState();
         }
         
@@ -1240,102 +1132,83 @@ app.get('/', (req, res) => {
             if(!container) return;
 
             const packagesList = [
-                {id: 200, title: 'স্ট্যান্ডার্ড প্যাকেজ', price: 200, rate: '500 RS/মিঃ', tier: 'tier-1', hasCrown: false},
-                {id: 500, title: 'ব্রোঞ্জ প্যাকেজ', price: 500, rate: '1000 RS/মিঃ', tier: 'tier-2', hasCrown: false},
-                {id: 700, title: 'সিলভার প্যাকেজ', price: 700, rate: '1700 RS/মিঃ', tier: 'tier-3', hasCrown: false},
-                {id: 1000, title: 'গোল্ড প্যাকেজ', price: 1000, rate: '2500 RS/মিঃ', tier: 'tier-4', hasCrown: false},
-                {id: 1500, title: 'প্লাটিনাম প্যাকেজ', price: 1500, rate: '3500 RS/মিঃ', tier: 'tier-5', hasCrown: true},
-                {id: 2000, title: 'ডায়মন্ড প্যাকেজ', price: 2000, rate: '5000 RS/মিঃ', tier: 'tier-6', hasCrown: true},
-                {id: 2500, title: 'ভিআইপি প্যাকেজ', price: 2500, rate: '7000 RS/মিঃ', tier: 'tier-7', hasCrown: false},
-                {id: 3000, title: 'আল্টিমেট প্রিমিয়াম', price: 3000, rate: '10000 RS/মিঃ', tier: 'tier-8', hasCrown: true}
+                {id: 200, title: 'স্ট্যান্ডার্ড প্যাকেজ', price: 200, rate: '500 RS/মিঃ', tier: 'tier-1'},
+                {id: 500, title: 'ব্রোঞ্জ প্যাকেজ', price: 500, rate: '1000 RS/মিঃ', tier: 'tier-2'},
+                {id: 700, title: 'সিলভার প্যাকেজ', price: 700, rate: '1700 RS/মিঃ', tier: 'tier-3'},
+                {id: 1000, title: 'গোল্ড প্যাকেজ', price: 1000, rate: '2500 RS/মিঃ', tier: 'tier-4'},
+                {id: 1500, title: 'প্লাটিনাম প্যাকেজ', price: 1500, rate: '3500 RS/মিঃ', tier: 'tier-5'},
+                {id: 2000, title: 'ডায়মন্ড প্যাকেজ', price: 2000, rate: '5000 RS/মিঃ', tier: 'tier-6'},
+                {id: 2500, title: 'ভিআইপি প্যাকেজ', price: 2500, rate: '7000 RS/মিঃ', tier: 'tier-7'},
+                {id: 3000, title: 'আল্টিমেট প্রিমিয়াম', price: 3000, rate: '10000 RS/মিঃ', tier: 'tier-8'}
             ];
 
             let html = '';
-            let now = new Date().getTime();
-
             packagesList.forEach(p => {
                 let isPurchased = purchasedPackages[p.id];
-                let crownHtml = p.hasCrown ? '<span class="crown-badge">👑</span>' : '';
-
                 if (isPurchased) {
+                    let now = new Date().getTime();
                     let timeLeft = isPurchased.expireTime - now;
-                    let daysPassed = Math.floor((now - isPurchased.startTime) / (1000 * 60 * 60 * 24));
-                    let daysLeft = Math.max(0, 30 - daysPassed);
-
                     if(timeLeft <= 0) {
-                        openCalculatorModal(p);
                         delete purchasedPackages[p.id];
+                        isPurchased = null;
                         saveAllState();
-                        renderPackagesUI();
-                        return;
                     } else {
-                        let noticeBar = "";
-                        if (daysPassed >= 27) {
-                            noticeBar = '<div style="font-size:9px; color:var(--accent-gold); font-weight:bold; margin-bottom:2px;">অভিনন্দন! আপনার প্যাকেজ ২৭ দিন হয়েছে। আর ৩ দিন পর কয়েন কনভার্ট হবে।</div>';
-                        }
-
-                        html += '<div class="pkg-card ' + p.tier + '" style="border-color: var(--accent-green);">' +
-                            '<div>' +
-                                '<div class="pkg-title">' + p.title + ' ' + crownHtml + '</div>' +
-                                '<div class="pkg-price">৳ ' + p.price + '</div>' +
-                                '<div class="pkg-rate">মাইন রেট: ' + p.rate + '</div>' +
-                            '</div>' +
-                            '<div>' +
-                                noticeBar +
-                                '<div class="pkg-active-status">' +
-                                    '<div style="font-weight:bold; font-size:11px;">প্যাকেজ আনলক আছে!</div>' +
-                                    '<div style="font-size:9px; color:var(--text-main);">মেয়াদ বাকি: ' + daysLeft + ' দিন</div>' +
-                                    '<div style="font-size:10px; font-weight:bold; color:var(--accent-gold); margin-top:2px;">আর্নিং: ' + formatCoinNumber(isPurchased.earnedCoins) + ' RS</div>' +
-                                '</div>' +
-                            '</div>' +
-                        '</div>';
+                        let daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+                        let hoursLeft = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        html += \`
+                            <div class="pkg-card \${p.tier}" style="border-color: var(--accent-green);">
+                                <div>
+                                    <div class="pkg-title">\${p.title}</div>
+                                    <div class="pkg-price">৳ \${p.price}</div>
+                                    <div class="pkg-rate">মাইন রেট: \${p.rate}</div>
+                                </div>
+                                <div class="pkg-active-status">
+                                    <div style="font-weight:bold; font-size:11px;">প্যাকেজ আনলক হইছে!</div>
+                                    <div style="font-size:9px; color:var(--text-main);">মেয়াদ: \${daysLeft} দিন \${hoursLeft} ঘণ্টা</div>
+                                    <div style="font-size:10px; font-weight:bold; color:var(--accent-gold); margin-top:2px;">আর্নিং: \${formatCoinNumber(isPurchased.earnedCoins)} RS</div>
+                                </div>
+                            </div>
+                        \`;
                         return;
                     }
                 }
 
-                html += '<div class="pkg-card ' + p.tier + '">' +
-                    '<div>' +
-                        '<div class="pkg-title">' + p.title + ' ' + crownHtml + '</div>' +
-                        '<div class="pkg-price">৳ ' + p.price + '</div>' +
-                        '<div class="pkg-rate">মাইন রেট: ' + p.rate + '</div>' +
-                    '</div>' +
-                    '<button class="pkg-btn" onclick="buyPackageViaDeposit(' + p.price + ', \'' + p.title + '\')">ডিপোজিট করে আনলক</button>' +
-                '</div>';
+                html += \`
+                    <div class="pkg-card \${p.tier}">
+                        <div>
+                            <div class="pkg-title">\${p.title}</div>
+                            <div class="pkg-price">৳ \${p.price}</div>
+                            <div class="pkg-rate">মাইন রেট: \${p.rate}</div>
+                        </div>
+                        <button class="pkg-btn" onclick="buyPackage(\${p.price})">আনলক করুন</button>
+                    </div>
+                \`;
             });
             container.innerHTML = html;
         }
 
-        function buyPackageViaDeposit(price, title) {
-            document.getElementById('pkgPopupMsg').innerText = '⚠️ নিয়ম অনুযায়ী অ্যাকাউন্ট ব্যালেন্স দিয়ে প্যাকেজ কেনা যায় না। \'' + title + '\' (৳' + price + ') কিনতে সরাসরি ডিপোজিট করুন।';
-            openModal('pkgDepositPopupModal');
-            document.getElementById('depositInputAmt').value = price;
-        }
-
-        let pendingPkgToUnlock = null;
-        function openCalculatorModal(pkg) {
-            pendingPkgToUnlock = pkg;
-            let earned = purchasedPackages[pkg.id] ? purchasedPackages[pkg.id].earnedCoins : 50000;
-            document.getElementById('calcPkgTitle').innerText = pkg.title + " - ৩০ দিন পূর্ণ হয়েছে!";
-            document.getElementById('calcDetailsText').innerHTML = 'আপনার প্যাকেজ থেকে মোট <b>' + formatCoinNumber(earned) + ' RS</b> কয়েন অর্জিত হয়েছে。<br>১ মিলিয়ন আরএস কয়েনের বর্তমান রেট অনুযায়ী এটি বাংলা টাকায় কনভার্ট হয়ে মূল অ্যাকাউন্টে যোগ হবে এবং প্যাকেজটি স্বয়ংক্রিয়ভাবে পুনরায় আনলক হবে।';
-            openModal('calculatorModal');
-        }
-
-        function executeCoinConversion() {
-            if(pendingPkgToUnlock) {
-                let pId = pendingPkgToUnlock.id;
-                let earned = 50000;
-                let convertedBDT = 500;
-                userBalance += convertedBDT;
-                totalTransactionsCount += 1;
-
-                let startTime = new Date().getTime();
-                let expireTime = startTime + (30 * 24 * 60 * 60 * 1000);
-                purchasedPackages[pId] = { startTime: startTime, expireTime: expireTime, earnedCoins: 0 };
-                
-                updateAccountStatsUI();
-                closeModal('calculatorModal');
-                alert('🎉 সফল! কয়েন সফলভাবে কনভার্ট হয়ে ৳' + convertedBDT + ' আপনার মূল ব্যালেন্সে যোগ হয়েছে এবং প্যাকেজটি রিনিউ ও আনলক হয়েছে।');
+        function buyPackage(price) {
+            if(userBalance < price) {
+                document.getElementById('pkgPopupMsg').innerText = \`⚠️ আপনার পর্যাপ্ত ব্যালেন্স নেই। প্যাকেজটি কিনতে ৳\${price} ডিপোজিট করুন।\`;
+                openModal('pkgDepositPopupModal');
+                document.getElementById('depositInputAmt').value = price;
+                return;
             }
+            userBalance -= price;
+            totalTransactionsCount += 1;
+            let expireTime = new Date().getTime() + (30 * 24 * 60 * 60 * 1000);
+            purchasedPackages[price] = { expireTime: expireTime, earnedCoins: 0 };
+            updateAccountStatsUI();
+            alert(\`🎉 অভিনন্দন! সফলভাবে ৳\${price} টাকার প্যাকেজটি আনলক হয়েছে!\`);
+        }
+
+        function switchTab(tabName, el) {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            const targetView = document.getElementById(tabName + 'View');
+            if(targetView) targetView.classList.add('active');
+            if(el) el.classList.add('active');
         }
 
         function triggerPhotoUpload() { document.getElementById('globalPhotoInput').click(); }
@@ -1385,11 +1258,6 @@ app.get('/', (req, res) => {
             alert('রেফারেল লিংক সফলভাবে কপি করা হয়েছে!');
         }
 
-        function shareToSocial(platform) {
-            const link = document.getElementById('refLinkInput').value;
-            alert(platform.toUpperCase() + ' এ অফিসিয়াল ইমেজ ও রেফারেল লিংক শেয়ারের জন্য প্রস্তুত: ' + link);
-        }
-
         function copyDepositNumber() {
             const num = document.getElementById('depositSendNumber').innerText;
             navigator.clipboard.writeText(num);
@@ -1404,21 +1272,29 @@ app.get('/', (req, res) => {
             document.getElementById('withdrawInputAmt').value = val;
         }
 
+        function checkInDaily() {
+            userBalance += 10;
+            todayEarnAmount += 10;
+            totalTransactionsCount += 1;
+            updateAccountStatsUI();
+            alert('চেক-ইন সফল হয়েছে! +১০ টাকা আপনার অ্যাকাউন্টে যোগ হয়েছে।');
+        }
+
         function openSupportPopup(type) {
             const titleEl = document.getElementById('supportPopupTitle');
             const descEl = document.getElementById('supportPopupDesc');
             if(type === 'deposit') {
                 titleEl.innerText = "💳 ডিপোজিট সংক্রান্ত সমস্যা ও সমাধান";
-                descEl.innerText = "১. ডিপোজিট সীমা ২০০ থেকে ৩০০০ টাকা।\n২. সঠিক TrxID ও পেমেন্ট নম্বরের শেষ ৩ ডিজিট প্রদান করুন।";
+                descEl.innerText = "১. ডিপোজিট সীমা ২০০ থেকে ৩০০০ টাকা।\\n২. সঠিক TrxID প্রদান করুন।";
             } else if(type === 'withdraw') {
                 titleEl.innerText = "🏦 উইথড্র সংক্রান্ত সমস্যা ও সমাধান";
-                descEl.innerText = "১. উইথড্র সীমা ৩০০ থেকে ৫০০০ টাকা।\n২. অ্যাকাউন্টে নির্দিষ্ট পরিমাণের বেশি ব্যালেন্স থাকতে হবে।";
+                descEl.innerText = "১. উইথড্র সীমা ৩০০ থেকে ৫০০০ টাকা।\\n২. অ্যাকাউন্টে নির্দিষ্ট পরিমাণের বেশি ব্যালেন্স থাকতে হবে।";
             } else if(type === 'bonus') {
                 titleEl.innerText = "🎁 বোনাস সংক্রান্ত তথ্য";
                 descEl.innerText = "১. রেফারেল ইনস্ট্যান্ট ১০০ কয়েন ও আজীবন ৩% কমিশন।";
             } else if(type === 'task') {
                 titleEl.innerText = "📋 ডেইলি টাস্ক গাইডলাইন";
-                descEl.innerText = "১. ২৪ ঘণ্টায় দুইবার ডেইলি টাস্ক ক্লেইম করা যায়।";
+                descEl.innerText = "১. ২৪ ঘণ্টায় একবার ডেইলি টাস্ক ক্লেইম করা যায়।";
             }
             openModal('supportPopupModal');
         }
@@ -1428,7 +1304,7 @@ app.get('/', (req, res) => {
             if(!txt) { alert('দয়া করে আপনার সমস্যাটি লিখুন।'); return; }
             
             const chatContainer = document.getElementById('chatBoxContainer');
-            let userMsgDiv = document.createElement('div');
+            const userMsgDiv = document.createElement('div');
             userMsgDiv.className = 'chat-msg user';
             userMsgDiv.innerText = txt;
             chatContainer.appendChild(userMsgDiv);
@@ -1436,7 +1312,7 @@ app.get('/', (req, res) => {
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
             setTimeout(() => {
-                let supportMsgDiv = document.createElement('div');
+                const supportMsgDiv = document.createElement('div');
                 supportMsgDiv.className = 'chat-msg support';
                 supportMsgDiv.innerText = "আমাদের এই মুহূর্তে কাস্টমার কেয়ারে অনেক পরিমাণ কাস্টমানের চাপ আছে। আপনারা কিছুক্ষণ পরে আবার মেসেজ করুন।";
                 chatContainer.appendChild(supportMsgDiv);
@@ -1467,7 +1343,7 @@ app.get('/', (req, res) => {
 
         function isValidTrxId(trx) {
             if (!trx || trx.length < 4) return false;
-            if (/^\d+$/.test(trx)) return false;
+            if (/^\\d+$/.test(trx)) return false;
             return true;
         }
 
@@ -1475,36 +1351,23 @@ app.get('/', (req, res) => {
             const method = document.getElementById('depositMethodSelect').value;
             const amt = parseFloat(document.getElementById('depositInputAmt').value);
             const trx = document.getElementById('depositTrxId').value.trim();
-            const lastDigits = document.getElementById('depositLastThreeDigits').value.trim();
             
             if(isNaN(amt) || amt < 200 || amt > 3000) { alert('⚠️ ডিপোজিট সীমা ২০০ টাকা থেকে ৩০০০ টাকার মধ্যে হতে হবে।'); return; }
-            if(!isValidTrxId(trx)) { alert('❌ সঠিক TrxID প্রদান করুন!'); return; }
-            if(!lastDigits || lastDigits.length !== 3 || !/^\d+$/.test(lastDigits)) {
-                alert('⚠️ আপনি দয়া করে পেমেন্ট মেথডের লাস্ট ৩ নাম্বার সঠিকভাবে লিখুন।');
-                return;
-            }
+            if(!isValidTrxId(trx)) { alert('❌ ভুল TrxID!'); return; }
 
             pendingAmount += amt;
             totalTransactionsCount += 1;
 
-            const newTx = { method, amt, trx, lastDigits, status: 'Pending', time: 'Just now', user: currentUserName };
+            const newTx = { method, amt, trx, status: 'Pending', time: 'Just now', user: currentUserName };
             userDepositHistory.unshift(newTx);
             updateAccountStatsUI();
             renderHistoryLists();
             renderAdminLiveLists();
 
-            let targetPkgPrice = amt;
-            if ([200, 500, 700, 1000, 1500, 2000, 2500, 3000].includes(targetPkgPrice)) {
-                let startTime = new Date().getTime();
-                let expireTime = startTime + (30 * 24 * 60 * 60 * 1000);
-                purchasedPackages[targetPkgPrice] = { startTime: startTime, expireTime: expireTime, earnedCoins: 0 };
-            }
-
-            alert('✅ সফল! ' + method + ' মাধ্যমে ৳' + amt + ' ডিপোজিট রিকোয়েস্ট পেন্ডিং আছে এবং প্যাকেজ আনলক প্রক্রিয়ায় রয়েছে।');
+            alert(\`✅ সফল! \${method} মাধ্যমে ৳\${amt} ডিপোজিট রিকোয়েস্ট পেন্ডিং আছে।\`);
             closeModal('depositModal');
             document.getElementById('depositInputAmt').value = '';
             document.getElementById('depositTrxId').value = '';
-            document.getElementById('depositLastThreeDigits').value = '';
         }
 
         function submitWithdraw() {
@@ -1514,7 +1377,7 @@ app.get('/', (req, res) => {
 
             if(isNaN(amt) || amt < 300 || amt > 5000) { alert('⚠️ উইথড্র সীমা ৩০০ টাকা থেকে ৫০০০ টাকার মধ্যে হতে হবে।'); return; }
             if(amt > userBalance) { alert('❌ অ্যাকাউন্টে পর্যাপ্ত ব্যালেন্স নেই!'); return; }
-            if(!phone || phone.length !== 11 || !/^\d+$/.test(phone)) { alert('❌ সঠিক ১১ ডিজিটের নম্বর দিন।'); return; }
+            if(!phone || phone.length !== 11 || !/^\\d+$/.test(phone)) { alert('❌ সঠিক ১১ ডিজিটের নম্বর দিন।'); return; }
 
             userBalance -= amt;
             pendingAmount += amt;
@@ -1526,7 +1389,7 @@ app.get('/', (req, res) => {
             renderHistoryLists();
             renderAdminLiveLists();
 
-            alert('✅ উইথড্র রিকোয়েস্ট সফল! ' + method + '-এর মাধ্যমে ৳' + amt + ' পেন্ডিং আছে।');
+            alert(\`✅ উইথড্র রিকোয়েস্ট সফল! \${method}-এর মাধ্যমে ৳\${amt} পেন্ডিং আছে।\`);
             closeModal('withdrawModal');
             document.getElementById('withdrawInputAmt').value = '';
             document.getElementById('withdrawPhone').value = '';
@@ -1543,20 +1406,22 @@ app.get('/', (req, res) => {
             
             document.getElementById('adminStatPendingCount').innerText = (pendingDeps.length + userWithdrawHistory.filter(w => w.status === 'Pending').length) + ' টি';
             document.getElementById('adminStatSuccessCount').innerText = (successDepsCount + successWdsCount) + ' টি';
-            document.getElementById('adminStatTodayEarn').innerText = '৳ ' + todayEarnAmount;
+            document.getElementById('adminStatTodayEarn').innerText = \`৳ \${todayEarnAmount}\`;
 
             if(pendingDeps.length === 0) {
                 depListEl.innerHTML = '<p style="font-size: 10px; color: var(--text-muted); text-align: center;">কোনো পেন্ডিং ডিপোজিট নেই</p>';
             } else {
                 let html = '';
                 pendingDeps.forEach((d, idx) => {
-                    html += '<div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; background: rgba(30,41,59,0.7); padding: 6px 8px; border-radius: 8px; margin-bottom: 6px;">' +
-                        '<span style="color:var(--text-main);">' + d.user + ': ৳' + d.amt + ' [' + d.method + '] [Trx: ' + d.trx + ']<br><b style="color:var(--accent-gold);">ইউজারের লাস্ট ৩ সংখ্যা: ' + d.lastDigits + '</b></span>' +
-                        '<div style="display:flex; gap:4px;">' +
-                            '<button class="tr-btn" style="padding: 3px 6px; font-size: 9px;" onclick="navigator.clipboard.writeText(\'' + d.trx + '\'); alert(\'কপি হয়েছে\');">কপি</button>' +
-                            '<button class="tr-btn" style="padding: 3px 6px; font-size: 9px; background: var(--accent-green); color:#fff;" onclick="approveDeposit(' + idx + ')">সাবমিট</button>' +
-                        '</div>' +
-                    '</div>';
+                    html += \`
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; background: rgba(30,41,59,0.7); padding: 6px 8px; border-radius: 8px; margin-bottom: 6px;">
+                            <span style="color:var(--text-main);">\${d.user}: ৳\${d.amt} [Trx: \${d.trx}]</span>
+                            <div style="display:flex; gap:4px;">
+                                <button class="tr-btn" style="padding: 3px 6px; font-size: 9px;" onclick="navigator.clipboard.writeText('\${d.trx}'); alert('কপি হয়েছে');">কপি</button>
+                                <button class="tr-btn" style="padding: 3px 6px; font-size: 9px; background: var(--accent-green); color:#fff;" onclick="approveDeposit(\${idx})">সাবমিট</button>
+                            </div>
+                        </div>
+                    \`;
                 });
                 depListEl.innerHTML = html;
             }
@@ -1567,13 +1432,15 @@ app.get('/', (req, res) => {
             } else {
                 let html = '';
                 pendingWds.forEach((w, idx) => {
-                    html += '<div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; background: rgba(30,41,59,0.7); padding: 6px 8px; border-radius: 8px; margin-bottom: 6px;">' +
-                        '<span style="color:var(--text-main);">' + w.user + ': ৳' + w.amt + ' [Ph: ' + w.phone + ']</span>' +
-                        '<div style="display:flex; gap:4px;">' +
-                            '<button class="tr-btn" style="padding: 3px 6px; font-size: 9px;" onclick="navigator.clipboard.writeText(\'' + w.phone + '\'); alert(\'কপি হয়েছে\');">কপি</button>' +
-                            '<button class="tr-btn" style="padding: 3px 6px; font-size: 9px; background: var(--accent-green); color:#fff;" onclick="approveWithdraw(' + idx + ')">সাবমিট</button>' +
-                        '</div>' +
-                    '</div>';
+                    html += \`
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; background: rgba(30,41,59,0.7); padding: 6px 8px; border-radius: 8px; margin-bottom: 6px;">
+                            <span style="color:var(--text-main);">\${w.user}: ৳\${w.amt} [Ph: \${w.phone}]</span>
+                            <div style="display:flex; gap:4px;">
+                                <button class="tr-btn" style="padding: 3px 6px; font-size: 9px;" onclick="navigator.clipboard.writeText('\${w.phone}'); alert('কপি হয়েছে');">কপি</button>
+                                <button class="tr-btn" style="padding: 3px 6px; font-size: 9px; background: var(--accent-green); color:#fff;" onclick="approveWithdraw(\${idx})">সাবমিট</button>
+                            </div>
+                        </div>
+                    \`;
                 });
                 wdListEl.innerHTML = html;
             }
@@ -1611,7 +1478,7 @@ app.get('/', (req, res) => {
         function verifyAdminTransaction() {
             let val = document.getElementById('adminUserSearch').value.trim();
             if(!val) { alert('দয়া করে নম্বর বা TrxID দিন।'); return; }
-            alert('✅ সফল! "' + val + '" ভেরিফাই ও কনফার্ম করা হয়েছে।');
+            alert(\`✅ সফল! "\${val}" ভেরিফাই ও কনফার্ম করা হয়েছে।\`);
             document.getElementById('adminUserSearch').value = '';
         }
 
@@ -1622,7 +1489,7 @@ app.get('/', (req, res) => {
             } else {
                 let html = '';
                 userDepositHistory.forEach(item => {
-                    html += '<div class="ticker-item"><span class="t-dep">📥 (' + item.method + '): +৳ ' + item.amt.toLocaleString() + ' [লাস্ট ৩ ডিজিট: ' + item.lastDigits + ']</span><span style="font-size:9px; color:var(--accent-gold);">' + item.status + '</span></div>';
+                    html += \`<div class="ticker-item"><span class="t-dep">📥 (\${item.method}): +৳ \${item.amt.toLocaleString()}</span><span style="font-size:9px; color:var(--accent-gold);">\${item.status}</span></div>\`;
                 });
                 depContent.innerHTML = html;
             }
@@ -1633,7 +1500,7 @@ app.get('/', (req, res) => {
             } else {
                 let html = '';
                 userWithdrawHistory.forEach(item => {
-                    html += '<div class="ticker-item"><span class="t-wd">📤 (' + item.method + '): -৳ ' + item.amt.toLocaleString() + '</span><span style="font-size:9px; color:var(--accent-gold);">' + item.status + '</span></div>';
+                    html += \`<div class="ticker-item"><span class="t-wd">📤 (\${item.method}): -৳ \${item.amt.toLocaleString()}</span><span style="font-size:9px; color:var(--accent-gold);">\${item.status}</span></div>\`;
                 });
                 wdContent.innerHTML = html;
             }
@@ -1643,7 +1510,7 @@ app.get('/', (req, res) => {
             let totalRate = 0;
             for(let pPrice in purchasedPackages) {
                 let pData = purchasedPackages[pPrice];
-                let rate = parseInt(pPrice) >= 3000 ? 10000 : (parseInt(pPrice) >= 2000 ? 5000 : 2500);
+                let rate = parseInt(pPrice) >= 3000 ? 1000 : (parseInt(pPrice) >= 2000 ? 500 : 200);
                 pData.earnedCoins += rate;
                 rsCoins += rate;
                 totalRate += rate;
@@ -1660,10 +1527,10 @@ app.get('/', (req, res) => {
             let nameList = isFemale ? femaleNames : maleNames;
             let fName = nameList[i % nameList.length];
             let lName = ["Smith", "Johnson", "Brown", "Taylor", "Miller", "Wilson", "Moore", "Clark", "Hall"][i % 9];
-            let fullName = fName + ' ' + lName;
+            let fullName = \`\${fName} \${lName}\`;
             let score = 50000 - (i * 350) + Math.floor(Math.random() * 200);
             let rsCoinEarned = Math.floor(Math.random() * 5000) + 500;
-            let avatarUrl = 'https://i.pravatar.cc/100?img=' + ((i % 70) + 1);
+            let avatarUrl = \`https://i.pravatar.cc/100?img=\${(i % 70) + 1}\`;
             usersData.push({ rank: i, name: fullName, score: score, rsCoins: rsCoinEarned, avatar: avatarUrl });
         }
 
@@ -1680,46 +1547,55 @@ app.get('/', (req, res) => {
             usersData.sort((a, b) => b.score - a.score);
             usersData.forEach((u, index) => u.rank = index + 1);
 
-            let top3HTML = '<div class="podium-col" style="border-color: #3b82f6;">' +
-                '<div class="crown">👑</div>' +
-                '<div class="p-ava" style="border-color: #3b82f6;"><img src="' + usersData[1].avatar + '" alt="2"></div>' +
-                '<h5 style="font-size: 11px;">' + usersData[1].name + '</h5>' +
-                '<p style="font-size: 9px; color: var(--accent-green);">৳ ' + usersData[1].score.toLocaleString() + '</p>' +
-                '<p style="font-size: 8px; color: var(--accent-gold);">🪙 ' + formatCoinNumber(usersData[1].rsCoins) + ' RS</p>' +
-                '<span style="font-size: 9px; background: #3b82f6; padding: 1px 6px; border-radius: 8px; margin-top: 4px; display: inline-block;">#২</span>' +
-            '</div>' +
-            '<div class="podium-col rank-1">' +
-                '<div class="crown" style="font-size: 24px;">👑</div>' +
-                '<div class="p-ava" style="border-color: var(--accent-gold); box-shadow: 0 0 15px var(--accent-gold);"><img src="' + usersData[0].avatar + '" alt="1"></div>' +
-                '<h5 style="font-size: 12px; color: var(--accent-gold); font-weight: bold;">' + usersData[0].name + '</h5>' +
-                '<p style="font-size: 10px; color: var(--accent-green);">৳ ' + usersData[0].score.toLocaleString() + '</p>' +
-                '<p style="font-size: 9px; color: var(--accent-gold);">🪙 ' + formatCoinNumber(usersData[0].rsCoins) + ' RS</p>' +
-                '<span style="font-size: 9px; background: var(--accent-gold); color: #000; padding: 1px 6px; border-radius: 8px; margin-top: 4px; display: inline-block; font-weight: bold;">#১</span>' +
-            '</div>' +
-            '<div class="podium-col" style="border-color: #b45309;">' +
-                '<div class="crown">👑</div>' +
-                '<div class="p-ava" style="border-color: #b45309;"><img src="' + usersData[2].avatar + '" alt="3"></div>' +
-                '<h5 style="font-size: 11px;">' + usersData[2].name + '</h5>' +
-                '<p style="font-size: 9px; color: var(--accent-green);">৳ ' + usersData[2].score.toLocaleString() + '</p>' +
-                '<p style="font-size: 8px; color: var(--accent-gold);">🪙 ' + formatCoinNumber(usersData[2].rsCoins) + ' RS</p>' +
-                '<span style="font-size: 9px; background: #b4530px; padding: 1px 6px; border-radius: 8px; margin-top: 4px; display: inline-block;">#৩</span>' +
-            '</div>';
+            let top3HTML = '';
+            top3HTML += \`
+                <div class="podium-col" style="border-color: #3b82f6;">
+                    <div class="crown">👑</div>
+                    <div class="p-ava" style="border-color: #3b82f6;"><img src="\${usersData[1].avatar}" alt="2"></div>
+                    <h5 style="font-size: 11px;">\${usersData[1].name}</h5>
+                    <p style="font-size: 9px; color: var(--accent-green);">৳ \${usersData[1].score.toLocaleString()}</p>
+                    <p style="font-size: 8px; color: var(--accent-gold);">🪙 \${formatCoinNumber(usersData[1].rsCoins)} RS</p>
+                    <span style="font-size: 9px; background: #3b82f6; padding: 1px 6px; border-radius: 8px; margin-top: 4px; display: inline-block;">#২</span>
+                </div>
+            \`;
+            top3HTML += \`
+                <div class="podium-col rank-1">
+                    <div class="crown" style="font-size: 24px;">👑</div>
+                    <div class="p-ava" style="border-color: var(--accent-gold); box-shadow: 0 0 15px var(--accent-gold);"><img src="\${usersData[0].avatar}" alt="1"></div>
+                    <h5 style="font-size: 12px; color: var(--accent-gold); font-weight: bold;">\${usersData[0].name}</h5>
+                    <p style="font-size: 10px; color: var(--accent-green);">৳ \${usersData[0].score.toLocaleString()}</p>
+                    <p style="font-size: 9px; color: var(--accent-gold);">🪙 \${formatCoinNumber(usersData[0].rsCoins)} RS</p>
+                    <span style="font-size: 9px; background: var(--accent-gold); color: #000; padding: 1px 6px; border-radius: 8px; margin-top: 4px; display: inline-block; font-weight: bold;">#১</span>
+                </div>
+            \`;
+            top3HTML += \`
+                <div class="podium-col" style="border-color: #b45309;">
+                    <div class="crown">👑</div>
+                    <div class="p-ava" style="border-color: #b45309;"><img src="\${usersData[2].avatar}" alt="3"></div>
+                    <h5 style="font-size: 11px;">\${usersData[2].name}</h5>
+                    <p style="font-size: 9px; color: var(--accent-green);">৳ \${usersData[2].score.toLocaleString()}</p>
+                    <p style="font-size: 8px; color: var(--accent-gold);">🪙 \${formatCoinNumber(usersData[2].rsCoins)} RS</p>
+                    <span style="font-size: 9px; background: #b45309; padding: 1px 6px; border-radius: 8px; margin-top: 4px; display: inline-block;">#৩</span>
+                </div>
+            \`;
             document.getElementById('podiumTop3Container').innerHTML = top3HTML;
 
             let remainingHTML = '';
             for(let i = 3; i < usersData.length; i++) {
                 let u = usersData[i];
-                remainingHTML += '<div class="transaction-row">' +
-                    '<div style="display: flex; align-items: center; gap: 10px;">' +
-                        '<span style="font-size: 11px; font-weight: bold; color: var(--accent-blue);">#' + u.rank + '</span>' +
-                        '<img src="' + u.avatar + '" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">' +
-                        '<div>' +
-                            '<span style="font-size: 12px; display: block;">' + u.name + '</span>' +
-                            '<span style="font-size: 9px; color: var(--accent-gold);">🪙 ' + formatCoinNumber(u.rsCoins) + ' RS Collected</span>' +
-                        '</div>' +
-                    '</div>' +
-                    '<span style="font-size: 12px; color: var(--accent-green); font-weight: bold;">৳ ' + u.score.toLocaleString() + '</span>' +
-                '</div>';
+                remainingHTML += \`
+                    <div class="transaction-row">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 11px; font-weight: bold; color: var(--accent-blue);">#\${u.rank}</span>
+                            <img src="\${u.avatar}" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
+                            <div>
+                                <span style="font-size: 12px; display: block;">\${u.name}</span>
+                                <span style="font-size: 9px; color: var(--accent-gold);">🪙 \${formatCoinNumber(u.rsCoins)} RS Collected</span>
+                            </div>
+                        </div>
+                        <span style="font-size: 12px; color: var(--accent-green); font-weight: bold;">৳ \${u.score.toLocaleString()}</span>
+                    </div>
+                \`;
             }
             document.getElementById('rankingListContainer').innerHTML = remainingHTML;
         }
