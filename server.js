@@ -154,13 +154,10 @@ app.get('/', (req, res) => {
             flex-grow: 1;
             overflow-y: auto;
             padding: 15px;
-            animation: fadeIn 0.25s ease-in-out;
             padding-bottom: 90px;
         }
-        .view-section.active { display: block; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(4px); }
-            to { opacity: 1; transform: translateY(0); }
+        .view-section.active {
+            display: block !important;
         }
 
         .premium-notice-box {
@@ -558,7 +555,7 @@ app.get('/', (req, res) => {
             </marquee>
         </div>
 
-        <div id="homeView" class="view-section active">
+        <div id="homeView" class="view-section active" style="display: block;">
             <div class="banner-card">
                 <h2>RS REWARDS CENTER</h2>
                 <p>প্রতিদিন কাজ করুন, প্যাকেজ মাইন করুন আর আরও বেশি রিওয়ার্ড জিতুন!</p>
@@ -603,14 +600,14 @@ app.get('/', (req, res) => {
             </div>
         </div>
 
-        <div id="packagesView" class="view-section">
+        <div id="packagesView" class="view-section" style="display: none;">
             <div class="section-heading"><span>💎 এক্সক্লুসিভ মাইনিং প্যাকেজ</span> <span style="font-size: 10px; color: var(--accent-gold);">শুধুমাত্র ডিপোজিট করে কিনুন</span></div>
             <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 12px;">অ্যাকাউন্টে নয়, সরাসরি ডিপোজিট ব্যালেন্স দিয়ে প্যাকেজ আনলক করতে হয়। ৩০ দিন পর প্যাকেজ অটো রিসেট ও কয়েন কনভার্ট হবে।</p>
             
             <div class="packages-grid-2x2" id="packagesGridContainer"></div>
         </div>
 
-        <div id="tasksView" class="view-section">
+        <div id="tasksView" class="view-section" style="display: none;">
             <div class="section-heading"><span>⚡ Offerwall.gg লাইভ টাস্ক সেন্টার (৫০ টি টাস্ক)</span> <span style="font-size: 10px; color: var(--accent-green);">● সার্ভার লাইভ</span></div>
             
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px;">
@@ -637,7 +634,7 @@ app.get('/', (req, res) => {
             </div>
         </div>
 
-        <div id="rankingView" class="view-section">
+        <div id="rankingView" class="view-section" style="display: none;">
             <div class="section-heading"><span>🏆 গ্লোবাল টপ র‍্যাঙ্কিং লিডারবোর্ড</span> <span style="font-size: 10px; color: var(--accent-gold);">টপ ১ থেকে ১০ কয়েন ক্রমান্বয়ে বৃদ্ধি পাবে</span></div>
             
             <div class="podium-box" id="podiumTop3Container"></div>
@@ -646,7 +643,7 @@ app.get('/', (req, res) => {
             <div id="rankingListContainer"></div>
         </div>
 
-        <div id="supportView" class="view-section">
+        <div id="supportView" class="view-section" style="display: none;">
             <div class="support-banner">
                 <div style="font-size: 28px; position: relative;">
                     💻
@@ -687,7 +684,7 @@ app.get('/', (req, res) => {
             </div>
         </div>
 
-        <div id="referralView" class="view-section">
+        <div id="referralView" class="view-section" style="display: none;">
             <div class="ref-banner">
                 <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">আজীবন ৩% কমিশন ও ইনস্ট্যান্ট ১০০ আরএস কয়েন</h3>
                 <p style="font-size: 11px; color: #cbd5e1;">অফিসিয়াল সোশ্যাল মিডিয়া ইমেজ ও লিংক ব্যবহার করে রেফার করুন।</p>
@@ -714,7 +711,7 @@ app.get('/', (req, res) => {
             </div>
         </div>
 
-        <div id="accountView" class="view-section">
+        <div id="accountView" class="view-section" style="display: none;">
             <div class="section-heading"><span>অ্যাকাউন্ট ওভারভিউ</span></div>
             
             <div class="update-card" style="align-items: center; background: rgba(30, 41, 59, 0.7);">
@@ -1017,6 +1014,26 @@ app.get('/', (req, res) => {
 
         let microJobsList = [];
 
+        // 🌟 Fixed Robust Navigation Tab Switcher Function
+        function switchTab(tabName, el) {
+            const sections = document.querySelectorAll('.view-section');
+            sections.forEach(s => {
+                s.style.display = 'none';
+                s.classList.remove('active');
+            });
+
+            const targetView = document.getElementById(tabName + 'View');
+            if (targetView) {
+                targetView.style.display = 'block';
+                targetView.classList.add('active');
+            }
+
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if (el) {
+                el.classList.add('active');
+            }
+        }
+
         async function fetchServerTasks() {
             try {
                 const response = await fetch('/api/tasks');
@@ -1036,7 +1053,7 @@ app.get('/', (req, res) => {
                     let sample = baseTasks[(i - 1) % baseTasks.length];
                     microJobsList.push({
                         id: i,
-                        title: \`Offerwall Task #\${i}: \${sample.title}\`,
+                        title: `Offerwall Task #${i}:${sample.title}`,
                         reward: sample.reward || (20 + (i % 30)),
                         icon: i % 2 === 0 ? "▶️" : "📘",
                         color: i % 2 === 0 ? "#FF0000" : "#1877F2",
@@ -1070,18 +1087,18 @@ app.get('/', (req, res) => {
 
             let html = '';
             availableTasks.forEach(t => {
-                html += \`
+                html += `
                     <div class="task-row-card" style="margin-bottom:0; flex-direction:column; align-items:flex-start; gap:8px;">
                         <div class="tr-left" style="width:100%;">
-                            <div class="tr-icon" style="background: rgba(56, 189, 248, 0.2); color: var(--accent-blue); width:32px; height:32px; font-size:14px;">\${t.icon}</div>
+                            <div class="tr-icon" style="background: rgba(56, 189, 248, 0.2); color: var(--accent-blue); width:32px; height:32px; font-size:14px;">${t.icon}</div>
                             <div class="tr-info" style="flex:1; overflow:hidden;">
-                                <h4 style="font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">\${t.title}</h4>
-                                <p style="color:var(--accent-gold); font-size:10px;">+\${t.reward} RS (Pending on server)</p>
+                                <h4 style="font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.title}</h4>
+                                <p style="color:var(--accent-gold); font-size:10px;">+${t.reward} RS (Pending on server)</p>
                             </div>
                         </div>
-                        <button class="tr-btn" style="width:100%; padding:4px; font-size:10px;" onclick="openTaskDetails(\${t.id})">কাজ করুন</button>
+                        <button class="tr-btn" style="width:100%; padding:4px; font-size:10px;" onclick="openTaskDetails(${t.id})">কাজ করুন</button>
                     </div>
-                \`;
+                `;
             });
             container.innerHTML = html;
         }
@@ -1136,7 +1153,7 @@ app.get('/', (req, res) => {
                 let remainingTime = twentyFourHours - (currentTime - oldestClaim);
                 let hoursLeft = Math.floor(remainingTime / (1000 * 60 * 60));
                 let minutesLeft = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
-                alert(\`⏳ আপনি ২৪ ঘণ্টায় সর্বোচ্চ ২ বার ডেইলি টাস্ক ক্লেইম করতে পারবেন! পরবর্তী সুযোগের জন্য আরও \${hoursLeft} ঘণ্টা \${minutesLeft} মিনিট অপেক্ষা করুন।\`);
+                alert(`⏳ আপনি ২৪ ঘণ্টায় সর্বোচ্চ ২ বার ডেইলি টাস্ক ক্লেইম করতে পারবেন! পরবর্তী সুযোগের জন্য আরও ${hoursLeft} ঘণ্টা ${minutesLeft} মিনিট অপেক্ষা করুন।`);
                 return;
             }
 
@@ -1147,7 +1164,7 @@ app.get('/', (req, res) => {
             rsCoins += rewardCoins;
             totalTransactionsCount += 1;
             updateAccountStatsUI();
-            alert(\`🎉 সফল! ডেইলি টাস্ক থেকে +\${rewardCoins} RS কয়েন আপনার অ্যাকাউন্টে যোগ হয়েছে।\`);
+            alert(`🎉 সফল! ডেইলি টাস্ক থেকে +${rewardCoins} RS কয়েন আপনার অ্যাকাউন্টে যোগ হয়েছে।`);
         }
 
         function checkInDaily() {
@@ -1159,7 +1176,7 @@ app.get('/', (req, res) => {
                 let remainingTime = twentyFourHours - (currentTime - lastCheckIn);
                 let hoursLeft = Math.floor(remainingTime / (1000 * 60 * 60));
                 let minutesLeft = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
-                alert(\`⏳ আপনি আজ ইতিমধ্যেই চেক-ইন বোনাস নিয়েছেন! পরবর্তী ক্লেইমের জন্য আরও \${hoursLeft} ঘণ্টা \${minutesLeft} মিনিট অপেক্ষা করুন।\`);
+                alert(`⏳ আপনি আজ ইতিমধ্যেই চেক-ইন বোনাস নিয়েছেন! পরবর্তী ক্লেইমের জন্য আরও ${hoursLeft} ঘণ্টা ${minutesLeft} মিনিট অপেক্ষা করুন।`);
                 return;
             }
 
@@ -1169,7 +1186,7 @@ app.get('/', (req, res) => {
             
             localStorage.setItem('rs_last_checkin', currentTime);
             updateAccountStatsUI();
-            alert(\`🎁 চেক-ইন সফল! +100 RS কয়েন আপনার অ্যাকাউন্টে যোগ হয়েছে।\`);
+            alert(`🎁 চেক-ইন সফল! +100 RS কয়েন আপনার অ্যাকাউন্টে যোগ হয়েছে।`);
         }
 
         const agentNames = ["মাহিয়া", "জান্নাত", "ফাতেমা", "সাবিহা", "নুসরাত"];
@@ -1204,12 +1221,12 @@ app.get('/', (req, res) => {
         }
 
         function updateAccountStatsUI() {
-            document.getElementById('topBalanceDisplay').innerText = \`৳ \${userBalance.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\`;
-            document.getElementById('topRsDisplay').innerText = \`🪙 \${formatCoinNumber(rsCoins)} RS\`;
-            document.getElementById('statPending').innerText = \`৳ \${pendingAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\`;
+            document.getElementById('topBalanceDisplay').innerText = `৳ ${userBalance.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('topRsDisplay').innerText = `🪙 ${formatCoinNumber(rsCoins)} RS`;
+            document.getElementById('statPending').innerText = `৳ ${pendingAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             document.getElementById('statTransactions').innerText = totalTransactionsCount;
-            document.getElementById('statTodayEarn').innerText = \`৳ \${todayEarnAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\`;
-            document.getElementById('statRefEarn').innerText = \`৳ \${referralEarnAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\`;
+            document.getElementById('statTodayEarn').innerText = `৳ ${todayEarnAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('statRefEarn').innerText = `৳ ${referralEarnAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             
             document.getElementById('headerName').innerText = currentUserName + " ✏️";
             document.getElementById('accScreenName').innerText = currentUserName;
@@ -1260,46 +1277,46 @@ app.get('/', (req, res) => {
                     } else {
                         let noticeBar = "";
                         if (daysPassed >= 27) {
-                            noticeBar = \`<div style="font-size:9px; color:var(--accent-gold); font-weight:bold; margin-bottom:2px;">অভিনন্দন! আপনার প্যাকেজ ২৭ দিন হয়েছে। আর ৩ দিন পর কয়েন কনভার্ট হবে।</div>\`;
+                            noticeBar = `<div style="font-size:9px; color:var(--accent-gold); font-weight:bold; margin-bottom:2px;">অভিনন্দন! আপনার প্যাকেজ ২৭ দিন হয়েছে। আর ৩ দিন পর কয়েন কনভার্ট হবে।</div>`;
                         }
 
-                        html += \`
-                            <div class="pkg-card \${p.tier}" style="border-color: var(--accent-green);">
+                        html += `
+                            <div class="pkg-card ${p.tier}" style="border-color: var(--accent-green);">
                                 <div>
-                                    <div class="pkg-title">\${p.title} \${crownHtml}</div>
-                                    <div class="pkg-price">৳ \${p.price}</div>
-                                    <div class="pkg-rate">মাইন রেট: \${p.rate}</div>
+                                    <div class="pkg-title">${p.title}${crownHtml}</div>
+                                    <div class="pkg-price">৳ ${p.price}</div>
+                                    <div class="pkg-rate">মাইন রেট: ${p.rate}</div>
                                 </div>
                                 <div>
-                                    \${noticeBar}
+                                    ${noticeBar}
                                     <div class="pkg-active-status">
                                         <div style="font-weight:bold; font-size:11px;">প্যাকেজ আনলক আছে!</div>
-                                        <div style="font-size:9px; color:var(--text-main);">মেয়াদ বাকি: \${daysLeft} দিন</div>
-                                        <div style="font-size:10px; font-weight:bold; color:var(--accent-gold); margin-top:2px;">আর্নিং: \${formatCoinNumber(isPurchased.earnedCoins)} RS</div>
+                                        <div style="font-size:9px; color:var(--text-main);">মেয়াদ বাকি: ${daysLeft} দিন</div>
+                                        <div style="font-size:10px; font-weight:bold; color:var(--accent-gold); margin-top:2px;">আর্নিং: ${formatCoinNumber(isPurchased.earnedCoins)} RS</div>
                                     </div>
                                 </div>
                             </div>
-                        \`;
+                        `;
                         return;
                     }
                 }
 
-                html += \`
-                    <div class="pkg-card \${p.tier}">
+                html += `
+                    <div class="pkg-card ${p.tier}">
                         <div>
-                            <div class="pkg-title">\${p.title} \${crownHtml}</div>
-                            <div class="pkg-price">৳ \${p.price}</div>
-                            <div class="pkg-rate">মাইন রেট: \${p.rate}</div>
+                            <div class="pkg-title">${p.title}${crownHtml}</div>
+                            <div class="pkg-price">৳ ${p.price}</div>
+                            <div class="pkg-rate">মাইন রেট: ${p.rate}</div>
                         </div>
-                        <button class="pkg-btn" onclick="buyPackageViaDeposit(\${p.price}, '\${p.title}')">ডিপোজিট করে আনলক</button>
+                        <button class="pkg-btn" onclick="buyPackageViaDeposit(${p.price}, '${p.title}')">ডিপোজিট করে আনলক</button>
                     </div>
-                \`;
+                `;
             });
             container.innerHTML = html;
         }
 
         function buyPackageViaDeposit(price, title) {
-            document.getElementById('pkgPopupMsg').innerText = \`⚠️ নিয়ম অনুযায়ী অ্যাকাউন্ট ব্যালেন্স দিয়ে প্যাকেজ কেনা যায় না। '\${title}' (৳\${price}) কিনতে সরাসরি ডিপোজিট করুন।\`;
+            document.getElementById('pkgPopupMsg').innerText = `⚠️ নিয়ম অনুযায়ী অ্যাকাউন্ট ব্যালেন্স দিয়ে প্যাকেজ কেনা যায় না। '${title}' (৳${price}) কিনতে সরাসরি ডিপোজিট করুন।`;
             openModal('pkgDepositPopupModal');
             document.getElementById('depositInputAmt').value = price;
         }
@@ -1309,7 +1326,7 @@ app.get('/', (req, res) => {
             pendingPkgToUnlock = pkg;
             let earned = purchasedPackages[pkg.id] ? purchasedPackages[pkg.id].earnedCoins : 50000;
             document.getElementById('calcPkgTitle').innerText = pkg.title + " - ৩০ দিন পূর্ণ হয়েছে!";
-            document.getElementById('calcDetailsText').innerHTML = \`আপনার প্যাকেজ থেকে মোট <b>\${formatCoinNumber(earned)} RS</b> কয়েন অর্জিত হয়েছে।<br>১ মিলিয়ন আরএস কয়েনের বর্তমান রেট অনুযায়ী এটি বাংলা টাকায় কনভার্ট হয়ে মূল অ্যাকাউন্টে যোগ হবে এবং প্যাকেজটি স্বয়ংক্রিয়ভাবে পুনরায় আনলক হবে।\`;
+            document.getElementById('calcDetailsText').innerHTML = `আপনার প্যাকেজ থেকে মোট <b>${formatCoinNumber(earned)} RS</b> কয়েন অর্জিত হয়েছে।<br>১ মিলিয়ন আরএস কয়েনের বর্তমান রেট অনুযায়ী এটি বাংলা টাকায় কনভার্ট হয়ে মূল অ্যাকাউন্টে যোগ হবে এবং প্যাকেজটি স্বয়ংক্রিয়ভাবে পুনরায় আনলক হবে।`;
             openModal('calculatorModal');
         }
 
@@ -1327,20 +1344,7 @@ app.get('/', (req, res) => {
                 
                 updateAccountStatsUI();
                 closeModal('calculatorModal');
-                alert(\`🎉 সফল! কয়েন সফলভাবে কনভার্ট হয়ে ৳\${convertedBDT} আপনার মূল ব্যালেন্সে যোগ হয়েছে এবং প্যাকেজটি রিনিউ ও আনলক হয়েছে।\`);
-            }
-        }
-
-        function switchTab(tabName, el) {
-            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            
-            const targetView = document.getElementById(tabName + 'View');
-            if(targetView) {
-                targetView.classList.add('active');
-            }
-            if(el) {
-                el.classList.add('active');
+                alert(`🎉 সফল! কয়েন সফলভাবে কনভার্ট হয়ে ৳${convertedBDT} আপনার মূল ব্যালেন্সে যোগ হয়েছে এবং প্যাকেজটি রিনিউ ও আনলক হয়েছে।`);
             }
         }
 
@@ -1393,7 +1397,7 @@ app.get('/', (req, res) => {
 
         function shareToSocial(platform) {
             const link = document.getElementById('refLinkInput').value;
-            alert(\`\${platform.toUpperCase()} এ অফিসিয়াল ইমেজ ও রেফারেল লিংক শেয়ারের জন্য প্রস্তুত: \${link}\`);
+            alert(`${platform.toUpperCase()} এ অফিসিয়াল ইমেজ ও রেফারেল লিংক শেয়ারের জন্য প্রস্তুত: ${link}`);
         }
 
         function copyDepositNumber() {
@@ -1473,7 +1477,7 @@ app.get('/', (req, res) => {
 
         function isValidTrxId(trx) {
             if (!trx || trx.length < 4) return false;
-            if (/^\\d+$/.test(trx)) return false;
+            if (/^\d+$/.test(trx)) return false;
             return true;
         }
 
@@ -1485,7 +1489,7 @@ app.get('/', (req, res) => {
             
             if(isNaN(amt) || amt < 200 || amt > 3000) { alert('⚠️ ডিপোজিট সীমা ২০০ টাকা থেকে ৩০০০ টাকার মধ্যে হতে হবে।'); return; }
             if(!isValidTrxId(trx)) { alert('❌ সঠিক TrxID প্রদান করুন!'); return; }
-            if(!lastDigits || lastDigits.length !== 3 || !/^\\d+$/.test(lastDigits)) {
+            if(!lastDigits || lastDigits.length !== 3 || !/\d+/.test(lastDigits)) {
                 alert('⚠️ আপনি দয়া করে পেমেন্ট মেথডের লাস্ট ৩ নাম্বার সঠিকভাবে লিখুন।');
                 return;
             }
@@ -1506,7 +1510,7 @@ app.get('/', (req, res) => {
                 purchasedPackages[targetPkgPrice] = { startTime: startTime, expireTime: expireTime, earnedCoins: 0 };
             }
 
-            alert(\`✅ সফল! \${method} মাধ্যমে ৳\${amt} ডিপোজিট রিকোয়েস্ট পেন্ডিং আছে এবং প্যাকেজ আনলক প্রক্রিয়ায় রয়েছে।\`);
+            alert(`✅ সফল! ${method} মাধ্যমে ৳${amt} ডিপোজিট রিকোয়েস্ট পেন্ডিং আছে এবং প্যাকেজ আনলক প্রক্রিয়ায় রয়েছে।`);
             closeModal('depositModal');
             document.getElementById('depositInputAmt').value = '';
             document.getElementById('depositTrxId').value = '';
@@ -1520,7 +1524,7 @@ app.get('/', (req, res) => {
 
             if(isNaN(amt) || amt < 300 || amt > 5000) { alert('⚠️ উইথড্র সীমা ৩০০ টাকা থেকে ৫০০০ টাকার মধ্যে হতে হবে।'); return; }
             if(amt > userBalance) { alert('❌ অ্যাকাউন্টে পর্যাপ্ত ব্যালেন্স নেই!'); return; }
-            if(!phone || phone.length !== 11 || !/^\\d+$/.test(phone)) { alert('❌ সঠিক ১১ ডিজিটের নম্বর দিন।'); return; }
+            if(!phone || phone.length !== 11 || !/\d+/.test(phone)) { alert('❌ সঠিক ১১ ডিজিটের নম্বর দিন।'); return; }
 
             userBalance -= amt;
             pendingAmount += amt;
@@ -1532,7 +1536,7 @@ app.get('/', (req, res) => {
             renderHistoryLists();
             renderAdminLiveLists();
 
-            alert(\`✅ উইথড্র রিকোয়েস্ট সফল! \${method}-এর মাধ্যমে ৳\${amt} পেন্ডিং আছে।\`);
+            alert(`✅ উইথড্র রিকোয়েস্ট সফল! ${method}-এর মাধ্যমে ৳${amt} পেন্ডিং আছে।`);
             closeModal('withdrawModal');
             document.getElementById('withdrawInputAmt').value = '';
             document.getElementById('withdrawPhone').value = '';
@@ -1549,22 +1553,22 @@ app.get('/', (req, res) => {
             
             document.getElementById('adminStatPendingCount').innerText = (pendingDeps.length + userWithdrawHistory.filter(w => w.status === 'Pending').length) + ' টি';
             document.getElementById('adminStatSuccessCount').innerText = (successDepsCount + successWdsCount) + ' টি';
-            document.getElementById('adminStatTodayEarn').innerText = \`৳ \${todayEarnAmount}\`;
+            document.getElementById('adminStatTodayEarn').innerText = `৳ ${todayEarnAmount}`;
 
             if(pendingDeps.length === 0) {
                 depListEl.innerHTML = '<p style="font-size: 10px; color: var(--text-muted); text-align: center;">কোনো পেন্ডিং ডিপোজিট নেই</p>';
             } else {
                 let html = '';
                 pendingDeps.forEach((d, idx) => {
-                    html += \`
+                    html += `
                         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; background: rgba(30,41,59,0.7); padding: 6px 8px; border-radius: 8px; margin-bottom: 6px;">
-                            <span style="color:var(--text-main);">\${d.user}: ৳\${d.amt} [\${d.method}] [Trx: \${d.trx}]<br><b style="color:var(--accent-gold);">ইউজারের লাস্ট ৩ সংখ্যা: \${d.lastDigits}</b></span>
+                            <span style="color:var(--text-main);">${d.user}: ৳${d.amt} [${d.method}] [Trx:${d.trx}]<br><b style="color:var(--accent-gold);">ইউজারের লাস্ট ৩ সংখ্যা: ${d.lastDigits}</b></span>
                             <div style="display:flex; gap:4px;">
-                                <button class="tr-btn" style="padding: 3px 6px; font-size: 9px;" onclick="navigator.clipboard.writeText('\${d.trx}'); alert('কপি হয়েছে');">কপি</button>
-                                <button class="tr-btn" style="padding: 3px 6px; font-size: 9px; background: var(--accent-green); color:#fff;" onclick="approveDeposit(\${idx})">সাবমিট</button>
+                                <button class="tr-btn" style="padding: 3px 6px; font-size: 9px;" onclick="navigator.clipboard.writeText('${d.trx}'); alert('কপি হয়েছে');">কপি</button>
+                                <button class="tr-btn" style="padding: 3px 6px; font-size: 9px; background: var(--accent-green); color:#fff;" onclick="approveDeposit(${idx})">সাবমিট</button>
                             </div>
                         </div>
-                    \`;
+                    `;
                 });
                 depListEl.innerHTML = html;
             }
@@ -1575,15 +1579,15 @@ app.get('/', (req, res) => {
             } else {
                 let html = '';
                 pendingWds.forEach((w, idx) => {
-                    html += \`
+                    html += `
                         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; background: rgba(30,41,59,0.7); padding: 6px 8px; border-radius: 8px; margin-bottom: 6px;">
-                            <span style="color:var(--text-main);">\${w.user}: ৳\${w.amt} [Ph: \${w.phone}]</span>
+                            <span style="color:var(--text-main);">${w.user}: ৳${w.amt} [Ph:${w.phone}]</span>
                             <div style="display:flex; gap:4px;">
-                                <button class="tr-btn" style="padding: 3px 6px; font-size: 9px;" onclick="navigator.clipboard.writeText('\${w.phone}'); alert('কপি হয়েছে');">কপি</button>
-                                <button class="tr-btn" style="padding: 3px 6px; font-size: 9px; background: var(--accent-green); color:#fff;" onclick="approveWithdraw(\${idx})">সাবমিট</button>
+                                <button class="tr-btn" style="padding: 3px 6px; font-size: 9px;" onclick="navigator.clipboard.writeText('${w.phone}'); alert('কপি হয়েছে');">কপি</button>
+                                <button class="tr-btn" style="padding: 3px 6px; font-size: 9px; background: var(--accent-green); color:#fff;" onclick="approveWithdraw(${idx})">সাবমিট</button>
                             </div>
                         </div>
-                    \`;
+                    `;
                 });
                 wdListEl.innerHTML = html;
             }
@@ -1621,7 +1625,7 @@ app.get('/', (req, res) => {
         function verifyAdminTransaction() {
             let val = document.getElementById('adminUserSearch').value.trim();
             if(!val) { alert('দয়া করে নম্বর বা TrxID দিন।'); return; }
-            alert(\`✅ সফল! "\${val}" ভেরিফাই ও কনফার্ম করা হয়েছে।\`);
+            alert(`✅ সফল! "${val}" ভেরিফাই ও কনফার্ম করা হয়েছে।`);
             document.getElementById('adminUserSearch').value = '';
         }
 
@@ -1632,7 +1636,7 @@ app.get('/', (req, res) => {
             } else {
                 let html = '';
                 userDepositHistory.forEach(item => {
-                    html += \`<div class="ticker-item"><span class="t-dep">📥 (\${item.method}): +৳ \${item.amt.toLocaleString()} [লাস্ট ৩ ডিজিট: \${item.lastDigits}]</span><span style="font-size:9px; color:var(--accent-gold);">\${item.status}</span></div>\`;
+                    html += `<div class="ticker-item"><span class="t-dep">📥 (${item.method}): +৳ ${item.amt.toLocaleString()} [লাস্ট ৩ ডিজিট: ${item.lastDigits}]</span><span style="font-size:9px; color:var(--accent-gold);">${item.status}</span></div>`;
                 });
                 depContent.innerHTML = html;
             }
@@ -1643,7 +1647,7 @@ app.get('/', (req, res) => {
             } else {
                 let html = '';
                 userWithdrawHistory.forEach(item => {
-                    html += \`<div class="ticker-item"><span class="t-wd">📤 (\${item.method}): -৳ \${item.amt.toLocaleString()}</span><span style="font-size:9px; color:var(--accent-gold);">\${item.status}</span></div>\`;
+                    html += `<div class="ticker-item"><span class="t-wd">📤 (${item.method}): -৳ ${item.amt.toLocaleString()}</span><span style="font-size:9px; color:var(--accent-gold);">${item.status}</span></div>`;
                 });
                 wdContent.innerHTML = html;
             }
@@ -1670,10 +1674,10 @@ app.get('/', (req, res) => {
             let nameList = isFemale ? femaleNames : maleNames;
             let fName = nameList[i % nameList.length];
             let lName = ["Smith", "Johnson", "Brown", "Taylor", "Miller", "Wilson", "Moore", "Clark", "Hall"][i % 9];
-            let fullName = \`\${fName} \${lName}\`;
+            let fullName = `${fName}${lName}`;
             let score = 50000 - (i * 350) + Math.floor(Math.random() * 200);
             let rsCoinEarned = Math.floor(Math.random() * 5000) + 500;
-            let avatarUrl = \`https://i.pravatar.cc/100?img=\${(i % 70) + 1}\`;
+            let avatarUrl = `https://i.pravatar.cc/100?img=${(i % 70) + 1}`;
             usersData.push({ rank: i, name: fullName, score: score, rsCoins: rsCoinEarned, avatar: avatarUrl });
         }
 
@@ -1691,54 +1695,54 @@ app.get('/', (req, res) => {
             usersData.forEach((u, index) => u.rank = index + 1);
 
             let top3HTML = '';
-            top3HTML += \`
+            top3HTML += `
                 <div class="podium-col" style="border-color: #3b82f6;">
                     <div class="crown">👑</div>
-                    <div class="p-ava" style="border-color: #3b82f6;"><img src="\${usersData[1].avatar}" alt="2"></div>
-                    <h5 style="font-size: 11px;">\${usersData[1].name}</h5>
-                    <p style="font-size: 9px; color: var(--accent-green);">৳ \${usersData[1].score.toLocaleString()}</p>
-                    <p style="font-size: 8px; color: var(--accent-gold);">🪙 \${formatCoinNumber(usersData[1].rsCoins)} RS</p>
+                    <div class="p-ava" style="border-color: #3b82f6;"><img src="${usersData[1].avatar}" alt="2"></div>
+                    <h5 style="font-size: 11px;">${usersData[1].name}</h5>
+                    <p style="font-size: 9px; color: var(--accent-green);">৳ ${usersData[1].score.toLocaleString()}</p>
+                    <p style="font-size: 8px; color: var(--accent-gold);">🪙 ${formatCoinNumber(usersData[1].rsCoins)} RS</p>
                     <span style="font-size: 9px; background: #3b82f6; padding: 1px 6px; border-radius: 8px; margin-top: 4px; display: inline-block;">#২</span>
                 </div>
-            \`;
-            top3HTML += \`
+            `;
+            top3HTML += `
                 <div class="podium-col rank-1">
                     <div class="crown" style="font-size: 24px;">👑</div>
-                    <div class="p-ava" style="border-color: var(--accent-gold); box-shadow: 0 0 15px var(--accent-gold);"><img src="\${usersData[0].avatar}" alt="1"></div>
-                    <h5 style="font-size: 12px; color: var(--accent-gold); font-weight: bold;">\${usersData[0].name}</h5>
-                    <p style="font-size: 10px; color: var(--accent-green);">৳ \${usersData[0].score.toLocaleString()}</p>
-                    <p style="font-size: 9px; color: var(--accent-gold);">🪙 \${formatCoinNumber(usersData[0].rsCoins)} RS</p>
+                    <div class="p-ava" style="border-color: var(--accent-gold); box-shadow: 0 0 15px var(--accent-gold);"><img src="${usersData[0].avatar}" alt="1"></div>
+                    <h5 style="font-size: 12px; color: var(--accent-gold); font-weight: bold;">${usersData[0].name}</h5>
+                    <p style="font-size: 10px; color: var(--accent-green);">৳ ${usersData[0].score.toLocaleString()}</p>
+                    <p style="font-size: 9px; color: var(--accent-gold);">🪙 ${formatCoinNumber(usersData[0].rsCoins)} RS</p>
                     <span style="font-size: 9px; background: var(--accent-gold); color: #000; padding: 1px 6px; border-radius: 8px; margin-top: 4px; display: inline-block; font-weight: bold;">#১</span>
                 </div>
-            \`;
-            top3HTML += \`
+            `;
+            top3HTML += `
                 <div class="podium-col" style="border-color: #b45309;">
                     <div class="crown">👑</div>
-                    <div class="p-ava" style="border-color: #b45309;"><img src="\${usersData[2].avatar}" alt="3"></div>
-                    <h5 style="font-size: 11px;">\${usersData[2].name}</h5>
-                    <p style="font-size: 9px; color: var(--accent-green);">৳ \${usersData[2].score.toLocaleString()}</p>
-                    <p style="font-size: 8px; color: var(--accent-gold);">🪙 \${formatCoinNumber(usersData[2].rsCoins)} RS</p>
+                    <div class="p-ava" style="border-color: #b45309;"><img src="${usersData[2].avatar}" alt="3"></div>
+                    <h5 style="font-size: 11px;">${usersData[2].name}</h5>
+                    <p style="font-size: 9px; color: var(--accent-green);">৳ ${usersData[2].score.toLocaleString()}</p>
+                    <p style="font-size: 8px; color: var(--accent-gold);">🪙 ${formatCoinNumber(usersData[2].rsCoins)} RS</p>
                     <span style="font-size: 9px; background: #b45309; padding: 1px 6px; border-radius: 8px; margin-top: 4px; display: inline-block;">#৩</span>
                 </div>
-            \`;
+            `;
             document.getElementById('podiumTop3Container').innerHTML = top3HTML;
 
             let remainingHTML = '';
             for(let i = 3; i < usersData.length; i++) {
                 let u = usersData[i];
-                remainingHTML += \`
+                remainingHTML += `
                     <div class="transaction-row">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 11px; font-weight: bold; color: var(--accent-blue);">#\${u.rank}</span>
-                            <img src="\${u.avatar}" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
+                            <span style="font-size: 11px; font-weight: bold; color: var(--accent-blue);">#${u.rank}</span>
+                            <img src="${u.avatar}" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
                             <div>
-                                <span style="font-size: 12px; display: block;">\${u.name}</span>
-                                <span style="font-size: 9px; color: var(--accent-gold);">🪙 \${formatCoinNumber(u.rsCoins)} RS Collected</span>
+                                <span style="font-size: 12px; display: block;">${u.name}</span>
+                                <span style="font-size: 9px; color: var(--accent-gold);">🪙 ${formatCoinNumber(u.rsCoins)} RS Collected</span>
                             </div>
                         </div>
-                        <span style="font-size: 12px; color: var(--accent-green); font-weight: bold;">৳ \${u.score.toLocaleString()}</span>
+                        <span style="font-size: 12px; color: var(--accent-green); font-weight: bold;">৳ ${u.score.toLocaleString()}</span>
                     </div>
-                \`;
+                `;
             }
             document.getElementById('rankingListContainer').innerHTML = remainingHTML;
         }
