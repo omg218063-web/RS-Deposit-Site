@@ -37,7 +37,7 @@ app.get('/api/tasks', (req, res) => {
     res.json(defaultTasks);
 });
 
-// Main Frontend Route (Serves the entire 1500+ lines HTML UI directly)
+// Main Frontend Route (Serves the entire UI directly)
 app.get('/', (req, res) => {
     res.send(`<!DOCTYPE html>
 <html lang="bn">
@@ -89,6 +89,33 @@ app.get('/', (req, res) => {
             display: flex;
             flex-direction: column;
             height: 94vh;
+        }
+
+        /* Auth Screen Styling */
+        #authScreen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--card-bg);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 25px;
+            text-align: center;
+        }
+        .auth-logo {
+            font-size: 28px; font-weight: bold; color: var(--accent-gold);
+            margin-bottom: 5px; text-shadow: 0 0 15px rgba(251,191,36,0.4);
+        }
+        .auth-subtitle {
+            font-size: 11px; color: var(--text-muted); margin-bottom: 20px;
+        }
+        .auth-form-group {
+            width: 100%; margin-bottom: 12px; text-align: left;
+        }
+        .auth-form-group label {
+            font-size: 10px; color: var(--text-muted); margin-bottom: 4px; display: block;
         }
 
         .top-user-bar {
@@ -477,6 +504,31 @@ app.get('/', (req, res) => {
 </head>
 <body>
 
+    <!-- Authentication / Registration Screen -->
+    <div id="authScreen">
+        <div class="auth-logo">RS Growth Matrix</div>
+        <div class="auth-subtitle">নিরাপদ আর্নিং ও মাইনিং প্ল্যাটফর্ম ২০২৬</div>
+        <div style="background: rgba(30,41,59,0.5); border: 1px solid var(--card-border); border-radius: 16px; padding: 18px; width: 100%;">
+            <h4 style="font-size: 13px; color: var(--accent-gold); margin-bottom: 12px;" id="authTitle">রেজিস্ট্রেশন বা সাইন-আপ</h4>
+            
+            <div class="auth-form-group">
+                <label>আপনার নাম:</label>
+                <input type="text" id="authNameInput" class="form-control" placeholder="যেমন: Rakibul Islam" style="margin-top:0;">
+            </div>
+            <div class="auth-form-group">
+                <label>আপনার জিমেইল (Gmail):</label>
+                <input type="email" id="authEmailInput" class="form-control" placeholder="example@gmail.com" style="margin-top:0;">
+            </div>
+            <div class="auth-form-group">
+                <label>নিরাপত্তা ভেরিফিকেশন কোড (৪ ডিজিট): <b style="color:var(--accent-green);" id="captchaCodeDisplay">4829</b></label>
+                <input type="text" id="authCaptchaInput" class="form-control" placeholder="উপরের কোডটি লিখুন" style="margin-top:0;">
+            </div>
+
+            <button class="banner-btn" style="width:100%; justify-content:center; margin-top:10px; background:var(--accent-green); color:#fff;" onclick="handleUserRegister()">অ্যাকাউন্ট ভেরিফাই ও প্রবেশ করুন</button>
+            <p style="font-size: 10px; color: var(--text-muted); margin-top: 10px;">জিমেইল দিয়ে সাইন-আপ করলে আপনার অ্যাকাউন্ট স্বয়ংক্রিয়ভাবে ভেরিফাই হয়ে যাবে।</p>
+        </div>
+    </div>
+
     <div class="container">
         <div class="top-user-bar">
             <div class="user-left">
@@ -489,7 +541,7 @@ app.get('/', (req, res) => {
                 </div>
                 <div class="user-info">
                     <h3 id="headerName" onclick="openEditProfileModal()" style="cursor: pointer;" title="এডিট করতে ক্লিক করুন">Rakibul Islam ✏️</h3>
-                    <p>👑 VIP Member</p>
+                    <p style="display:flex; align-items:center; gap:3px;">👑 VIP Member <span style="background:var(--accent-green); color:white; font-size:8px; padding:1px 4px; border-radius:4px;">Verified ✓</span></p>
                 </div>
             </div>
             <div class="balance-pill">
@@ -601,7 +653,7 @@ app.get('/', (req, res) => {
         <div id="supportView" class="view-section">
             <div class="support-banner">
                 <div style="font-size: 28px; position: relative;">
-                    💻
+                    👩‍💼
                     <span style="position: absolute; bottom: 0; right: -4px; width: 12px; height: 12px; background: var(--accent-green); border-radius: 50%; border: 2px solid #0f172a; display: flex; align-items: center; justify-content: center; font-size: 8px; color: white;">✓</span>
                 </div>
                 <div>
@@ -718,6 +770,7 @@ app.get('/', (req, res) => {
         </div>
     </div>
 
+    <!-- Modals -->
     <div class="modal" id="taskDetailModal">
         <div class="modal-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -929,9 +982,45 @@ app.get('/', (req, res) => {
     </div>
 
     <script>
-        let currentUserName = localStorage.getItem('rs_username') || "Rakibul Islam";
+        let currentUserName = localStorage.getItem('rs_username') || "";
         let currentUserAvatar = localStorage.getItem('rs_avatar') || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces";
         
+        // Check Authentication on load
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!currentUserName) {
+                document.getElementById('authScreen').style.display = 'flex';
+            } else {
+                document.getElementById('authScreen').style.display = 'none';
+            }
+        });
+
+        function handleUserRegister() {
+            let name = document.getElementById('authNameInput').value.trim();
+            let email = document.getElementById('authEmailInput').value.trim();
+            let captcha = document.getElementById('authCaptchaInput').value.trim();
+
+            if (!name || !email) {
+                alert('⚠️ দয়া করে আপনার নাম এবং জিমেইল প্রদান করুন।');
+                return;
+            }
+            if (!email.includes('@gmail.com')) {
+                alert('❌ সঠিক জিমেইল অ্যাকাউন্ট (Gmail) দিন!');
+                return;
+            }
+            if (captcha !== "4829") {
+                alert('❌ নিরাপত্তা ভেরিফিকেশন কোড ভুল হয়েছে! সঠিক কোডটি দিন।');
+                return;
+            }
+
+            currentUserName = name;
+            localStorage.setItem('rs_username', currentUserName);
+            localStorage.setItem('rs_email', email);
+            
+            document.getElementById('authScreen').style.display = 'none';
+            updateAccountStatsUI();
+            alert('✅ অ্যাকাউন্ট সফলভাবে ভেরিফাই ও রেজিস্টার্ড হয়েছে!');
+        }
+
         let userBalance = parseFloat(localStorage.getItem('rs_balance'));
         if(isNaN(userBalance)) {
             userBalance = 25.00;
@@ -1114,8 +1203,8 @@ app.get('/', (req, res) => {
             document.getElementById('statTodayEarn').innerText = \`৳ \${todayEarnAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\`;
             document.getElementById('statRefEarn').innerText = \`৳ \${referralEarnAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\`;
             
-            document.getElementById('headerName').innerText = currentUserName + " ✏️";
-            document.getElementById('accScreenName').innerText = currentUserName;
+            document.getElementById('headerName').innerText = (currentUserName || "Rakibul Islam") + " ✏️";
+            document.getElementById('accScreenName').innerText = currentUserName || "Rakibul Islam";
             document.getElementById('headerAvatar').src = currentUserAvatar;
             document.getElementById('accScreenAvatar').src = currentUserAvatar;
             renderPackagesUI();
