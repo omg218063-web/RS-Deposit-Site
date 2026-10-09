@@ -339,6 +339,7 @@ app.get('/', (req, res) => {
         .ref-banner {
             background: linear-gradient(135deg, #1e1b4b, #312e81); border: 1px solid rgba(168, 85, 247, 0.4);
             border-radius: 18px; padding: 16px; text-align: center; margin-bottom: 15px;
+            box-shadow: 0 10px 25px rgba(168, 85, 247, 0.15);
         }
         .ref-input-box {
             display: flex; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--card-border);
@@ -346,18 +347,22 @@ app.get('/', (req, res) => {
         }
         .social-share-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
         .ss-btn {
-            background: rgba(30, 41, 59, 0.8); border: 1px solid var(--card-border); border-radius: 10px;
-            padding: 8px; text-align: center; font-size: 11px; cursor: pointer; color: var(--text-main);
-            display: flex; align-items: center; justify-content: center; gap: 4px;
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(51, 65, 85, 0.8)); 
+            border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px;
+            padding: 10px 6px; text-align: center; font-size: 11px; cursor: pointer; color: var(--text-main);
+            display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 500;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
+        .ss-btn:hover { border-color: var(--accent-purple); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(168, 85, 247, 0.25); }
 
         .live-ticker-box-large {
             background: radial-gradient(circle, rgba(30,41,59,0.95) 0%, rgba(15,23,42,0.98) 100%);
             border: 1px solid var(--accent-purple); border-radius: 16px; padding: 12px; margin-top: 15px;
-            height: 160px; overflow: hidden; position: relative;
+            height: 180px; overflow: hidden; position: relative;
         }
         .ticker-list {
-            display: flex; flex-direction: column; gap: 8px; animation: scrollTicker 16s linear infinite;
+            display: flex; flex-direction: column; gap: 8px; animation: scrollTicker 8s linear infinite;
         }
         .ticker-list:hover { animation-play-state: paused; }
         @keyframes scrollTicker {
@@ -582,10 +587,29 @@ app.get('/', (req, res) => {
         </div>
 
         <div id="tasksView" class="view-section">
-            <div class="section-heading"><span>⚡ সার্ভার ও মাইক্রো জবস লাইভ টাস্ক</span> <span style="font-size: 10px; color: var(--accent-green);">● সার্ভার থেকে লোডকৃত</span></div>
+            <div class="section-heading"><span>⚡ Offerwall.gg লাইভ টাস্ক সেন্টার (৫০ টি টাস্ক)</span> <span style="font-size: 10px; color: var(--accent-green);">● সার্ভার লাইভ</span></div>
             
-            <div id="microJobsListContainer">
-                <p style="font-size: 11px; color: var(--text-muted); text-align: center;">সার্ভার থেকে টাস্ক লোড করা হচ্ছে...</p>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px;">
+                <div class="acc-stat-card" style="padding: 6px 2px; background: rgba(56,189,248,0.1); border-color: var(--accent-blue);">
+                    <div style="font-size: 9px; color: var(--text-muted);">টোটাল টাস্ক</div>
+                    <div style="font-size: 11px; font-weight: bold; color: var(--accent-blue);" id="taskStatTotal">50</div>
+                </div>
+                <div class="acc-stat-card" style="padding: 6px 2px; background: rgba(251,191,36,0.1); border-color: var(--accent-gold);">
+                    <div style="font-size: 9px; color: var(--text-muted);">পেন্ডিং</div>
+                    <div style="font-size: 11px; font-weight: bold; color: var(--accent-gold);" id="taskStatPending">0</div>
+                </div>
+                <div class="acc-stat-card" style="padding: 6px 2px; background: rgba(34,197,94,0.1); border-color: var(--accent-green);">
+                    <div style="font-size: 9px; color: var(--text-muted);">সফল</div>
+                    <div style="font-size: 11px; font-weight: bold; color: var(--accent-green);" id="taskStatSuccess">0</div>
+                </div>
+                <div class="acc-stat-card" style="padding: 6px 2px; background: rgba(239,68,68,0.1); border-color: #ef4444;">
+                    <div style="font-size: 9px; color: var(--text-muted);">রিজেক্ট</div>
+                    <div style="font-size: 11px; font-weight: bold; color: #ef4444;" id="taskStatReject">0</div>
+                </div>
+            </div>
+
+            <div id="microJobsListContainer" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                <p style="font-size: 11px; color: var(--text-muted); text-align: center; grid-column: span 2;">সার্ভার থেকে টাস্ক লোড করা হচ্ছে...</p>
             </div>
         </div>
 
@@ -642,21 +666,24 @@ app.get('/', (req, res) => {
         <div id="referralView" class="view-section">
             <div class="ref-banner">
                 <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">আজীবন ৩% কমিশন ও ইনস্ট্যান্ট ১০০ আরএস কয়েন</h3>
-                <p style="font-size: 11px; color: #cbd5e1;">অফিসিয়াল সোশ্যাল মিডিয়া (TikTok, Facebook, YouTube) ইমেজ ব্যবহার করে রেফার করুন।</p>
+                <p style="font-size: 11px; color: #cbd5e1;">অফিসিয়াল সোশ্যাল মিডিয়া ইমেজ ও লিংক ব্যবহার করে রেফার করুন।</p>
                 <div class="ref-input-box">
                     <input type="text" id="refLinkInput" value="https://rs.taptoearn.app/ref/RS12345" readonly style="background:transparent; border:none; color:white; font-size:11px; width:100%; outline:none; padding-left:4px;">
                     <button class="tr-btn" onclick="copyRefLink()">কপি</button>
                 </div>
                 <div class="social-share-row">
-                    <div class="ss-btn" onclick="alert('টিকটক অফিশিয়াল ইমেজ শেয়ার লিংক কপি হয়েছে')">🎵 টিকটক</div>
-                    <div class="ss-btn" onclick="alert('ফেসবুক অফিশিয়াল ইমেজ শেয়ার লিংক কপি হয়েছে')">📘 ফেসবুক</div>
-                    <div class="ss-btn" onclick="alert('ইউটিউব অফিশিয়াল ইমেজ শেয়ার লিংক কপি হয়েছে')">▶️ ইউটিউব</div>
+                    <div class="ss-btn" onclick="shareToSocial('youtube')">▶️ ইউটিউব</div>
+                    <div class="ss-btn" onclick="shareToSocial('facebook')">📘 ফেসবুক</div>
+                    <div class="ss-btn" onclick="shareToSocial('tiktok')">🎵 টিকটক</div>
+                    <div class="ss-btn" onclick="shareToSocial('whatsapp')">💬 হোয়াটসঅ্যাপ</div>
+                    <div class="ss-btn" onclick="shareToSocial('imo')">📞 ইমো</div>
+                    <div class="ss-btn" onclick="shareToSocial('messenger')">⚡ মেসেঞ্জার</div>
                 </div>
             </div>
 
-            <div class="section-heading"><span>🎁 লাইভ রেফারেল ফিড</span></div>
+            <div class="section-heading"><span>🎁 প্রিমিয়াম লাইভ রেফারেল ফিড</span></div>
             <div class="live-ticker-box-large">
-                <div class="ticker-list">
+                <div class="ticker-list" id="referralTickerListContainer">
                     <div class="ticker-item"><span class="t-ref">🎁 SAJIB_07 রেফারেল সম্পন্ন করে +100 কয়েন বোনাস পেয়েছে</span><span style="font-size:9px; color:var(--text-muted)">১মিঃ আগে</span></div>
                     <div class="ticker-item"><span class="t-ref">🔥 Nayeem_99 রেফারেল সম্পন্ন করে +100 কয়েন বোনাস পেয়েছে</span><span style="font-size:9px; color:var(--text-muted)">৩মিঃ আগে</span></div>
                 </div>
@@ -708,11 +735,12 @@ app.get('/', (req, res) => {
             <button class="banner-btn" style="width:100%; justify-content:center; background:rgba(34, 197, 94, 0.2); color:var(--accent-green); border:1px solid var(--accent-green); margin-bottom:8px;" onclick="openModal('depositHistoryModal')">📋 রিয়েল ডিপোজিট হিস্ট্রি</button>
             <button class="banner-btn" style="width:100%; justify-content:center; background:rgba(239, 68, 68, 0.2); color:#ef4444; border:1px solid #ef4444; margin-bottom:15px;" onclick="openModal('withdrawHistoryModal')">📋 রিয়েল উইথড্র হিস্ট্রি</button>
 
-            <div class="section-heading" style="margin-top: 15px;"><span>🌐 গ্লোবাল লাইভ ট্রানজেকশন ফিড</span></div>
-            <div class="live-ticker-box-large">
-                <div class="ticker-list" id="globalLiveTickerList">
+            <div class="section-heading" style="margin-top: 15px;"><span>🌐 গ্লোবাল লাইভ ট্রানজেকশন ফিড (দ্রুত ও আপডেট)</span></div>
+            <div class="live-ticker-box-large" style="height: 200px;">
+                <div class="ticker-list" id="globalLiveTickerList" style="animation-duration: 4s;">
                     <div class="ticker-item"><span class="t-dep">📥 ডিপোজিট (বিকাশ): +৳ ১,০০০.০০ (Success)</span><span style="font-size:9px; color:var(--text-muted)">017****94</span></div>
                     <div class="ticker-item"><span class="t-wd">📤 উইথড্র (নগদ): -৳ ৫০০.০০ (Success)</span><span style="font-size:9px; color:var(--text-muted)">018****22</span></div>
+                    <div class="ticker-item"><span class="t-bon">🎁 বোনাস (ডেইলি চেক-ইন): +৳ ১০.০০</span><span style="font-size:9px; color:var(--text-muted)">019****55</span></div>
                 </div>
             </div>
         </div>
@@ -734,7 +762,7 @@ app.get('/', (req, res) => {
             <label style="font-size: 10px; color: var(--text-muted); display: block; margin-top: 6px;">কাজের প্রমাণ (Proof / Text / Username) জমা দিন:</label>
             <textarea id="taskProofInput" class="form-control" rows="3" placeholder="আপনার প্রুফ বা বিস্তারিত এখানে লিখুন..." style="margin-top:4px; margin-bottom:12px; resize:none; font-size:11px;"></textarea>
             
-            <button class="banner-btn" style="width:100%; justify-content:center; background:var(--accent-green); color:#fff;" onclick="submitTaskProof()">প্রুফ সাবমিট করুন (+<span id="modalTaskRewardSpan">0</span> RS)</button>
+            <button class="banner-btn" style="width:100%; justify-content:center; background:var(--accent-green); color:#fff;" onclick="submitTaskProof()">প্রুফ সাবমিট করুন (পেন্ডিং এ যাবে)</button>
         </div>
     </div>
 
@@ -828,6 +856,9 @@ app.get('/', (req, res) => {
             
             <label style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">ট্রানজাকশন আইডি (TrxID):</label>
             <input type="text" id="depositTrxId" class="form-control" placeholder="যেমন: 7A3B2C1D4E">
+
+            <label style="font-size: 10px; color: var(--text-muted); margin-top: 6px;">পেমেন্ট মেথড নম্বরের শেষ ৩ ডিজিট লিখুন:</label>
+            <input type="text" id="depositLastThreeDigits" class="form-control" maxlength="3" placeholder="যেমন: ৪৬০" style="border-color: var(--accent-gold);">
             
             <button class="banner-btn" style="width:100%; justify-content:center; margin-top:12px; background:var(--accent-green); color:#fff;" onclick="submitDeposit()">ডিপোজিট নিশ্চিত করুন</button>
         </div>
@@ -948,36 +979,41 @@ app.get('/', (req, res) => {
         let purchasedPackages = JSON.parse(localStorage.getItem('rs_purchased_packages')) || {};
 
         let microJobsList = [];
+        let taskStats = { total: 50, pending: 0, success: 0, reject: 0 };
 
         async function fetchServerTasks() {
             try {
                 const response = await fetch('/api/tasks');
                 const data = await response.json();
+                let baseTasks = [];
                 if(data && data.length > 0) {
-                    microJobsList = data.map((t, idx) => ({
-                        id: t._id || idx + 1,
-                        title: t.title || \`MicroTask #\${idx + 1}\`,
-                        reward: t.reward || 50,
-                        icon: "📋",
-                        color: "#38bdf8",
-                        desc: t.description || "সার্ভার থেকে প্রাপ্ত টাস্ক বিবরণী। নির্দেশিকা অনুযায়ী কাজ সম্পন্ন করুন।",
-                        link: "https://youtube.com/@SproutGigsTaskOfficial"
-                    }));
+                    baseTasks = data;
                 } else {
-                    loadDefaultFallbackTasks();
+                    baseTasks = [
+                        {_id: 1, title: "YouTube Channel Subscribe & Watch", reward: 50, description: "১. লিংকে ক্লিক করে সাবস্ক্রাইব করুন।\n২. ভিডিওটি সম্পূর্ণ লাইক দিন।"},
+                        {_id: 2, title: "Facebook Page Like & Follow", reward: 40, description: "১. পেজে লাইক ও ফলো করুন।"}
+                    ];
+                }
+
+                // Generate 50 tasks based on offerwall list
+                microJobsList = [];
+                for(let i = 1; i <= 50; i++) {
+                    let sample = baseTasks[(i - 1) % baseTasks.length];
+                    microJobsList.push({
+                        id: i,
+                        title: \`Offerwall Task #\${i}: \${sample.title}\`,
+                        reward: sample.reward || (20 + (i % 30)),
+                        icon: i % 2 === 0 ? "▶️" : "📘",
+                        color: i % 2 === 0 ? "#FF0000" : "#1877F2",
+                        desc: sample.description || "নির্দেশিকা অনুযায়ী টাস্কটি সম্পন্ন করুন।",
+                        link: "https://offerwall.gg/task/redirect/" + i,
+                        status: 'available' // available, pending, success, reject
+                    });
                 }
             } catch (err) {
-                console.error("Backend fetch error, loading fallback tasks:", err);
-                loadDefaultFallbackTasks();
+                console.error("Backend fetch error:", err);
             }
             renderMicroJobsUI();
-        }
-
-        function loadDefaultFallbackTasks() {
-            microJobsList = [
-                {id: 1, title: "MicroTask #1: YouTube Channel Subscribe & Watch", reward: 50, icon: "▶️", color: "#FF0000", desc: "১. দেওয়া লিংকে ক্লিক করে ইউটিউব চ্যানেল সাবস্ক্রাইব করুন।\\n২. ভিডিওটি সম্পূর্ণ দেখে একটি লাইক দিন।\\n৩. আপনার ইউটিউব ইউজারনেম প্রুফ হিসেবে নিচে লিখুন।", link: "https://youtube.com/@SproutGigsTaskOfficial"},
-                {id: 2, title: "MicroTask #2: Facebook Page Like & Follow", reward: 40, icon: "📘", color: "#1877F2", desc: "১. ফেসবুক পেজে প্রবেশ করে লাইক ও ফলো করুন।\\n২. আপনার ফেসবুক প্রোফাইল লিংক বা নাম প্রুফ দিন।", link: "https://facebook.com/SproutGigsOfficialTask"}
-            ];
         }
 
         let selectedActiveTask = null;
@@ -986,18 +1022,29 @@ app.get('/', (req, res) => {
             const container = document.getElementById('microJobsListContainer');
             if(!container) return;
 
+            let availableTasks = microJobsList.filter(t => t.status === 'available');
+            document.getElementById('taskStatTotal').innerText = availableTasks.length;
+            document.getElementById('taskStatPending').innerText = microJobsList.filter(t => t.status === 'pending').length;
+            document.getElementById('taskStatSuccess').innerText = microJobsList.filter(t => t.status === 'success').length;
+            document.getElementById('taskStatReject').innerText = microJobsList.filter(t => t.status === 'reject').length;
+
+            if(availableTasks.length === 0) {
+                container.innerHTML = '<p style="font-size: 11px; color: var(--text-muted); text-align: center; grid-column: span 2;">আজকের সব টাস্ক সম্পন্ন হয়েছে! ২৪ ঘণ্টা পর নতুন টাস্ক আসবে।</p>';
+                return;
+            }
+
             let html = '';
-            microJobsList.forEach(t => {
+            availableTasks.forEach(t => {
                 html += \`
-                    <div class="task-row-card">
-                        <div class="tr-left">
-                            <div class="tr-icon" style="background: rgba(56, 189, 248, 0.2); color: var(--accent-blue);">\${t.icon}</div>
-                            <div class="tr-info">
-                                <h4>\${t.title} <span style="color: var(--accent-gold); font-size: 10px;">+\${t.reward} RS</span></h4>
-                                <p>মাইক্রো জবস টাস্ক</p>
+                    <div class="task-row-card" style="margin-bottom:0; flex-direction:column; align-items:flex-start; gap:8px;">
+                        <div class="tr-left" style="width:100%;">
+                            <div class="tr-icon" style="background: rgba(56, 189, 248, 0.2); color: var(--accent-blue); width:32px; height:32px; font-size:14px;">\${t.icon}</div>
+                            <div class="tr-info" style="flex:1; overflow:hidden;">
+                                <h4 style="font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">\${t.title}</h4>
+                                <p style="color:var(--accent-gold); font-size:10px;">+\${t.reward} RS (Pending on server)</p>
                             </div>
                         </div>
-                        <button class="tr-btn" onclick="openTaskDetails('\${t.id}')">কাজ করুন</button>
+                        <button class="tr-btn" style="width:100%; padding:4px; font-size:10px;" onclick="openTaskDetails(\${t.id})">কাজ করুন</button>
                     </div>
                 \`;
             });
@@ -1012,7 +1059,6 @@ app.get('/', (req, res) => {
             document.getElementById('modalTaskDesc').innerText = selectedActiveTask.desc;
             document.getElementById('modalTaskLink').href = selectedActiveTask.link;
             document.getElementById('modalTaskLink').innerText = selectedActiveTask.link;
-            document.getElementById('modalTaskRewardSpan').innerText = selectedActiveTask.reward;
             document.getElementById('taskProofInput').value = '';
 
             openModal('taskDetailModal');
@@ -1026,14 +1072,25 @@ app.get('/', (req, res) => {
             }
 
             if(selectedActiveTask) {
-                userBalance += selectedActiveTask.reward;
-                todayEarnAmount += selectedActiveTask.reward;
-                totalTransactionsCount += 1;
-                updateAccountStatsUI();
-                alert(\`🎉 অভিনন্দন! আপনার টাস্কের প্রুফ সফলভাবে জমা হয়েছে এবং অ্যাকাউন্টে +\${selectedActiveTask.reward} ৳ যোগ হয়েছে!\`);
+                selectedActiveTask.status = 'pending';
+                renderMicroJobsUI();
+                alert('⏳ টাস্ক প্রুফ সফলভাবে সার্ভারে জমা হয়েছে এবং এটি বর্তমানে পেন্ডিং (Pending) অবস্থায় রয়েছে। ডেভেলপমেন্ট সাইট থেকে কলব্যাক আসার পর ব্যালেন্স যোগ হবে।');
                 closeModal('taskDetailModal');
             }
         }
+
+        // Simulate Callback from Offerwall Development Backend after some time or manual simulation
+        setTimeout(() => {
+            let pendingTask = microJobsList.find(t => t.status === 'pending');
+            if(pendingTask) {
+                pendingTask.status = 'success';
+                userBalance += pendingTask.reward;
+                rsCoins += pendingTask.reward;
+                todayEarnAmount += pendingTask.reward;
+                updateAccountStatsUI();
+                renderMicroJobsUI();
+            }
+        }, 15000);
 
         function claimDailyTask() {
             let lastClaimTime = parseInt(localStorage.getItem('rs_last_daily_claim')) || 0;
@@ -1259,6 +1316,11 @@ app.get('/', (req, res) => {
             alert('রেফারেল লিংক সফলভাবে কপি করা হয়েছে!');
         }
 
+        function shareToSocial(platform) {
+            const link = document.getElementById('refLinkInput').value;
+            alert(\`\${platform.toUpperCase()} এ অফিসিয়াল ইমেজ ও রেফারেল লিংক শেয়ারের জন্য প্রস্তুত: \${link}\`);
+        }
+
         function copyDepositNumber() {
             const num = document.getElementById('depositSendNumber').innerText;
             navigator.clipboard.writeText(num);
@@ -1286,10 +1348,10 @@ app.get('/', (req, res) => {
             const descEl = document.getElementById('supportPopupDesc');
             if(type === 'deposit') {
                 titleEl.innerText = "💳 ডিপোজিট সংক্রান্ত সমস্যা ও সমাধান";
-                descEl.innerText = "১. ডিপোজিট সীমা ২০০ থেকে ৩০০০ টাকা।\\n২. সঠিক TrxID প্রদান করুন।";
+                descEl.innerText = "১. ডিপোজিট সীমা ২০০ থেকে ৩০০০ টাকা।\n২. সঠিক TrxID ও পেমেন্ট নম্বরের শেষ ৩ ডিজিট প্রদান করুন।";
             } else if(type === 'withdraw') {
                 titleEl.innerText = "🏦 উইথড্র সংক্রান্ত সমস্যা ও সমাধান";
-                descEl.innerText = "১. উইথড্র সীমা ৩০০ থেকে ৫০০০ টাকা।\\n২. অ্যাকাউন্টে নির্দিষ্ট পরিমাণের বেশি ব্যালেন্স থাকতে হবে।";
+                descEl.innerText = "১. উইথড্র সীমা ৩০০ থেকে ৫০০০ টাকা।\n২. অ্যাকাউন্টে নির্দিষ্ট পরিমাণের বেশি ব্যালেন্স থাকতে হবে।";
             } else if(type === 'bonus') {
                 titleEl.innerText = "🎁 বোনাস সংক্রান্ত তথ্য";
                 descEl.innerText = "১. রেফারেল ইনস্ট্যান্ট ১০০ কয়েন ও আজীবন ৩% কমিশন।";
@@ -1305,7 +1367,7 @@ app.get('/', (req, res) => {
             if(!txt) { alert('দয়া করে আপনার সমস্যাটি লিখুন।'); return; }
             
             const chatContainer = document.getElementById('chatBoxContainer');
-            const userMsgDiv = document.createElement('div');
+            let userMsgDiv = document.createElement('div');
             userMsgDiv.className = 'chat-msg user';
             userMsgDiv.innerText = txt;
             chatContainer.appendChild(userMsgDiv);
@@ -1313,7 +1375,7 @@ app.get('/', (req, res) => {
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
             setTimeout(() => {
-                const supportMsgDiv = document.createElement('div');
+                let supportMsgDiv = document.createElement('div');
                 supportMsgDiv.className = 'chat-msg support';
                 supportMsgDiv.innerText = "আমাদের এই মুহূর্তে কাস্টমার কেয়ারে অনেক পরিমাণ কাস্টমানের চাপ আছে। আপনারা কিছুক্ষণ পরে আবার মেসেজ করুন।";
                 chatContainer.appendChild(supportMsgDiv);
@@ -1352,14 +1414,19 @@ app.get('/', (req, res) => {
             const method = document.getElementById('depositMethodSelect').value;
             const amt = parseFloat(document.getElementById('depositInputAmt').value);
             const trx = document.getElementById('depositTrxId').value.trim();
+            const lastDigits = document.getElementById('depositLastThreeDigits').value.trim();
             
             if(isNaN(amt) || amt < 200 || amt > 3000) { alert('⚠️ ডিপোজিট সীমা ২০০ টাকা থেকে ৩০০০ টাকার মধ্যে হতে হবে।'); return; }
-            if(!isValidTrxId(trx)) { alert('❌ ভুল TrxID!'); return; }
+            if(!isValidTrxId(trx)) { alert('❌ সঠিক TrxID প্রদান করুন!'); return; }
+            if(!lastDigits || lastDigits.length !== 3 || !/^\\d+$/.test(lastDigits)) {
+                alert('⚠️ আপনি দয়া করে পেমেন্ট মেথডের লাস্ট ৩ নাম্বার সঠিকভাবে লিখুন।');
+                return;
+            }
 
             pendingAmount += amt;
             totalTransactionsCount += 1;
 
-            const newTx = { method, amt, trx, status: 'Pending', time: 'Just now', user: currentUserName };
+            const newTx = { method, amt, trx, lastDigits, status: 'Pending', time: 'Just now', user: currentUserName };
             userDepositHistory.unshift(newTx);
             updateAccountStatsUI();
             renderHistoryLists();
@@ -1369,6 +1436,7 @@ app.get('/', (req, res) => {
             closeModal('depositModal');
             document.getElementById('depositInputAmt').value = '';
             document.getElementById('depositTrxId').value = '';
+            document.getElementById('depositLastThreeDigits').value = '';
         }
 
         function submitWithdraw() {
@@ -1416,7 +1484,7 @@ app.get('/', (req, res) => {
                 pendingDeps.forEach((d, idx) => {
                     html += \`
                         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; background: rgba(30,41,59,0.7); padding: 6px 8px; border-radius: 8px; margin-bottom: 6px;">
-                            <span style="color:var(--text-main);">\${d.user}: ৳\${d.amt} [Trx: \${d.trx}]</span>
+                            <span style="color:var(--text-main);">\${d.user}: ৳\${d.amt} [\${d.method}] [Trx: \large\${d.trx}]<br><b style="color:var(--accent-gold);">ইউজারের লাস্ট ৩ সংখ্যা: \${d.lastDigits}</b></span>
                             <div style="display:flex; gap:4px;">
                                 <button class="tr-btn" style="padding: 3px 6px; font-size: 9px;" onclick="navigator.clipboard.writeText('\${d.trx}'); alert('কপি হয়েছে');">কপি</button>
                                 <button class="tr-btn" style="padding: 3px 6px; font-size: 9px; background: var(--accent-green); color:#fff;" onclick="approveDeposit(\${idx})">সাবমিট</button>
@@ -1490,7 +1558,7 @@ app.get('/', (req, res) => {
             } else {
                 let html = '';
                 userDepositHistory.forEach(item => {
-                    html += \`<div class="ticker-item"><span class="t-dep">📥 (\${item.method}): +৳ \${item.amt.toLocaleString()}</span><span style="font-size:9px; color:var(--accent-gold);">\${item.status}</span></div>\`;
+                    html += \`<div class="ticker-item"><span class="t-dep">📥 (\${item.method}): +৳ \${item.amt.toLocaleString()} [লাস্ট ৩ ডিজিট: \${item.lastDigits}]</span><span style="font-size:9px; color:var(--accent-gold);">\${item.status}</span></div>\`;
                 });
                 depContent.innerHTML = html;
             }
