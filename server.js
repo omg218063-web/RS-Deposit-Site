@@ -118,7 +118,7 @@ async function fetchOffers(uid) {
   if (!OW_KEY || !OW_SECRET) return [];
   const r = await fetch('https://offerwall.gg/api/v1/offers?appId=' + OW_KEY + '&userId=' + encodeURIComponent(uid) + '&limit=100', { headers: { 'X-Api-Key': OW_SECRET } });
   const j = await r.json();
-  const arr = Array.isArray(j) ? j : (j.offers || j.data || j.items || []);
+   const arr = Array.isArray(j) ? j : ((j.data && j.data.offers) || j.offers || (Array.isArray(j.data) ? j.data : []));
   return arr.map(o => {
     const coins = +pick(o, ['currencyAmount', 'rewardAmount', 'reward', 'coins', 'amount', 'payout']) || 0;
     return { id: String(pick(o, ['id', 'offerId']) || ''), title: String(pick(o, ['name', 'title', 'offerName']) || 'Offer').slice(0, 80), icon: String(pick(o, ['iconUrl', 'icon', 'imageUrl', 'image', 'thumbnail']) || ''), clickUrl: pick(o, ['clickUrl', 'url']), bdt: bdtFor(coins / 100) };
