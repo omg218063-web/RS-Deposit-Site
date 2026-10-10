@@ -536,7 +536,7 @@ app.get('/', (req, res) => {
 </head>
 <body>
 
-    <!-- Authentication Screen -->
+    <!-- Authentication Screen (Updated & Fixed Registration with regName) -->
     <div id="authScreen">
         <div class="auth-logo-circle">RS</div>
         <div class="auth-logo-title">RS Growth Matrix</div>
@@ -548,7 +548,7 @@ app.get('/', (req, res) => {
                 <div class="ast-btn" id="tabLoginBtn" onclick="switchAuthMode('login')">লগইন</div>
             </div>
 
-            <!-- Registration Form -->
+            <!-- Registration Form Section -->
             <div id="registrationFormSection">
                 <div class="auth-form-group">
                     <label>আপনার নাম:</label>
@@ -565,7 +565,7 @@ app.get('/', (req, res) => {
                 <button type="button" class="banner-btn" style="width:100%; justify-content:center; margin-top:8px; background:var(--accent-green); color:#fff;" onclick="submitManualRegistration()">রেজিস্ট্রেশন কনফার্ম করুন</button>
             </div>
 
-            <!-- Login Form -->
+            <!-- Login Form Section -->
             <div id="loginFormSection" style="display: none;">
                 <div class="auth-form-group">
                     <label>আপনার মোবাইল নম্বর:</label>
