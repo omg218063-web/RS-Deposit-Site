@@ -4,12 +4,28 @@ const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
+
+// ❤️ নিচের ৬টা জিনিস কোডে কিছু লিখতে হবে না। Render → Environment এ এই নামগুলো দিয়ে বসান:
+// ❤️ SECRET = যেকোনো লম্বা গোপন লেখা (ইউজারের লগইন সুরক্ষিত রাখে)
 const SECRET = process.env.SECRET || crypto.randomBytes(32).toString('hex');
+// ❤️ ADMIN_PASSWORD = আপনার নিজের এডমিন পাসওয়ার্ড (Render Environment এ দিন, এখানে লিখবেন না)
 const ADMIN_PASS = process.env.ADMIN_PASSWORD || '';
+// ❤️ GOOGLE_CLIENT_ID = Google Cloud Console থেকে পাওয়া Client ID (Render Environment এ দিন)
 const GID = process.env.GOOGLE_CLIENT_ID || '';
-const REF_BONUS = 10, DAILY = 30, CHECKIN = 10, MIN_WD = 300, MAX_WD = 5000;
+// ❤️ OFFERWALL_KEY = অফারওয়ালের Public key (Render Environment এ দিন)
+const OW_KEY = process.env.OFFERWALL_KEY || '';
+// ❤️ OFFERWALL_SECRET = অফারওয়ালের নতুন Secret key (Render Environment এ দিন, কাউকে দেখাবেন না)
+const OW_SECRET = process.env.OFFERWALL_SECRET || '';
+// ❤️ BDT_PER_USD = ১ ডলারের কত টাকা ধরবেন। কিছু না দিলে ১২০ ধরা হবে (Render Environment এ দিতে পারেন)
+const RATE = Number(process.env.BDT_PER_USD) || 120;
+
+// ❤️ নিচের সংখ্যাগুলো আপনি এখানেই বদলাতে পারবেন:
+// ❤️ REF_BONUS = কেউ রেফার করলে বোনাস (টাকা), DAILY = ডেইলি টাস্কের বোনাস, CHECKIN = চেক-ইন বোনাস
+// ❤️ MIN_WD / MAX_WD = উইথড্রের সর্বনিম্ন ও সর্বোচ্চ টাকা, SLOTS = প্রতিদিন কয়টা টাস্ক দেখাবে
+const REF_BONUS = 10, DAILY = 30, CHECKIN = 10, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
 app.use(express.json({ limit: '100kb' }));
 
+// ❤️ MONGO_URI = আপনার ডাটাবেসের লিংক। এটা আগে থেকেই Render Environment এ আছে, আবার দিতে হবে না।
 if (!process.env.MONGO_URI) console.error('MONGO_URI is not set: accounts cannot be saved.');
 else mongoose.connect(process.env.MONGO_URI).then(() => console.log('MongoDB connected')).catch(e => console.error('MongoDB error:', e.message));
 
@@ -19,17 +35,12 @@ const User = mongoose.model('User', new mongoose.Schema({
   balance: { type: Number, default: 0 }, earned: { type: Number, default: 0 },
   refCode: { type: String, unique: true }, refBy: String,
   refEarn: { type: Number, default: 0 }, refCount: { type: Number, default: 0 },
-  lastDaily: { type: Number, default: 0 }, lastCheckin: String, created: { type: Date, default: Date.now }
+  lastDaily: { type: Number, default: 0 }, lastCheckin: String, lastSeen: Number, created: { type: Date, default: Date.now }
 }));
-const Sub = mongoose.model('Sub', new mongoose.Schema({ uid: String, name: String, taskId: Number, reward: Number, proof: String, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
+const Click = mongoose.model('Click', new mongoose.Schema({ uid: String, offerId: String, title: String, icon: String, bdt: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now }, doneAt: Number }));
+const Conv = mongoose.model('Conv', new mongoose.Schema({ key: { type: String, unique: true }, uid: String, tx: String, bdt: Number, status: String, at: { type: Date, default: Date.now } }));
 const Wd = mongoose.model('Wd', new mongoose.Schema({ uid: String, name: String, amount: Number, method: String, phone: String, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
 const Msg = mongoose.model('Msg', new mongoose.Schema({ uid: String, name: String, from: String, text: String, at: { type: Date, default: Date.now } }));
-
-// Replace the links below with your real task links.
-const TASKS = [
-  { id: 1, title: 'Subscribe to our YouTube channel', reward: 50, link: 'https://youtube.com/@SproutGigsTaskOfficial', desc: '1. Open the link and subscribe.\n2. Watch the video and like it.\n3. Write your YouTube username as proof.' },
-  { id: 2, title: 'Like and follow our Facebook page', reward: 40, link: 'https://facebook.com/SproutGigsOfficialTask', desc: '1. Open the page, like it and follow it.\n2. Write your Facebook profile name or link as proof.' }
-];
 
 const h = fn => (q, s) => fn(q, s).catch(e => { console.error(e); s.status(500).json({ error: 'Server error. Please try again.' }); });
 const bad = (s, m, c) => s.status(c || 400).json({ error: m });
@@ -40,6 +51,8 @@ const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.fr
 const today = () => new Date().toISOString().slice(0, 10);
 const credit = (id, n) => User.updateOne({ _id: id }, { $inc: { balance: n, earned: n } });
 const me = u => ({ name: u.name, phone: u.phone || '', email: u.email || '', balance: u.balance, earned: u.earned, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, checkedIn: u.lastCheckin === today() });
+// ❤️ নিচের লাইনে ইউজারের ভাগ ঠিক করা আছে: ১ ডলারের বেশি হলে ০.৫ (৫০%), ১ ডলার বা কম হলে ০.৭ (৭০%)। বদলাতে চাইলে এই দুটো সংখ্যা বদলান।
+const bdtFor = usd => Math.round(usd * RATE * (usd > 1 ? 0.5 : 0.7) * 100) / 100;
 
 const auth = async (req, res, next) => {
   try {
@@ -47,6 +60,7 @@ const auth = async (req, res, next) => {
     if (!sig || !same(sig, hmac(id + '.' + exp)) || +exp < Date.now()) throw 0;
     req.user = await User.findById(id);
     if (!req.user) throw 0;
+    if (!req.user.lastSeen || Date.now() - req.user.lastSeen > 3e5) User.updateOne({ _id: id }, { lastSeen: Date.now() }).catch(() => {});
     next();
   } catch (e) { bad(res, 'Please log in again.', 401); }
 };
@@ -98,21 +112,73 @@ app.post('/api/google', h(async (q, s) => {
 
 app.get('/api/me', auth, (q, s) => s.json(me(q.user)));
 
-app.get('/api/tasks', auth, h(async (q, s) => {
-  const subs = await Sub.find({ uid: q.user.id });
-  s.json(TASKS.map(t => { const x = subs.filter(v => v.taskId === t.id && v.status !== 'rejected')[0]; return { ...t, status: x ? x.status : 'open' }; }));
+// ---------- Offerwall ----------
+const pick = (o, ks) => { for (const k of ks) if (o[k] != null && o[k] !== '') return o[k]; };
+async function fetchOffers(uid) {
+  if (!OW_KEY || !OW_SECRET) return [];
+  const r = await fetch('https://offerwall.gg/api/v1/offers?appId=' + OW_KEY + '&userId=' + encodeURIComponent(uid) + '&limit=100', { headers: { 'X-Api-Key': OW_SECRET } });
+  const j = await r.json();
+  const arr = Array.isArray(j) ? j : (j.offers || j.data || j.items || []);
+  return arr.map(o => {
+    const coins = +pick(o, ['currencyAmount', 'rewardAmount', 'reward', 'coins', 'amount', 'payout']) || 0;
+    return { id: String(pick(o, ['id', 'offerId']) || ''), title: String(pick(o, ['name', 'title', 'offerName']) || 'Offer').slice(0, 80), icon: String(pick(o, ['iconUrl', 'icon', 'imageUrl', 'image', 'thumbnail']) || ''), clickUrl: pick(o, ['clickUrl', 'url']), bdt: bdtFor(coins / 100) };
+  }).filter(o => o.id && o.clickUrl);
+}
+
+app.get('/api/offers', auth, h(async (q, s) => {
+  const now = Date.now(), day = 864e5;
+  const clicks = await Click.find({ uid: q.user.id });
+  const used = clicks.filter(c => c.status === 'pending' || (c.status === 'success' && c.doneAt > now - day));
+  const blocked = new Set(clicks.filter(c => c.status === 'success' || c.status === 'pending').map(c => c.offerId));
+  const offers = await fetchOffers(q.user.id);
+  const free = offers.filter(o => !blocked.has(o.id)).slice(0, Math.max(0, SLOTS - used.length));
+  const list = used.map(c => ({ id: c.offerId, title: c.title, icon: c.icon, bdt: c.bdt, status: c.status })).concat(free.map(o => ({ id: o.id, title: o.title, icon: o.icon, bdt: o.bdt, status: 'open' })));
+  const n = st => clicks.filter(c => c.status === st).length;
+  s.json({ stats: { pending: n('pending'), success: n('success'), cancelled: n('cancelled'), total: list.length }, list });
 }));
 
-app.post('/api/tasks/:id/submit', auth, h(async (q, s) => {
-  const t = TASKS.find(v => v.id === +q.params.id);
-  const proof = String((q.body || {}).proof || '').trim().slice(0, 300);
-  if (!t) return bad(s, 'Task not found.', 404);
-  if (!proof) return bad(s, 'Please enter your proof.');
-  if (await Sub.exists({ uid: q.user.id, taskId: t.id, status: { $in: ['pending', 'approved'] } })) return bad(s, 'You already submitted this task.');
-  await Sub.create({ uid: q.user.id, name: q.user.name, taskId: t.id, reward: t.reward, proof });
-  s.json({ ok: true });
+app.post('/api/offers/:id/start', auth, h(async (q, s) => {
+  const clicks = await Click.find({ uid: q.user.id });
+  const now = Date.now();
+  const used = clicks.filter(c => c.status === 'pending' || (c.status === 'success' && c.doneAt > now - 864e5));
+  if (clicks.some(c => c.offerId === q.params.id && (c.status === 'success'))) return bad(s, 'You already completed this task.');
+  const o = (await fetchOffers(q.user.id)).find(x => x.id === q.params.id);
+  if (!o) return bad(s, 'This task is no longer available.', 404);
+  const mine = used.find(c => c.offerId === o.id);
+  if (!mine) {
+    if (used.length >= SLOTS) return bad(s, 'Daily task limit reached. New tasks arrive after 24 hours.');
+    await Click.create({ uid: q.user.id, offerId: o.id, title: o.title, icon: o.icon, bdt: o.bdt });
+  }
+  s.json({ url: o.clickUrl });
 }));
 
+// ❤️ এই অংশে কিছু বদলাতে হবে না। অফারওয়াল টাস্ক শেষ হলে নিজে এই ঠিকানায় খবর পাঠায় (Postback)।
+app.get('/api/offerwall', h(async (q, s) => {
+  const { user, tx, amount, status, offerId, offer, test, sig } = q.query;
+  if (!OW_SECRET || !user || !tx || amount == null || !sig) return bad(s, 'bad request', 400);
+  const exp = crypto.createHmac('sha256', OW_SECRET).update(user + ':' + tx + ':' + amount).digest('hex');
+  if (!same(String(sig), exp)) return bad(s, 'invalid signature', 403);
+  if (test === '1') return s.send('ok');
+  const coins = +amount;
+  if (!isFinite(coins) || !mongoose.isValidObjectId(user)) return s.send('ok');
+  const neg = coins < 0 || status === 'reversed';
+  const bdt = bdtFor(Math.abs(coins) / 100);
+  try { await Conv.create({ key: tx + ':' + (neg ? 'rev' : 'cr'), uid: user, tx, bdt: neg ? -bdt : bdt, status: neg ? 'reversed' : 'credited' }); }
+  catch (e) { if (e.code === 11000) return s.send('ok'); throw e; }
+  if (!(await User.exists({ _id: user }))) return s.send('ok');
+  const oid = String(offerId || tx);
+  if (neg) {
+    await User.updateOne({ _id: user }, { $inc: { balance: -bdt, earned: -bdt } });
+    await Click.findOneAndUpdate({ uid: user, offerId: oid, status: { $in: ['success', 'pending'] } }, { status: 'cancelled' });
+  } else {
+    await credit(user, bdt);
+    const c = await Click.findOneAndUpdate({ uid: user, offerId: oid, status: 'pending' }, { $set: { status: 'success', doneAt: Date.now(), bdt } });
+    if (!c) await Click.create({ uid: user, offerId: oid, title: String(offer || 'Task').slice(0, 80), bdt, status: 'success', doneAt: Date.now() });
+  }
+  s.send('ok');
+}));
+
+// ---------- Rewards, ranking, withdraw, support ----------
 app.post('/api/daily', auth, h(async (q, s) => {
   const r = await User.findOneAndUpdate({ _id: q.user.id, lastDaily: { $lte: Date.now() - 864e5 } }, { $set: { lastDaily: Date.now() }, $inc: { balance: DAILY, earned: DAILY } }, { new: true });
   if (!r) return bad(s, 'You already claimed today. Come back in 24 hours.');
@@ -152,15 +218,19 @@ app.post('/api/support', auth, h(async (q, s) => {
   s.json({ ok: true });
 }));
 
-app.get('/api/admin/data', admin, h(async (q, s) => s.json({
-  subs: await Sub.find({ status: 'pending' }).sort({ at: 1 }).limit(50),
-  wds: await Wd.find({ status: 'pending' }).sort({ at: 1 }).limit(50),
-  msgs: await Msg.find({ from: 'user' }).sort({ at: -1 }).limit(30)
-})));
-app.post('/api/admin/sub/:id', admin, h(async (q, s) => {
-  const x = await Sub.findOneAndUpdate({ _id: q.params.id, status: 'pending' }, { status: q.body.ok ? 'approved' : 'rejected' });
-  if (x && q.body.ok) await credit(x.uid, x.reward);
-  s.json({ ok: true });
+// ---------- Admin ----------
+app.get('/api/admin/data', admin, h(async (q, s) => {
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  const sum = async (M, match, f) => { const r = await M.aggregate([{ $match: match }, { $group: { _id: null, t: { $sum: '$' + f } } }]); return r.length ? r[0].t : 0; };
+  s.json({
+    stats: {
+      users: await User.countDocuments(), active: await User.countDocuments({ lastSeen: { $gt: Date.now() - 864e5 } }),
+      pending: await Click.countDocuments({ status: 'pending' }), success: await Click.countDocuments({ status: 'success' }), cancelled: await Click.countDocuments({ status: 'cancelled' }),
+      today: await sum(Conv, { at: { $gte: start } }, 'bdt'), balance: await sum(User, {}, 'balance')
+    },
+    wds: await Wd.find({ status: 'pending' }).sort({ at: 1 }).limit(50),
+    msgs: await Msg.find({ from: 'user' }).sort({ at: -1 }).limit(30)
+  });
 }));
 app.post('/api/admin/wd/:id', admin, h(async (q, s) => {
   const x = await Wd.findOneAndUpdate({ _id: q.params.id, status: 'pending' }, { status: q.body.ok ? 'paid' : 'rejected' });
@@ -171,6 +241,11 @@ app.post('/api/admin/reply', admin, h(async (q, s) => {
   const u = await User.findById(q.body.uid);
   if (u && q.body.text) await Msg.create({ uid: u.id, name: u.name, from: 'support', text: String(q.body.text).slice(0, 500) });
   s.json({ ok: true });
+}));
+app.get('/api/admin/offers-raw', admin, h(async (q, s) => {
+  if (!OW_KEY || !OW_SECRET) return s.json({ text: 'OFFERWALL_KEY or OFFERWALL_SECRET is not set in Environment.' });
+  const r = await fetch('https://offerwall.gg/api/v1/offers?appId=' + OW_KEY + '&userId=admin-test&limit=2', { headers: { 'X-Api-Key': OW_SECRET } });
+  s.json({ text: 'HTTP ' + r.status + '\n' + (await r.text()).slice(0, 1500) });
 }));
 
 const PAGE = `<!DOCTYPE html>
@@ -205,20 +280,21 @@ main{flex:1;overflow-y:auto;padding:14px}
 .row small{display:block;color:var(--mu);font-size:11px;margin-top:2px}
 h3{font-size:13px;color:var(--mu);margin:4px 0 10px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.stat{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}.stat b{display:block;font-size:16px;color:var(--gold)}.stat small{font-size:11px;color:var(--mu)}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stat{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}.stat b{display:block;font-size:16px;color:var(--gold)}.stat small{font-size:11px;color:var(--mu)}
 .pod{display:flex;gap:8px;align-items:flex-end;margin-bottom:14px}
 .pod div{flex:1;text-align:center;border-radius:16px;padding:14px 6px;background:#131d38;border:1px solid var(--line);font-size:12px}
 .pod .p1{border-color:var(--gold);padding-bottom:26px;background:linear-gradient(180deg,rgba(251,191,36,.18),#131d38)}
 .pod b{display:block;color:var(--gold);font-size:14px;margin-top:4px}
 .chip{font-size:10px;padding:3px 8px;border-radius:10px;background:#1e293b;color:var(--gold)}
-.chip.approved,.chip.paid{color:var(--grn)}.chip.rejected{color:var(--red)}
+.chip.approved,.chip.paid{color:var(--grn)}.chip.rejected,.chip.cancelled{color:var(--red)}
 .share{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .share a,.share button{display:block;text-align:center;background:#1e293b;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:12px;color:var(--tx);text-decoration:none;cursor:pointer}
 .chat{max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .m{padding:8px 12px;border-radius:12px;font-size:13px;max-width:85%}.m.user{background:#1e293b;align-self:flex-end}.m.support{background:#172554;color:var(--blu);align-self:flex-start}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center;padding:14px}
 .modal>div{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;width:100%;max-width:410px;max-height:90vh;overflow-y:auto}
-pre{white-space:pre-wrap;font-size:12px;color:#e2e8f0;line-height:1.5;margin:8px 0}
+pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-height:1.5;margin:8px 0}
 .err{color:var(--red);font-size:12px;margin-top:8px;min-height:14px}
 </style></head><body>
 <div class="app">
@@ -276,17 +352,19 @@ function vHome(){var ok=Date.now()-ME.lastDaily>=864e5;
  $('main').innerHTML='<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
  '<h3>Today</h3><div class="row"><div>Daily task<small>Claim once every 24 hours</small></div><button class="btn s" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed')+'</button></div>'+
  '<div class="row"><div>Daily check-in<small>Login bonus, once per day</small></div><button class="btn s" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done':'Check in')+'</button></div>'+
- '<div class="row"><div>Micro tasks<small>Subscribe, follow, and earn</small></div><button class="btn s" onclick="go(\\'tasks\\')">Open</button></div>'+
+ '<div class="row"><div>Live tasks<small>Complete offers and earn</small></div><button class="btn s" onclick="go(\\'tasks\\')">Open</button></div>'+
  '<div class="row"><div>Invite friends<small>Earn a bonus for every signup</small></div><button class="btn s" onclick="go(\\'ref\\')">Invite</button></div>'}
 function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added to your balance.')}).catch(function(e){toast(e.message)})}
-function vTasks(){$('main').innerHTML='<h3>Micro tasks</h3><div id="tl">Loading...</div>';
- api('tasks').then(function(a){window.TK=a;$('tl').innerHTML=a.map(function(t){var b=t.status==='open'?'<button class="btn s" onclick="openT('+t.id+')">Start</button>':'<span class="chip '+t.status+'">'+t.status+'</span>';
- return '<div class="row"><div>'+esc(t.title)+'<small>Reward: '+t.reward+' BDT</small></div>'+b+'</div>'}).join('')}).catch(function(e){$('tl').textContent=e.message})}
+function vTasks(){$('main').innerHTML='<div class="grid4" id="st"></div><h3>Live tasks</h3><div id="tl">Loading...</div>';
+ function load(){api('offers').then(function(d){var s=d.stats;if(!$('st'))return;
+ $('st').innerHTML=[['Pending',s.pending],['Success',s.success],['Cancelled',s.cancelled],['Total',s.total]].map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('');
+ window.OF=d.list;
+ $('tl').innerHTML=d.list.length?d.list.map(function(t,i){var b=t.status==='open'?'<button class="btn s" onclick="startO('+i+')">Start</button>':'<span class="chip '+(t.status==='success'?'approved':t.status)+'">'+t.status+'</span>';
+ return '<div class="row"><div style="display:flex;gap:10px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="38" height="38" style="border-radius:10px" alt="">':'')+'<div>'+esc(t.title)+'<small>Reward: '+money(t.bdt)+' BDT</small></div></div>'+b+'</div>'}).join(''):'<div class="row">No tasks right now. Check again later.</div>'}).catch(function(e){if($('tl'))$('tl').textContent=e.message})}
+ load();TIMER=setInterval(load,30000)}
+function startO(i){api('offers/'+encodeURIComponent(OF[i].id)+'/start','POST').then(function(r){var w=window.open(r.url,'_blank');if(!w)location.href=r.url;vTasks()}).catch(function(e){toast(e.message)})}
 function modal(h){$('mBody').innerHTML=h;$('modal').style.display='flex'}
 function closeM(){$('modal').style.display='none'}
-function openT(id){var t=TK.filter(function(x){return x.id===id})[0];
- modal('<h3 style="color:var(--gold)">'+esc(t.title)+'</h3><pre>'+esc(t.desc)+'</pre><a href="'+esc(t.link)+'" target="_blank" rel="noopener" style="color:var(--gold);word-break:break-all;font-size:13px">'+esc(t.link)+'</a><label>Your proof (username, name or link)</label><textarea id="pf" rows="3" maxlength="300"></textarea><button class="btn g" onclick="sendP('+id+')">Submit proof (+'+t.reward+' BDT after review)</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
-function sendP(id){api('tasks/'+id+'/submit','POST',{proof:$('pf').value}).then(function(){closeM();toast('Submitted. Your reward is added once the proof is approved.');vTasks()}).catch(function(e){toast(e.message)})}
 function vRank(){$('main').innerHTML='<h3>Top earners</h3><div id="rk">Loading...</div>';
  function load(){api('leaderboard').then(function(a){if(!a.length){$('rk').innerHTML='<div class="row">No earners yet. Complete a task to take the first place.</div>';return}
  var p=[a[1],a[0],a[2]],cl=['','p1',''],rk=['#2','#1','#3'];
@@ -313,13 +391,15 @@ function wdForm(){modal('<h3 style="color:var(--gold)">Withdraw (300 - 5000 BDT)
 function doWd(){api('withdraw','POST',{method:$('wm').value,amount:$('wa').value,phone:$('wp').value}).then(function(m){ME=m;head();closeM();toast('Withdraw request sent.');vAcc()}).catch(function(e){toast(e.message)})}
 function admin(){var p=prompt('Admin password');if(!p)return;ADM=p;loadAdm()}
 function ah(){return{'x-admin-pass':ADM}}
-function loadAdm(){api('admin/data','GET',null,ah()).then(function(d){
- modal('<h3 style="color:var(--gold)">Task proofs</h3>'+(d.subs.map(function(x){return '<div class="row"><div>'+esc(x.name)+' - task '+x.taskId+'<small>'+esc(x.proof)+'</small></div><div><button class="btn s g" onclick="dec(\\'sub\\',\\''+x._id+'\\',1)">OK</button> <button class="btn s r" onclick="dec(\\'sub\\',\\''+x._id+'\\',0)">No</button></div></div>'}).join('')||'<div class="row">None</div>')+
- '<h3>Withdrawals</h3>'+(d.wds.map(function(x){return '<div class="row"><div>'+esc(x.name)+' '+x.amount+'<small>'+esc(x.method)+' '+esc(x.phone)+'</small></div><div><button class="btn s g" onclick="dec(\\'wd\\',\\''+x._id+'\\',1)">Paid</button> <button class="btn s r" onclick="dec(\\'wd\\',\\''+x._id+'\\',0)">Reject</button></div></div>'}).join('')||'<div class="row">None</div>')+
+function loadAdm(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
+ var cards=[['Users',s.users],['Active (24h)',s.active],['Pending tasks',s.pending],['Success tasks',s.success],['Cancelled tasks',s.cancelled],['Paid to users today',money(s.today)],['Users balance',money(s.balance)]].map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('');
+ modal('<h3 style="color:var(--gold)">Overview</h3><div class="grid">'+cards+'</div>'+
+ '<h3>Pending withdrawals</h3>'+(d.wds.map(function(x){return '<div class="row"><div>'+esc(x.name)+' '+x.amount+'<small>'+esc(x.method)+' '+esc(x.phone)+'</small></div><div><button class="btn s g" onclick="dec(\\''+x._id+'\\',1)">Paid</button> <button class="btn s r" onclick="dec(\\''+x._id+'\\',0)">Reject</button></div></div>'}).join('')||'<div class="row">None</div>')+
  '<h3>Support messages</h3>'+(d.msgs.map(function(x){return '<div class="row"><div>'+esc(x.name)+'<small>'+esc(x.text)+'</small></div><button class="btn s" onclick="rep(\\''+x.uid+'\\')">Reply</button></div>'}).join('')||'<div class="row">None</div>')+
- '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}).catch(function(e){toast(e.message)})}
-function dec(t,id,ok){api('admin/'+t+'/'+id,'POST',{ok:!!ok},ah()).then(loadAdm)}
+ '<button class="btn" style="background:#1e293b;color:#fff" onclick="chk()">Check offers</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}).catch(function(e){toast(e.message)})}
+function dec(id,ok){api('admin/wd/'+id,'POST',{ok:!!ok},ah()).then(loadAdm)}
 function rep(uid){var t=prompt('Reply');if(t)api('admin/reply','POST',{uid:uid,text:t},ah()).then(function(){toast('Sent')})}
+function chk(){api('admin/offers-raw','GET',null,ah()).then(function(r){modal('<h3 style="color:var(--gold)">Offers response</h3><pre>'+esc(r.text)+'</pre><button class="btn" style="background:#1e293b;color:#fff" onclick="loadAdm()">Back</button>')})}
 document.addEventListener('DOMContentLoaded',function(){$('logoA').innerHTML=logo(88);$('logoT').innerHTML=logo(40);initG();
  if(REF)mode('reg');
  if(T)api('me').then(enter).catch(function(){$('auth').style.display='block'});else $('auth').style.display='block'});
