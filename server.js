@@ -268,13 +268,15 @@ h3{font-size:13px;color:var(--mu);margin:4px 0 10px}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
 .stat{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}.stat b{display:block;font-size:16px;color:var(--gold)}.stat small{font-size:11px;color:var(--mu)}
 .pod{display:flex;gap:8px;align-items:flex-end;margin-bottom:14px}
-.pod div{flex:1;text-align:center;border-radius:16px;padding:14px 6px;background:#131d38;border:1px solid var(--line);font-size:12px}
+.pod div{flex:1;text-align:center;border-radius:16px;padding:14px 6px;background:#131d38;border:1px solid var(--line);font-size:12px;position:relative}
 .pod .p1{border-color:var(--gold);padding-bottom:26px;background:linear-gradient(180deg,rgba(251,191,36,.18),#131d38)}
-.pod b{display:block;color:var(--gold);font-size:14px;margin-top:4px}
+.pod .ring{width:46px;height:46px;border-radius:50%;border:2px solid var(--gold);margin:0 auto 6px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.pod .ring img{width:100%;height:100%;object-fit:cover}
+.pod b{display:block;color:var(--gold);font-size:13px;margin-top:4px}
 .chip{font-size:10px;padding:3px 8px;border-radius:10px;background:#1e293b;color:var(--gold)}
 .chip.approved,.chip.paid{color:var(--grn)}.chip.rejected,.chip.cancelled{color:var(--red)}
-.share{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.share a,.share button{display:block;text-align:center;background:#1e293b;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:12px;color:var(--tx);text-decoration:none;cursor:pointer}
+.share{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.share a,.share button{display:flex;align-items:center;justify-content:center;gap:6px;background:#1e293b;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:12px;color:var(--tx);text-decoration:none;cursor:pointer}
 .chat{max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .m{padding:8px 12px;border-radius:12px;font-size:13px;max-width:85%}.m.user{background:#1e293b;align-self:flex-end}.m.support{background:#172554;color:var(--blu);align-self:flex-start}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center;padding:14px}
@@ -370,12 +372,11 @@ function unlockPkg(p){
 
 function vTasks(){
  $('main').innerHTML='<div class="grid4" id="st"></div><h3>অফারওয়াল টাস্ক</h3><div id="tl">লোড হচ্ছে...</div>';
- function load(){api('offers').then(function(d){var s=d.stats;if(!$('st'))return;
+ api('offers').then(function(d){var s=d.stats;if(!$('st'))return;
  $('st').innerHTML=[['Pending',s.pending],['Success',s.success],['Cancelled',s.cancelled],['Total',s.total]].map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('');
  window.OF=d.list;
  $('tl').innerHTML=d.list.length?d.list.map(function(t,i){var b=t.status==='open'?'<button class="btn s" onclick="startO('+i+')">Start</button>':'<span class="chip '+(t.status==='success'?'approved':t.status)+'">'+t.status+'</span>';
- return '<div class="row"><div style="display:flex;gap:10px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="38" height="38" style="border-radius:10px" alt="">':'')+'<div>'+esc(t.title)+'<small>Reward: '+money(t.bdt)+' BDT</small></div></div>'+b+'</div>'}).join(''):'<div class="row">কোনো টাস্ক নেই।</div>'}).catch(function(e){if($('tl'))$('tl').textContent=e.message})}
- load();TIMER=setInterval(load,30000);
+ return '<div class="row"><div style="display:flex;gap:10px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="38" height="38" style="border-radius:10px" alt="">':'')+'<div>'+esc(t.title)+'<small>Reward: '+money(t.bdt)+' BDT</small></div></div>'+b+'</div>'}).join(''):'<div class="row">কোনো টাস্ক নেই।</div>'}).catch(function(e){if($('tl'))$('tl').textContent=e.message});
 }
 function startO(i){api('offers/'+encodeURIComponent(OF[i].id)+'/start','POST').then(function(r){var w=window.open(r.url,'_blank');if(!w)location.href=r.url;vTasks()}).catch(function(e){toast(e.message)})}
 function modal(h){$('mBody').innerHTML=h;$('modal').style.display='flex'}
@@ -383,36 +384,59 @@ function closeM(){$('modal').style.display='none'}
 
 function vRank(){
  $('main').innerHTML='<h3>র‍্যাঙ্কিং সিস্টেম (শীর্ষ আয়কারী)</h3><div id="rk">লোড হচ্ছে...</div>';
- function load(){api('leaderboard').then(function(a){if(!a.length){$('rk').innerHTML='<div class="row">কেউ নেই।</div>';return}
- var p=[a[1],a[0],a[2]],cl=['','p1',''],rk=['#2','#1','#3'];
- var demoUsers=[{name:'রহিম মিয়া',earned:4500},{name:'করিম উদ্দিন',earned:4200},{name:'সালাম শিকদার',earned:3900}];
- $('rk').innerHTML='<div class="pod">'+p.map(function(u,i){var un=u?u.name:demoUsers[i].name;var er=u?u.earned:demoUsers[i].earned;return '<div class="'+cl[i]+'">'+(i===1?'👑':'')+'<br>'+esc(un)+'<b>'+money(er)+'</b><small>'+rk[i]+'</small></div>'}).join('')+'</div>'+
- (a.length>3?a.slice(3):demoUsers).map(function(u,i){return '<div class="row"><div>#'+(i+4)+' '+esc(u.name)+'</div><b style="color:var(--grn)">'+money(u.earned)+'</b></div>'}).join('')}).catch(function(){})}
- load();TIMER=setInterval(load,20000);
+ api('leaderboard').then(function(a){
+  var demo=[
+   {name:'রহিম মিয়া',earned:12500,img:'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'},
+   {name:'পাওয়ার ম্যান',earned:15000,img:'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100'},
+   {name:'সাজ্জাদ হোসেন',earned:11000,img:'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100'},
+   {name:'শরীফুল ইসলাম',earned:9500,img:'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100'},
+   {name:'আকাশ খান',earned:8700,img:'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100'},
+   {name:'বিবেক শর্মা (नेपाल)',earned:7800,img:'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100'},
+   {name:'ইমরান খান (پاکستان)',earned:7200,img:'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=100'},
+   {name:'রাহুল ভার্মা (India)',earned:6500,img:'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
+  ];
+  if(ME){demo.push({name:ME.name+' (You)',earned:ME.earned,img:'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'});}
+  demo.sort(function(x,y){return y.earned-x.earned});
+  var top=[demo[1],demo[0],demo[2]],cl=['','p1',''],rk=['#2','#1','#3'];
+  $('rk').innerHTML='<div class="pod">'+top.map(function(u,i){
+   return '<div class="'+cl[i]+'">'+(i===1?'👑':'')+'<div class="ring"><img src="'+u.img+'"></div>'+esc(u.name)+'<b>'+money(u.earned)+'</b><small>'+rk[i]+'</small></div>';
+  }).join('')+'</div>'+
+  demo.slice(3,100).map(function(u,i){
+   return '<div class="row"><div style="display:flex;align-items:center;gap:8px"><img src="'+u.img+'" width="30" height="30" style="border-radius:50%"><div>#'+(i+4)+' '+esc(u.name)+'</div></div><b style="color:var(--grn)">'+money(u.earned)+'</b></div>';
+  }).join('');
+ }).catch(function(){});
 }
 
 function vRef(){
  var link=location.origin+'/?ref='+ME.refCode,e=encodeURIComponent(link),tx=encodeURIComponent('RS Growth Matrix-এ যোগ দিন এবং আয় করুন: ');window.RL=link;
  $('main').innerHTML='<div class="card" style="text-align:center">'+logo(64)+'<div class="brand" style="font-size:18px">বন্ধুকে আমন্ত্রণ করুন</div><div class="sub">প্রতি রেফারে পান ১৫ টাকা ইনস্ট্যান্ট বোনাস, ১০০০ আরএস কয়েন এবং আজীবন ৩% কমিশন!</div>'+
  '<input readonly id="rl" value="'+esc(link)+'"><button class="btn" onclick="copyL()">লিংক কপি করুন</button>'+
- '<div class="share"><a target="_blank" rel="noopener" href="https://wa.me/?text='+tx+e+'">WhatsApp</a><a target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u='+e+'">Facebook</a><a href="fb-messenger://share?link='+e+'">Messenger</a><button onclick="copyL(1)">Imo</button><a target="_blank" rel="noopener" href="https://t.me/share/url?url='+e+'&text='+tx+'">Telegram</a><button onclick="nat()">More apps</button></div></div>'+
+ '<div class="share">'+
+ '<a target="_blank" rel="noopener" href="https://wa.me/?text='+tx+e+'"> WhatsApp</a>'+
+ '<a target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u='+e+'"><svg width="16" height="16" fill="#1877f2" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg> Facebook</a>'+
+ '<a href="fb-messenger://share?link='+e+'"> Messenger</a>'+
+ '<button onclick="copyL(1)"><svg width="16" height="16" fill="#0088cc" viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12c0 2.16.564 4.183 1.55 5.944L.25 23.75l5.986-1.332A11.936 11.936 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-1.855 0-3.593-.513-5.078-1.405l-.364-.216-3.722.828.831-3.626-.237-.378A9.855 9.855 0 012.182 12c0-5.435 4.401-9.818 9.818-9.818s9.818 4.383 9.818 9.818-4.383 9.818-9.818 9.818z"/></svg> Imo</button>'+
+ '<a target="_blank" rel="noopener" href="https://t.me/share/url?url='+e+'&text='+tx+'"> Telegram</a>'+
+ '<button onclick="nat()"><svg width="16" height="16" fill="#fff" viewBox="0 0 24 24"><path d="M4 12a2 2 0 1 1 4 0 2 2 0 0 1-4 0zm7 0a2 2 0 1 1 4 0 2 2 0 0 1-4 0zm7 0a2 2 0 1 1 4 0 2 2 0 0 1-4 0z"/></svg> TikTok</button>'+
+ '</div></div>'+
  '<div class="grid" style="margin-top:12px"><div class="stat"><b>'+ME.refCount+'</b><small>বন্ধু যুক্ত হয়েছে</small></div><div class="stat"><b>'+money(ME.refEarn)+'</b><small>রেফারেল আয়</small></div></div>'+
- '<h3 style="margin-top:15px">লাইভ রেফারেল ট্রানজ্যাকশন</h3><div class="row"><div>রিদয় খান ১০ সেকেন্ড আগে রেফার বোনাস পেয়েছে</div><span class="chip">১৫ টাকা</span></div>'+
- '<div class="row"><div>শান্ত ইসলাম ১ মিনিট আগে রেফার বোনাস পেয়েছে</div><span class="chip">১৫ টাকা</span></div>';
+ '<h3 style="margin-top:15px">লাইভ রেফারেল ট্রানজ্যাকশন</h3>'+
+ '<div class="pod" style="margin-bottom:0"><div class="p1"><div class="ring"><img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"></div>রিয়াদ খান<b>১৫ টাকা + ১০০০ আরএস কয়েন</b><small>১০ সেকেন্ড আগে</small></div>'+
+ '<div><div class="ring"><img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100"></div>শান্ত ইসলাম<b>১৫ টাকা + ১০০০ আরএস কয়েন</b><small>১ মিনিট আগে</small></div>'+
+ '<div><div class="ring"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100"></div>তানভীর আহমেদ<b>১৫ টাকা + ১০০০ আরএস কয়েন</b><small>এখনই</small></div></div>';
 }
 function copyL(imo){(navigator.clipboard?navigator.clipboard.writeText(RL):Promise.reject()).then(function(){toast(imo?'লিংক কপি হয়েছে। ইমুতে পেস্ট করুন।':'লিংক কপি হয়েছে।')}).catch(function(){$('rl').select();toast('কপি করুন।')})}
 function nat(){if(navigator.share)navigator.share({title:'RS Growth Matrix',url:RL});else copyL()}
 
 function vHelp(){
- $('main').innerHTML='<div style="text-align:center;margin-bottom:10px"><div style="width:40px;height:40px;background:var(--blu);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;position:relative">👩<span style="position:absolute;bottom:0;right:0;width:10px;height:10px;background:var(--grn);border-radius:50%;border:2px solid var(--card)"></span></div><small style="display:block;color:var(--grn);font-weight:bold;margin-top:4px">অনলাইন কাস্টমার কেয়ার</small></div>'+
+ $('main').innerHTML='<div style="text-align:center;margin-bottom:10px"><div style="width:40px;height:40px;background:#38bdf8;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;position:relative"><svg width="24" height="24" fill="#fff" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg><span style="position:absolute;bottom:0;right:0;width:10px;height:10px;background:var(--grn);border-radius:50%;border:2px solid var(--card)"></span></div><small style="display:block;color:var(--grn);font-weight:bold;margin-top:4px">অনলাইন কাস্টমার কেয়ার</small></div>'+
  '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:10px">'+
  '<button class="btn s" onclick="toast(\\'ডিপোজিট সমস্যা: অনুগ্রহ করে ট্রানজ্যাকশন আইডি সহ চ্যাটে জানান।\\')">ডিপোজিট</button>'+
  '<button class="btn s" onclick="toast(\\'উইথড্র সমস্যা: নিয়ম অনুযায়ী ২৪ ঘণ্টার মধ্যে পেমেন্ট দেওয়া হয়।\\')">উইথড্র</button>'+
  '<button class="btn s" onclick="toast(\\'টাস্ক সমস্যা: অফার সঠিকভাবে কমপ্লিট করুন।\\')">টাস্ক</button>'+
  '<button class="btn s" onclick="go(\\'acc\\')">একাউন্ট</button></div>'+
  '<div class="chat" id="ch"></div><textarea id="st" rows="2" maxlength="500" placeholder="আপনার সমস্যা লিখুন..."></textarea><button class="btn" onclick="sendS()">সেন্ড করুন</button>';
- function load(){api('support').then(function(a){var c=$('ch');if(!c)return;c.innerHTML=a.length?a.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join(''):'<div class="m support">আমাদের অনলাইন কেয়ারে অনেক কাজের চাপের কারণে এখন সরাসরি উত্তর দেওয়া যাচ্ছে না। দুঃখিত! কিছুক্ষণ পরে আবার মেসেজ করুন। সাথে থাকার জন্য ধন্যবাদ।</div>';c.scrollTop=c.scrollHeight}).catch(function(){})}
- load();TIMER=setInterval(load,10000);
+ api('support').then(function(a){var c=$('ch');if(!c)return;c.innerHTML=a.length?a.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join(''):'<div class="m support">আমাদের অনলাইন কেয়ারে অনেক কাজের চাপের কারণে এখন সরাসরি উত্তর দেওয়া যাচ্ছে না। দুঃখিত! কিছুক্ষণ পরে আবার মেসেজ করুন। সাথে থাকার জন্য ধন্যবাদ।</div>';c.scrollTop=c.scrollHeight}).catch(function(){});
 }
 function sendS(){
  api('support','POST',{text:$('st').value}).then(function(){$('st').value='';vHelp()}).catch(function(e){toast(e.message)});
@@ -421,7 +445,7 @@ function sendS(){
 function vAcc(){
  $('main').innerHTML='<div class="row"><div>'+esc(ME.name)+'<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">লগআউট</button></div>'+
  '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.rsCoins||0)+'</b><small>RS Coins</small></div></div>'+
- '<button class="btn r" style="margin-top:0" onclick="wdForm()">উইথড্র করুন</button><h3 style="margin-top:16px">উইথড্র ইতিহাস</h3><div id="wh">লোড হচ্ছে...</div>'+
+ '<button class="btn r" style="margin-top:0" onclick="wdForm()">উইথড্র করুন</button><h3 style="margin-top:16px">উইথড্র ইতিহাস</h3><div id="wh">লোড হচ্ছেবাবু...</div>'+
  '<button class="btn" style="background:#1e293b;color:#fff" onclick="admin()">এডমিন প্যানেল</button>';
  api('withdrawals').then(function(a){$('wh').innerHTML=a.length?a.map(function(w){return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' <span class="chip '+w.status+'">'+w.status+'</span></div></div>'}).join(''):'<div class="row">কোনো উইথড্র ইতিহাস নেই।</div>'});
 }
