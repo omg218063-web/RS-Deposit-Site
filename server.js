@@ -41,7 +41,6 @@ app.get('/api/tasks', (req, res) => {
 // Offerwall Configuration Route
 app.get('/api/offerwall', (req, res) => {
     const userId = req.query.userId || 'guest_user';
-    // Generates iframe or SDK configurations using Render Environment Keys
     const iframeUrl = `https://www.cpalead.com/offerwall/demo?pub=${OFFERWALL_PUBLIC_KEY}&subid=${userId}`;
     res.json({
         publicKey: OFFERWALL_PUBLIC_KEY,
@@ -49,17 +48,13 @@ app.get('/api/offerwall', (req, res) => {
     });
 });
 
-// Offerwall S2S Postback Route (Handles completed offer rewards safely)
+// Offerwall S2S Postback Route
 app.get('/api/offerwall/postback', (req, res) => {
     const { subid, reward, secret } = req.query;
-    
-    // Verify secret key for security
     if (secret && secret !== OFFERWALL_SECRET_KEY) {
         return res.status(403).send('Unauthorized Postback Signature');
     }
-
     console.log(`[Offerwall Reward Received] User: ${subid}, Reward: ${reward}`);
-    // Respond back to offerwall network success acknowledgment
     res.send('1');
 });
 
