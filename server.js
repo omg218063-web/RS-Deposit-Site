@@ -15,6 +15,11 @@ if (process.env.MONGO_URI) {
       .catch(err => console.error('MongoDB Connection Error:', err));
 }
 
+// Offerwall Configuration from Render Environment Variables
+const OFFERWALL_PUBLIC_KEY = process.env.PUBLIC_KEY || 'demo_public_key';
+const OFFERWALL_SECRET_KEY = process.env.SECRET_KEY || 'demo_secret_key';
+
+// Tasks API Route
 app.get('/api/tasks', (req, res) => {
     const defaultTasks = [
         {
@@ -31,6 +36,31 @@ app.get('/api/tasks', (req, res) => {
         }
     ];
     res.json(defaultTasks);
+});
+
+// Offerwall Configuration Route
+app.get('/api/offerwall', (req, res) => {
+    const userId = req.query.userId || 'guest_user';
+    // Generates iframe or SDK configurations using Render Environment Keys
+    const iframeUrl = `https://www.cpalead.com/offerwall/demo?pub=${OFFERWALL_PUBLIC_KEY}&subid=${userId}`;
+    res.json({
+        publicKey: OFFERWALL_PUBLIC_KEY,
+        iframeUrl: iframeUrl
+    });
+});
+
+// Offerwall S2S Postback Route (Handles completed offer rewards safely)
+app.get('/api/offerwall/postback', (req, res) => {
+    const { subid, reward, secret } = req.query;
+    
+    // Verify secret key for security
+    if (secret && secret !== OFFERWALL_SECRET_KEY) {
+        return res.status(403).send('Unauthorized Postback Signature');
+    }
+
+    console.log(`[Offerwall Reward Received] User: ${subid}, Reward: ${reward}`);
+    // Respond back to offerwall network success acknowledgment
+    res.send('1');
 });
 
 app.get('/', (req, res) => {
@@ -303,6 +333,15 @@ app.get('/', (req, res) => {
             padding: 6px 12px; border-radius: 16px; font-size: 11px; font-weight: bold; cursor: pointer;
         }
 
+        .offerwall-box {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(30, 41, 59, 0.9));
+            border: 2px dashed var(--accent-purple);
+            border-radius: 18px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
         .podium-box {
             display: flex; justify-content: center; align-items: flex-end; gap: 10px; margin-bottom: 20px;
         }
@@ -539,7 +578,7 @@ app.get('/', (req, res) => {
             <div class="banner-card">
                 <h2>RS REWARDS CENTER</h2>
                 <p>প্রতিদিন কাজ করুন, প্যাকেজ মাইন করুন আর আরও বেশি রিওয়ার্ড জিতুন!</p>
-                <button type="button" class="banner-btn" onclick="switchTab('packages', document.querySelectorAll('.nav-item')[1])">🚀 প্যাকেজ দেখুন &rarr;</button>
+                <button type="button" class="banner-btn" onclick="switchTab('packages', document.querySelectorAll('.nav-item')[1])">🚀 প্যাকেজ দেখুন &rsaquo;</button>
             </div>
 
             <div class="section-heading"><span>⚡ আজকের কার্যক্রম</span> <span style="font-size: 10px; color: var(--accent-blue); cursor: pointer;" onclick="switchTab('tasks', document.querySelectorAll('.nav-item')[2])">টাস্ক সম্পন্ন করুন &rsaquo;</span></div>
@@ -588,8 +627,14 @@ app.get('/', (req, res) => {
         </div>
 
         <div id="tasksView" class="view-section">
+            <div class="section-heading"><span>🔥 লাইভ অফারওয়াল (Offerwall)</span> <span style="font-size: 10px; color: var(--accent-purple);">● Render Keys Connected</span></div>
+            <div class="offerwall-box">
+                <h3 style="font-size: 13px; color: var(--accent-purple); margin-bottom: 4px;">🎯 অফারওয়াল সার্ভে ও রিওয়ার্ড টাস্ক</h3>
+                <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 10px;">Render-এর PUBLIC_KEY ও SECRET_KEY দিয়ে অটোমেটিক লোডকৃত লাইভ অফার সম্পন্ন করে আনলিমিটেড কয়েন জেনারেট করুন!</p>
+                <button type="button" class="banner-btn" style="background: linear-gradient(90deg, #a855f7, #6366f1); color: #fff;" onclick="openOfferwallModal()">🚀 অফারওয়াল অন করুন</button>
+            </div>
+
             <div class="section-heading"><span>⚡ সার্ভার ও মাইক্রো জবস লাইভ টাস্ক</span> <span style="font-size: 10px; color: var(--accent-green);">● সার্ভার থেকে লোডকৃত</span></div>
-            
             <div id="microJobsListContainer">
                 <p style="font-size: 11px; color: var(--text-muted); text-align: center;">সার্ভার থেকে টাস্ক লোড করা হচ্ছে...</p>
             </div>
@@ -730,6 +775,19 @@ app.get('/', (req, res) => {
                     <div class="ticker-item"><span class="t-wd">📤 উইথড্র (নগদ): -৳ ৫০০.০০ (Success)</span><span style="font-size:9px; color:var(--text-muted)">018****22</span></div>
                     <div class="ticker-item"><span class="t-bon">🎁 বোনাস অর্জন: +৫০০ RS (Success)</span><span style="font-size:9px; color:var(--text-muted)">019****11</span></div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offerwall Dynamic Modal -->
+    <div class="modal" id="offerwallModal">
+        <div class="modal-card" style="max-width:440px; padding:12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="font-size: 14px; color: var(--accent-purple);">🔥 লাইভ অফারওয়াল (Render Keys)</h3>
+                <span style="cursor: pointer; font-size: 20px;" onclick="closeModal('offerwallModal')">&times;</span>
+            </div>
+            <div id="offerwallContainer" style="width: 100%; height: 400px; background: #060913; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                <iframe id="offerwallIframe" src="about:blank" style="width:100%; height:100%; border:none;"></iframe>
             </div>
         </div>
     </div>
@@ -1001,6 +1059,19 @@ app.get('/', (req, res) => {
                 {id: 1, title: "MicroTask #1: YouTube Channel Subscribe & Watch", reward: 50, icon: "▶️", color: "#FF0000", desc: "১. দেওয়া লিংকে ক্লিক করে ইউটিউব চ্যানেল সাবস্ক্রাইব করুন।\n২. ভিডিওটি সম্পূর্ণ দেখে একটি লাইক দিন।\n৩. আপনার ইউটিউব ইউজারনেম প্রুফ হিসেবে নিচে লিখুন।", link: "https://youtube.com/@SproutGigsTaskOfficial"},
                 {id: 2, title: "MicroTask #2: Facebook Page Like & Follow", reward: 40, icon: "📘", color: "#1877F2", desc: "১. ফেসবুক পেজে প্রবেশ করে লাইক ও ফলো করুন।\n২. আপনার ফেসবুক প্রোফাইল লিংক বা নাম প্রুফ দিন।", link: "https://facebook.com/SproutGigsOfficialTask"}
             ];
+        }
+
+        async function openOfferwallModal() {
+            try {
+                const res = await fetch(\`/api/offerwall?userId=\${encodeURIComponent(currentUserPhone)}\`);
+                const data = await res.json();
+                if(data && data.iframeUrl) {
+                    document.getElementById('offerwallIframe').src = data.iframeUrl;
+                }
+            } catch(e) {
+                console.error("Offerwall load error", e);
+            }
+            openModal('offerwallModal');
         }
 
         let selectedActiveTask = null;
