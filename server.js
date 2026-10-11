@@ -23,6 +23,10 @@ const RATE = Number(process.env.BDT_PER_USD) || 120;
 // ❤️ REF_BONUS = কেউ রেফার করলে বোনাস (টাকা), DAILY = ডেইলি টাস্কের বোনাস, CHECKIN = চেক-ইন বোনাস
 // ❤️ MIN_WD / MAX_WD = উইথড্রের সর্বনিম্ন ও সর্বোচ্চ টাকা, SLOTS = প্রতিদিন কয়টা টাস্ক দেখাবে
 const REF_BONUS = 10, DAILY = 30, CHECKIN = 10, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
+// ❤️ MAX_USD = এর চেয়ে বড় (ডলারে) অফার ইউজারকে দেখানো হবে না। ছোট কাজ চাইলে কমান, বেশি চাইলে বাড়ান।
+const MAX_USD = 5;
+// ❤️ এই ধরনের অফার কোড নিজেই লুকিয়ে ফেলবে (অফারওয়ালের Blocked categories এর পাশাপাশি)
+const BLOCK_CATS = ['signup', 'signups', 'deposit', 'deposits', 'creditcard', 'creditcards', 'oneclick', 'multireward', 'freetrial', 'freetrials', 'shopping', 'extension', 'extensions'];
 app.use(express.json({ limit: '100kb' }));
 
 // ❤️ MONGO_URI = আপনার ডাটাবেসের লিংক। এটা আগে থেকেই Render Environment এ আছে, আবার দিতে হবে না।
@@ -49,6 +53,8 @@ const sign = id => { const b = id + '.' + (Date.now() + 30 * 864e5); return b + 
 const hashPw = (p, salt) => crypto.scryptSync(p, salt, 32).toString('hex');
 const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 const today = () => new Date().toISOString().slice(0, 10);
+// ❤️ নতুন: "আজ" মানে বাংলাদেশ সময় (UTC+6) অনুযায়ী রাত ১২টা থেকে। অ্যাডমিন প্যানেলের "আজকের" হিসাব এটা দিয়ে হয়।
+const dayStart = () => { const o = 6 * 36e5, n = Date.now() + o; return new Date(n - (n % 864e5) - o); };
 const credit = (id, n) => User.updateOne({ _id: id }, { $inc: { balance: n, earned: n } });
 const me = u => ({ name: u.name, phone: u.phone || '', email: u.email || '', balance: u.balance, earned: u.earned, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, checkedIn: u.lastCheckin === today() });
 // ❤️ নিচের লাইনে ইউজারের ভাগ ঠিক করা আছে: ১ ডলারের বেশি হলে ০.৫ (৫০%), ১ ডলার বা কম হলে ০.৭ (৭০%)। বদলাতে চাইলে এই দুটো সংখ্যা বদলান।
@@ -114,16 +120,43 @@ app.get('/api/me', auth, (q, s) => s.json(me(q.user)));
 
 // ---------- Offerwall ----------
 const pick = (o, ks) => { for (const k of ks) if (o[k] != null && o[k] !== '') return o[k]; };
-async function fetchOffers(uid) {
+const arrOf = v => Array.isArray(v) ? v : [];
+
+// ইউজারের ফোন (Android/iPhone/কম্পিউটার) আর দেশ বের করে। দেশ না পেলে খালি থাকে, তখন দেশ দিয়ে ফিল্টার হয় না।
+const ctxOf = q => {
+  const ua = String(q.headers['user-agent'] || '');
+  const device = /android/i.test(ua) ? 'android' : /iphone|ipad|ipod/i.test(ua) ? 'ios' : 'desktop';
+  const c = String(q.headers['cf-ipcountry'] || q.headers['x-vercel-ip-country'] || '').toUpperCase();
+  return { device, country: /^[A-Z]{2}$/.test(c) ? c : '' };
+};
+const devOk = (list, device) => {
+  if (!list.length) return true;
+  const words = { android: ['android'], ios: ['ios', 'iphone', 'ipad', 'apple'], desktop: ['desktop', 'web', 'windows', 'mac', 'pc', 'linux'] }[device];
+  return list.some(d => words.some(w => String(d).toLowerCase().includes(w)));
+};
+
+async function fetchOffers(uid, ctx) {
+  ctx = ctx || { device: '', country: '' };
   if (!OW_KEY || !OW_SECRET) return [];
   const r = await fetch('https://offerwall.gg/api/v1/offers?appId=' + OW_KEY + '&userId=' + encodeURIComponent(uid) + '&limit=100', { headers: { 'X-Api-Key': OW_SECRET } });
   const j = await r.json();
-  // ❤️ এই লাইনটাই ঠিক করা হয়েছে: অফারের তালিকা data এর ভেতরে offers নামে থাকে।
   const arr = Array.isArray(j) ? j : ((j.data && j.data.offers) || j.offers || (Array.isArray(j.data) ? j.data : []));
   return arr.map(o => {
     const coins = +pick(o, ['currencyAmount', 'rewardAmount', 'reward', 'coins', 'amount', 'payout']) || 0;
-    return { id: String(pick(o, ['id', 'offerId']) || ''), title: String(pick(o, ['name', 'title', 'offerName']) || 'Offer').slice(0, 80), icon: String(pick(o, ['iconUrl', 'icon', 'imageUrl', 'image', 'thumbnail']) || ''), clickUrl: pick(o, ['clickUrl', 'url']), bdt: bdtFor(coins / 100) };
-  }).filter(o => o.id && o.clickUrl);
+    return {
+      id: String(pick(o, ['id', 'offerId']) || ''), title: String(pick(o, ['name', 'title', 'offerName']) || 'Offer').slice(0, 80),
+      icon: String(pick(o, ['iconUrl', 'icon', 'imageUrl', 'image', 'thumbnail']) || ''), clickUrl: pick(o, ['clickUrl', 'url']),
+      usd: coins / 100, bdt: bdtFor(coins / 100),
+      cats: arrOf(o.categories).map(c => String(c).toLowerCase().replace(/[^a-z]/g, '')),
+      cnt: arrOf(o.countries).map(c => String(c).toUpperCase()),
+      dev: arrOf(o.devices)
+    };
+  })
+  .filter(o => o.id && o.clickUrl)
+  .filter(o => o.usd <= MAX_USD)
+  .filter(o => !o.cats.some(c => BLOCK_CATS.includes(c)))
+  .filter(o => !ctx.country || !o.cnt.length || o.cnt.includes(ctx.country))
+  .filter(o => !ctx.device || devOk(o.dev, ctx.device));
 }
 
 app.get('/api/offers', auth, h(async (q, s) => {
@@ -131,7 +164,7 @@ app.get('/api/offers', auth, h(async (q, s) => {
   const clicks = await Click.find({ uid: q.user.id });
   const used = clicks.filter(c => c.status === 'pending' || (c.status === 'success' && c.doneAt > now - day));
   const blocked = new Set(clicks.filter(c => c.status === 'success' || c.status === 'pending').map(c => c.offerId));
-  const offers = await fetchOffers(q.user.id);
+  const offers = await fetchOffers(q.user.id, ctxOf(q));
   const free = offers.filter(o => !blocked.has(o.id)).slice(0, Math.max(0, SLOTS - used.length));
   const list = used.map(c => ({ id: c.offerId, title: c.title, icon: c.icon, bdt: c.bdt, status: c.status })).concat(free.map(o => ({ id: o.id, title: o.title, icon: o.icon, bdt: o.bdt, status: 'open' })));
   const n = st => clicks.filter(c => c.status === st).length;
@@ -143,7 +176,7 @@ app.post('/api/offers/:id/start', auth, h(async (q, s) => {
   const now = Date.now();
   const used = clicks.filter(c => c.status === 'pending' || (c.status === 'success' && c.doneAt > now - 864e5));
   if (clicks.some(c => c.offerId === q.params.id && (c.status === 'success'))) return bad(s, 'You already completed this task.');
-  const o = (await fetchOffers(q.user.id)).find(x => x.id === q.params.id);
+  const o = (await fetchOffers(q.user.id, ctxOf(q))).find(x => x.id === q.params.id);
   if (!o) return bad(s, 'This task is no longer available.', 404);
   const mine = used.find(c => c.offerId === o.id);
   if (!mine) {
@@ -220,17 +253,51 @@ app.post('/api/support', auth, h(async (q, s) => {
 }));
 
 // ---------- Admin ----------
+// ❤️ ওভারভিউ ট্যাবের তথ্য
 app.get('/api/admin/data', admin, h(async (q, s) => {
-  const start = new Date(); start.setHours(0, 0, 0, 0);
+  const start = dayStart();
   const sum = async (M, match, f) => { const r = await M.aggregate([{ $match: match }, { $group: { _id: null, t: { $sum: '$' + f } } }]); return r.length ? r[0].t : 0; };
   s.json({
     stats: {
-      users: await User.countDocuments(), active: await User.countDocuments({ lastSeen: { $gt: Date.now() - 864e5 } }),
+      users: await User.countDocuments(), active: await User.countDocuments({ lastSeen: { $gte: start.getTime() } }),
+      newToday: await User.countDocuments({ created: { $gte: start } }),
       pending: await Click.countDocuments({ status: 'pending' }), success: await Click.countDocuments({ status: 'success' }), cancelled: await Click.countDocuments({ status: 'cancelled' }),
-      today: await sum(Conv, { at: { $gte: start } }, 'bdt'), balance: await sum(User, {}, 'balance')
-    },
-    wds: await Wd.find({ status: 'pending' }).sort({ at: 1 }).limit(50),
-    msgs: await Msg.find({ from: 'user' }).sort({ at: -1 }).limit(30)
+      today: await sum(Conv, { at: { $gte: start } }, 'bdt'), balance: await sum(User, {}, 'balance'),
+      wdPending: await Wd.countDocuments({ status: 'pending' }), wdPendingSum: await sum(Wd, { status: 'pending' }, 'amount'),
+      wdToday: await Wd.countDocuments({ at: { $gte: start } })
+    }
+  });
+}));
+// ❤️ উত্তোলন ট্যাবের তথ্য
+app.get('/api/admin/wd-list', admin, h(async (q, s) => {
+  const pending = await Wd.find({ status: 'pending' }).sort({ at: 1 }).limit(100);
+  const done = await Wd.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20);
+  s.json({ pending, done });
+}));
+// ❤️ সাপোর্ট ট্যাবের তথ্য (ইউজার ধরে ধরে কথোপকথন)
+app.get('/api/admin/support', admin, h(async (q, s) => {
+  const all = await Msg.find().sort({ at: -1 }).limit(400);
+  const map = {};
+  all.reverse().forEach(m => { (map[m.uid] = map[m.uid] || { uid: m.uid, name: m.name, msgs: [] }).msgs.push({ from: m.from, text: m.text, at: m.at }); });
+  const th = Object.values(map).map(t => { const l = t.msgs[t.msgs.length - 1]; return { uid: t.uid, name: t.name, msgs: t.msgs.slice(-30), needs: l.from === 'user', last: +new Date(l.at) }; });
+  th.sort((a, b) => (b.needs - a.needs) || (b.last - a.last));
+  s.json(th);
+}));
+// ❤️ অ্যাক্টিভ ও ইনকাম ট্যাবের তথ্য
+app.get('/api/admin/users', admin, h(async (q, s) => {
+  const st = dayStart();
+  const act = await User.find({ lastSeen: { $gte: st.getTime() } }).sort({ lastSeen: -1 }).limit(200).select('name phone email lastSeen balance earned');
+  const ag = await Conv.aggregate([{ $match: { at: { $gte: st } } }, { $group: { _id: '$uid', t: { $sum: '$bdt' } } }]);
+  const em = {}; ag.forEach(x => { em[x._id] = x.t; });
+  const ids = ag.map(x => x._id).filter(x => mongoose.isValidObjectId(x));
+  const eu = ids.length ? await User.find({ _id: { $in: ids } }).select('name phone email') : [];
+  const earners = eu.map(u => ({ name: u.name, phone: u.phone || u.email || '', t: em[String(u._id)] || 0 })).sort((a, b) => b.t - a.t);
+  const top = await User.find({ earned: { $gt: 0 } }).sort({ earned: -1 }).limit(30).select('name phone email earned balance');
+  s.json({
+    newToday: await User.countDocuments({ created: { $gte: st } }),
+    active: act.map(u => ({ name: u.name, phone: u.phone || u.email || '', seen: u.lastSeen, balance: u.balance, today: em[String(u._id)] || 0 })),
+    earners,
+    top: top.map(u => ({ name: u.name, phone: u.phone || u.email || '', earned: u.earned, balance: u.balance }))
   });
 }));
 app.post('/api/admin/wd/:id', admin, h(async (q, s) => {
@@ -293,10 +360,29 @@ h3{font-size:13px;color:var(--mu);margin:4px 0 10px}
 .share a,.share button{display:block;text-align:center;background:#1e293b;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:12px;color:var(--tx);text-decoration:none;cursor:pointer}
 .chat{max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .m{padding:8px 12px;border-radius:12px;font-size:13px;max-width:85%}.m.user{background:#1e293b;align-self:flex-end}.m.support{background:#172554;color:var(--blu);align-self:flex-start}
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center;padding:14px}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:130;align-items:center;justify-content:center;padding:14px}
 .modal>div{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;width:100%;max-width:410px;max-height:90vh;overflow-y:auto}
 pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-height:1.5;margin:8px 0}
 .err{color:var(--red);font-size:12px;margin-top:8px;min-height:14px}
+.mq{overflow:hidden;white-space:nowrap;border-radius:14px;background:linear-gradient(90deg,#2b1f04,#4a3508,#2b1f04);border:1px solid rgba(251,191,36,.55);box-shadow:0 0 14px rgba(251,191,36,.18);padding:10px 0;margin-bottom:12px}
+.mq span{display:inline-block;padding-left:100%;animation:mq 26s linear infinite;color:var(--gold);font-size:12.5px;font-weight:700;letter-spacing:.2px}
+.mq.u{background:#101a33;border-color:rgba(56,189,248,.4);box-shadow:none;padding:8px 0}
+.mq.u span{color:#bae6fd;text-decoration:underline;font-size:12px;animation-duration:32s}
+@keyframes mq{to{transform:translateX(-100%)}}
+.ar{font-size:20px;line-height:2.1;direction:rtl;text-align:right;color:var(--gold);font-family:'Amiri','Traditional Arabic',serif;margin:6px 0}
+.bkc{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;font-size:13px;line-height:1.7}
+.bkc b{color:var(--gold)}.bkc small{display:block;color:var(--mu);font-size:11px;margin-top:4px}
+.adm{display:none;position:fixed;inset:0;z-index:120;background:var(--bg);flex-direction:column;max-width:440px;margin:0 auto}
+.adm.on{display:flex}
+.ah{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#131d38,#0f172a)}
+.ah b{color:var(--gold);font-size:15px}
+#abody{flex:1;overflow-y:auto;padding:14px}
+#anav{display:flex;border-top:1px solid var(--line);background:#0b1224;padding-bottom:6px}
+#anav div{flex:1;text-align:center;font-size:10px;color:var(--mu);padding:8px 0;cursor:pointer;border-top:2px solid transparent}
+#anav div i{display:block;font-style:normal;font-size:18px}#anav .on{color:var(--gold);border-color:var(--gold)}
+.th{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+.th .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:700}
+.gap{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 </style></head><body>
 <div class="app">
 <div id="auth">
@@ -323,18 +409,20 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 <nav id="nav"></nav>
 <main id="main"></main>
 </div>
+<div class="adm" id="adm"><div class="ah"><b>Admin Panel</b><button class="btn s" onclick="admClose()">Close</button></div><div id="abody"></div><div id="anav"></div></div>
 <div class="modal" id="modal"><div id="mBody"></div></div>
 <script>
-var GID='__GID__',T=localStorage.getItem('t'),ME=null,ADM='',TAB='home',TIMER=null;
+var GID='__GID__',T=localStorage.getItem('t'),ME=null,ADM='',TAB='home',TIMER=null,AD={};
 var REF=new URLSearchParams(location.search).get('ref')||localStorage.getItem('ref')||'';
 if(REF)localStorage.setItem('ref',REF);
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function money(n){return Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function tm(t){return new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}
 function logo(s){return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 100 100" aria-label="RS Growth Matrix"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset=".5" stop-color="#fbbf24"/><stop offset="1" stop-color="#b45309"/></linearGradient></defs><path d="M50 4 90 20v30c0 25-17 42-40 48C27 92 10 75 10 50V20z" fill="#0b1020" stroke="url(#lg)" stroke-width="4"/><text x="50" y="60" text-anchor="middle" font-size="34" font-weight="800" fill="url(#lg)" font-family="Georgia,serif">RS</text><path d="M30 71h40M38 77h24" stroke="url(#lg)" stroke-width="2.5" stroke-linecap="round"/></svg>'}
 function api(p,m,b,hd){hd=hd||{};hd['Content-Type']='application/json';if(T)hd.Authorization='Bearer '+T;
  return fetch('/api/'+p,{method:m||'GET',headers:hd,body:b?JSON.stringify(b):undefined}).then(function(r){return r.json().then(function(d){if(r.status===401&&T){out();throw new Error(d.error)}if(!r.ok)throw new Error(d.error||'Error');return d})})}
-function out(){localStorage.removeItem('t');T=null;ME=null;$('auth').style.display='block'}
+function out(){localStorage.removeItem('t');T=null;ME=null;admClose();$('auth').style.display='block'}
 function mode(m){$('tReg').className=m==='reg'?'on':'';$('tLog').className=m==='log'?'on':'';$('fReg').style.display=m==='reg'?'block':'none';$('fLog').style.display=m==='log'?'block':'none';$('aErr').textContent=''}
 function done(d){T=d.token;localStorage.setItem('t',T);localStorage.removeItem('ref');enter(d.me)}
 function fail(e){$('aErr').textContent=e.message}
@@ -344,19 +432,20 @@ function gCb(r){api('google','POST',{credential:r.credential,ref:REF}).then(done
 function initG(){if(!GID){$('gWrap').style.display='none';return}
  if(!window.google||!google.accounts){return setTimeout(initG,400)}
  google.accounts.id.initialize({client_id:GID,callback:gCb});google.accounts.id.renderButton($('gBtn'),{theme:'filled_black',size:'large',text:'continue_with',width:280})}
-var TABS=[['home','🏠','Home'],['tasks','📋','Tasks'],['rank','🏆','Ranking'],['ref','👥','Refer'],['help','💬','Support'],['acc','👤','Account']];
+var TABS=[['home','🏠','Home'],['tasks','📋','Tasks'],['rank','🏆','Ranking'],['ref','👥','Refer'],['help','💬','Support'],['acc','👤','Account'],['book','📖','Book']];
 function enter(m){ME=m;$('auth').style.display='none';$('nav').innerHTML=TABS.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');head();go('home')}
 function head(){$('hName').textContent=ME.name;$('hBal').textContent=money(ME.balance)}
-function go(t){TAB=t;clearInterval(TIMER);TABS.forEach(function(x){$('n_'+x[0]).className=x[0]===t?'on':''});({home:vHome,tasks:vTasks,rank:vRank,ref:vRef,help:vHelp,acc:vAcc})[t]()}
+function go(t){TAB=t;clearInterval(TIMER);TABS.forEach(function(x){$('n_'+x[0]).className=x[0]===t?'on':''});({home:vHome,tasks:vTasks,rank:vRank,ref:vRef,help:vHelp,acc:vAcc,book:vBook})[t]()}
 function toast(m){alert(m)}
 function vHome(){var ok=Date.now()-ME.lastDaily>=864e5;
- $('main').innerHTML='<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
+ $('main').innerHTML='<div class="mq"><span>🌙 RS Growth Matrix-এ স্বাগতম! আপনার নামাজের কথা মনে আছে তো? 🤲 নামাজ পড়ুন, তারপর কাজে মন দিন। ✨ আমাদের এই বিশ্বস্ত সাইটে আপনি নিশ্চিন্তে কাজ করতে পারেন এবং সম্পূর্ণ টাস্ক কমপ্লিট করতে পারেন। 🤝</span></div>'+
+ '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
  '<h3>Today</h3><div class="row"><div>Daily task<small>Claim once every 24 hours</small></div><button class="btn s" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed')+'</button></div>'+
  '<div class="row"><div>Daily check-in<small>Login bonus, once per day</small></div><button class="btn s" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done':'Check in')+'</button></div>'+
  '<div class="row"><div>Live tasks<small>Complete offers and earn</small></div><button class="btn s" onclick="go(\\'tasks\\')">Open</button></div>'+
  '<div class="row"><div>Invite friends<small>Earn a bonus for every signup</small></div><button class="btn s" onclick="go(\\'ref\\')">Invite</button></div>'}
 function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added to your balance.')}).catch(function(e){toast(e.message)})}
-function vTasks(){$('main').innerHTML='<div class="grid4" id="st"></div><h3>Live tasks</h3><div id="tl">Loading...</div>';
+function vTasks(){$('main').innerHTML='<div class="grid4" id="st"></div><div class="mq u"><span>⏳ আপনার টাস্ক পেন্ডিং থাকা মানে যাচাই চলছে, চিন্তার কোনো কারণ নেই। টাস্ক কমপ্লিট হতে কিছুটা সময় লাগে। যাচাই শেষে সফল হলে টাকা আপনার ব্যালেন্সে যোগ হবে। ধৈর্য ধরুন। 🤍</span></div><h3>Live tasks</h3><div id="tl">Loading...</div>';
  function load(){api('offers').then(function(d){var s=d.stats;if(!$('st'))return;
  $('st').innerHTML=[['Pending',s.pending],['Success',s.success],['Cancelled',s.cancelled],['Total',s.total]].map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('');
  window.OF=d.list;
@@ -386,21 +475,71 @@ function sendS(){api('support','POST',{text:$('st').value}).then(function(){$('s
 function vAcc(){$('main').innerHTML='<div class="row"><div>'+esc(ME.name)+'<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
  '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
  '<button class="btn r" style="margin-top:0" onclick="wdForm()">Withdraw</button><h3 style="margin-top:16px">Withdraw history</h3><div id="wh">Loading...</div>'+
- '<button class="btn" style="background:#1e293b;color:#fff" onclick="admin()">Admin panel</button>';
+ '<button class="btn" style="background:#1e293b;color:#fff" onclick="admOpen()">Admin panel</button>';
  api('withdrawals').then(function(a){$('wh').innerHTML=a.length?a.map(function(w){return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' <span class="chip '+w.status+'">'+w.status+'</span></div></div>'}).join(''):'<div class="row">No withdrawals yet.</div>'})}
 function wdForm(){modal('<h3 style="color:var(--gold)">Withdraw (300 - 5000 BDT)</h3><label>Method</label><select id="wm"><option>bKash</option><option>Nagad</option></select><label>Amount</label><input id="wa" type="number" inputmode="numeric"><label>Your bKash/Nagad number</label><input id="wp" maxlength="11" inputmode="numeric" value="'+esc(ME.phone)+'"><button class="btn r" onclick="doWd()">Send request</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
 function doWd(){api('withdraw','POST',{method:$('wm').value,amount:$('wa').value,phone:$('wp').value}).then(function(m){ME=m;head();closeM();toast('Withdraw request sent.');vAcc()}).catch(function(e){toast(e.message)})}
-function admin(){var p=prompt('Admin password');if(!p)return;ADM=p;loadAdm()}
+
+/* ---------- Islamic Book ---------- */
+var NB=[["মুহাম্মদ","প্রশংসিত"],["আহমদ","অধিক প্রশংসাকারী"],["আবদুল্লাহ","আল্লাহর বান্দা"],["ইবরাহিম","নবী ইবরাহিম (আ.)-এর নাম"],["ইসমাইল","নবী ইসমাইল (আ.)-এর নাম"],["ইউসুফ","নবী ইউসুফ (আ.)-এর নাম"],["ইয়াহইয়া","নবী ইয়াহইয়া (আ.)-এর নাম"],["ইদরিস","নবী ইদরিস (আ.)-এর নাম"],["উমর","সাহাবীর নাম, দ্বিতীয় খলিফা"],["আলী","উচ্চ মর্যাদাসম্পন্ন"],["হামজা","সাহাবীর নাম, শক্তিশালী"],["বিলাল","সাহাবীর নাম, নবী (সা.)-এর মুয়াজ্জিন"],["সালমান","শান্তিপ্রিয়, নিরাপদ"],["হাসান","সুন্দর, উত্তম"],["হুসাইন","ছোট্ট সুন্দর, প্রিয়"]];
+var NG=[["আয়েশা","প্রাণবন্ত, জীবন্ত"],["ফাতিমা","নবী (সা.)-এর কন্যার নাম"],["খাদিজা","নবী (সা.)-এর প্রথম স্ত্রী"],["মারিয়াম","নবী ঈসা (আ.)-এর মাতা"],["জয়নব","সুগন্ধি বৃক্ষ"],["রুকাইয়া","নবী (সা.)-এর কন্যার নাম"],["হাফসা","সাহাবিয়া, নবী (সা.)-এর স্ত্রী"],["সুমাইয়া","ইসলামের প্রথম শহীদ নারী"],["আসমা","উচ্চ মর্যাদাসম্পন্না"],["সালমা","শান্তিপ্রিয়, নিরাপদ"],["আমিনা","বিশ্বস্ত, নিরাপদ"],["জান্নাত","বেহেশত"],["নূর","আলো"],["সাফিয়া","খাঁটি, নির্মল"],["হালিমা","ধৈর্যশীলা, কোমল"]];
+var DUA=[
+["১. সানা (নামাজের শুরুতে)","سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ وَتَبَارَكَ اسْمُكَ وَتَعَالَى جَدُّكَ وَلَا إِلَهَ غَيْرُكَ","সুবহানাকাল্লাহুম্মা ওয়া বিহামদিকা ওয়া তাবারাকাসমুকা ওয়া তাআলা জাদ্দুকা ওয়া লা ইলাহা গাইরুক।","হে আল্লাহ, আপনি পবিত্র, আপনার প্রশংসা করছি। আপনার নাম বরকতময়, আপনার মর্যাদা সুউচ্চ, আপনি ছাড়া কোনো ইলাহ নেই।"],
+["২. সূরা ফাতিহা (প্রতি রাকাতে)","بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ الرَّحْمَٰنِ الرَّحِيمِ مَالِكِ يَوْمِ الدِّينِ إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ","","পরম করুণাময় দয়ালু আল্লাহর নামে শুরু। সমস্ত প্রশংসা জগতের প্রতিপালক আল্লাহর। তিনি পরম করুণাময়, অতি দয়ালু, বিচার দিনের মালিক। আমরা শুধু আপনারই ইবাদত করি ও আপনারই কাছে সাহায্য চাই। আমাদের সরল পথ দেখান, তাদের পথ, যাদের আপনি নিয়ামত দিয়েছেন; তাদের পথ নয়, যারা গজবপ্রাপ্ত ও পথভ্রষ্ট।"],
+["৩. আত্তাহিয়্যাতু (শেষ বৈঠকে)","التَّحِيَّاتُ لِلَّهِ وَالصَّلَوَاتُ وَالطَّيِّبَاتُ السَّلَامُ عَلَيْكَ أَيُّهَا النَّبِيُّ وَرَحْمَةُ اللَّهِ وَبَرَكَاتُهُ السَّلَامُ عَلَيْنَا وَعَلَى عِبَادِ اللَّهِ الصَّالِحِينَ أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ","আত্তাহিয়্যাতু লিল্লাহি ওয়াস সালাওয়াতু ওয়াত তাইয়্যিবাতু, আস সালামু আলাইকা আইয়্যুহান নাবিয়্যু ওয়া রাহমাতুল্লাহি ওয়া বারাকাতুহু, আস সালামু আলাইনা ওয়া আলা ইবাদিল্লাহিস সালিহীন, আশহাদু আল লা ইলাহা ইল্লাল্লাহু ওয়া আশহাদু আন্না মুহাম্মাদান আবদুহু ওয়া রাসুলুহু।","সমস্ত সম্মান, ইবাদত ও পবিত্রতা আল্লাহর জন্য। হে নবী, আপনার ওপর শান্তি, আল্লাহর রহমত ও বরকত বর্ষিত হোক। আমাদের ওপর এবং আল্লাহর সৎ বান্দাদের ওপরও শান্তি বর্ষিত হোক। আমি সাক্ষ্য দিচ্ছি আল্লাহ ছাড়া কোনো ইলাহ নেই, আর মুহাম্মদ (সা.) তাঁর বান্দা ও রাসুল।"],
+["৪. দরুদ ইবরাহিম","اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا صَلَّيْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ اللَّهُمَّ بَارِكْ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا بَارَكْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ","আল্লাহুম্মা সাল্লি আলা মুহাম্মাদিউ ওয়া আলা আলি মুহাম্মাদিন কামা সাল্লাইতা আলা ইবরাহিমা ওয়া আলা আলি ইবরাহিমা ইন্নাকা হামিদুম মাজিদ। আল্লাহুম্মা বারিক আলা মুহাম্মাদিউ ওয়া আলা আলি মুহাম্মাদিন কামা বারাকতা আলা ইবরাহিমা ওয়া আলা আলি ইবরাহিমা ইন্নাকা হামিদুম মাজিদ।","হে আল্লাহ, মুহাম্মদ (সা.) ও তাঁর পরিবারের ওপর রহমত বর্ষণ করুন, যেমন ইবরাহিম (আ.) ও তাঁর পরিবারের ওপর করেছিলেন। নিশ্চয়ই আপনি প্রশংসিত ও মহিমান্বিত। হে আল্লাহ, মুহাম্মদ (সা.) ও তাঁর পরিবারের ওপর বরকত দিন, যেমন ইবরাহিম (আ.) ও তাঁর পরিবারের ওপর দিয়েছিলেন।"],
+["৫. দোয়া মাসুরা","اللَّهُمَّ إِنِّي ظَلَمْتُ نَفْسِي ظُلْمًا كَثِيرًا وَلَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ فَاغْفِرْ لِي مَغْفِرَةً مِنْ عِنْدِكَ وَارْحَمْنِي إِنَّكَ أَنْتَ الْغَفُورُ الرَّحِيمُ","আল্লাহুম্মা ইন্নি জালামতু নাফসি জুলমান কাসিরাঁও ওয়া লা ইয়াগফিরুয যুনুবা ইল্লা আনতা ফাগফিরলি মাগফিরাতাম মিন ইনদিকা ওয়ারহামনি ইন্নাকা আনতাল গাফুরুর রাহিম।","হে আল্লাহ, আমি নিজের ওপর অনেক জুলুম করেছি। আপনি ছাড়া কেউ গুনাহ মাফ করতে পারে না। তাই আপনার পক্ষ থেকে আমাকে ক্ষমা করুন ও দয়া করুন। নিশ্চয়ই আপনি ক্ষমাশীল, দয়ালু।"],
+["৬. নামাজের পরের দোয়া","رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ","রাব্বানা আতিনা ফিদ্দুনইয়া হাসানাতাঁও ওয়া ফিল আখিরাতি হাসানাতাঁও ওয়া কিনা আজাবান নার।","হে আমাদের রব, আমাদের দুনিয়াতে কল্যাণ দিন, আখিরাতেও কল্যাণ দিন এবং আমাদের জাহান্নামের আজাব থেকে রক্ষা করুন।"]];
+var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
+var HD=[["কাজ নিয়তের ওপর নির্ভরশীল। প্রত্যেক ব্যক্তি তা-ই পাবে, যার নিয়ত সে করেছে।","সহিহ বুখারি ১, সহিহ মুসলিম ১৯০৭"],["তোমাদের মধ্যে সেই ব্যক্তি সর্বোত্তম, যে কুরআন শেখে এবং অন্যকে শেখায়।","সহিহ বুখারি ৫০২৭"],["তোমাদের কেউ প্রকৃত মুমিন হবে না, যতক্ষণ না সে নিজের জন্য যা পছন্দ করে, তার ভাইয়ের জন্যও তা পছন্দ করে।","সহিহ বুখারি ১৩, সহিহ মুসলিম ৪৫"],["পবিত্রতা ঈমানের অর্ধেক।","সহিহ মুসলিম ২২৩"],["প্রকৃত বীর সে নয়, যে কুস্তিতে অন্যকে হারায়। প্রকৃত বীর সে, যে রাগের সময় নিজেকে নিয়ন্ত্রণ করে।","সহিহ বুখারি ৬১১৪, সহিহ মুসলিম ২৬০৯"],["যে আল্লাহ ও আখিরাতের দিনে বিশ্বাস রাখে, সে যেন ভালো কথা বলে, নয়তো চুপ থাকে।","সহিহ বুখারি ৬০১৮, সহিহ মুসলিম ৪৭"],["যে ব্যক্তি প্রতারণা করে, সে আমাদের দলভুক্ত নয়।","সহিহ মুসলিম ১০১"]];
+function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\\''+p+'\\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
+function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\\''+p+'\\')">&lsaquo; ফিরে যান</button>'}
+function vBook(){bk('menu')}
+function bk(p){var h='';
+ if(p==='menu'){h='<div class="card" style="text-align:center;margin-bottom:12px">'+logo(54)+'<div class="brand" style="font-size:18px">ইসলামিক বই</div><div class="sub" style="margin:0">নাম, দোয়া ও হাদিস</div></div>'+
+  bkb('names','🌙','ইসলামিক নাম','ছেলে ও মেয়েদের নাম ও অর্থ')+bkb('dua','🤲','নামাজের দোয়া','নামাজে যা যা পড়তে হয়')+bkb('rakat','🕌','পাঁচ ওয়াক্ত নামাজ','ফরজ রাকাতের সংখ্যা')+bkb('hadith','📜','হাদিস','কিছু সহিহ হাদিস')}
+ else if(p==='names'){h=bkBack('menu')+'<h3>কাদের নাম দেখতে চান?</h3>'+bkb('boys','👦','ছেলেদের নাম','ইসলামিক ছেলে শিশুর নাম')+bkb('girls','👧','মেয়েদের নাম','ইসলামিক মেয়ে শিশুর নাম')}
+ else if(p==='boys'||p==='girls'){var L=p==='boys'?NB:NG;h=bkBack('names')+'<h3>'+(p==='boys'?'ছেলেদের':'মেয়েদের')+' ইসলামিক নাম</h3>'+L.map(function(n){return '<div class="bkc"><b>'+esc(n[0])+'</b><small>'+esc(n[1])+'</small></div>'}).join('')}
+ else if(p==='dua'){h=bkBack('menu')+'<h3>নামাজের দোয়া</h3>'+DUA.map(function(d){return '<div class="bkc"><b>'+esc(d[0])+'</b><div class="ar">'+esc(d[1])+'</div>'+(d[2]?'<div>'+esc(d[2])+'</div>':'')+'<small>অর্থ: '+esc(d[3])+'</small></div>'}).join('')}
+ else if(p==='rakat'){h=bkBack('menu')+'<h3>পাঁচ ওয়াক্ত নামাজ</h3>'+RK.map(function(r){return '<div class="row"><div><b style="color:var(--gold)">'+r[0]+'</b></div><div>'+r[1]+'</div></div>'}).join('')+'<div class="bkc"><small>এখানে শুধু ফরজ রাকাত দেওয়া হয়েছে। সুন্নত ও নফল সম্পর্কে আপনার আলেম বা নির্ভরযোগ্য বই থেকে জেনে নিন।</small></div>'}
+ else if(p==='hadith'){h=bkBack('menu')+'<h3>হাদিস</h3>'+HD.map(function(x){return '<div class="bkc">'+esc(x[0])+'<small>সূত্র: '+esc(x[1])+'</small></div>'}).join('')}
+ $('main').innerHTML=h;$('main').scrollTop=0}
+
+/* ---------- Admin panel ---------- */
+var ATABS=[['ov','📊','ওভারভিউ'],['wd','💸','উত্তোলন'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ'],['ea','🏆','ইনকাম']];
 function ah(){return{'x-admin-pass':ADM}}
-function loadAdm(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
- var cards=[['Users',s.users],['Active (24h)',s.active],['Pending tasks',s.pending],['Success tasks',s.success],['Cancelled tasks',s.cancelled],['Paid to users today',money(s.today)],['Users balance',money(s.balance)]].map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('');
- modal('<h3 style="color:var(--gold)">Overview</h3><div class="grid">'+cards+'</div>'+
- '<h3>Pending withdrawals</h3>'+(d.wds.map(function(x){return '<div class="row"><div>'+esc(x.name)+' '+x.amount+'<small>'+esc(x.method)+' '+esc(x.phone)+'</small></div><div><button class="btn s g" onclick="dec(\\''+x._id+'\\',1)">Paid</button> <button class="btn s r" onclick="dec(\\''+x._id+'\\',0)">Reject</button></div></div>'}).join('')||'<div class="row">None</div>')+
- '<h3>Support messages</h3>'+(d.msgs.map(function(x){return '<div class="row"><div>'+esc(x.name)+'<small>'+esc(x.text)+'</small></div><button class="btn s" onclick="rep(\\''+x.uid+'\\')">Reply</button></div>'}).join('')||'<div class="row">None</div>')+
- '<button class="btn" style="background:#1e293b;color:#fff" onclick="chk()">Check offers</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}).catch(function(e){toast(e.message)})}
-function dec(id,ok){api('admin/wd/'+id,'POST',{ok:!!ok},ah()).then(loadAdm)}
-function rep(uid){var t=prompt('Reply');if(t)api('admin/reply','POST',{uid:uid,text:t},ah()).then(function(){toast('Sent')})}
-function chk(){api('admin/offers-raw','GET',null,ah()).then(function(r){modal('<h3 style="color:var(--gold)">Offers response</h3><pre>'+esc(r.text)+'</pre><button class="btn" style="background:#1e293b;color:#fff" onclick="loadAdm()">Back</button>')})}
+function admOpen(){var p=prompt('Admin password');if(!p)return;ADM=p;$('adm').className='adm on';
+ $('anav').innerHTML=ATABS.map(function(t){return '<div id="a_'+t[0]+'" onclick="admGo(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');admGo('ov')}
+function admClose(){$('adm').className='adm'}
+function aErr(e){if(e.message==='Wrong admin password.'){toast(e.message);admClose()}else $('abody').innerHTML='<div class="row">'+esc(e.message)+'</div>'}
+function admGo(t){ATABS.forEach(function(x){$('a_'+x[0]).className=x[0]===t?'on':''});$('abody').innerHTML='<div class="row">Loading...</div>';
+ ({ov:aOv,wd:aWd,sp:aSp,us:aUs,ea:aEa})[t]()}
+function sc(a){return a.map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('')}
+function aOv(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
+ $('abody').innerHTML='<h3>আজকের হিসাব</h3><div class="grid">'+sc([['মোট ইউজার',s.users],['আজ ঢুকেছে',s.active],['আজ নতুন',s.newToday],['আজ উত্তোলন রিকোয়েস্ট',s.wdToday],['আজ ইউজাররা আয় করেছে',money(s.today)],['সব ইউজারের ব্যালেন্স',money(s.balance)]])+'</div>'+
+ '<h3>টাস্ক</h3><div class="grid4">'+sc([['Pending',s.pending],['Success',s.success],['Cancelled',s.cancelled],['অপেক্ষমাণ উত্তোলন',s.wdPending]])+'</div>'+
+ '<div class="row"><div>অপেক্ষমাণ উত্তোলন মোট<small>এখনো পাঠানো হয়নি</small></div><b style="color:var(--gold)">'+money(s.wdPendingSum)+'</b></div>'+
+ '<button class="btn" style="background:#1e293b;color:#fff" onclick="chk()">Check offers</button>'}).catch(aErr)}
+function chk(){api('admin/offers-raw','GET',null,ah()).then(function(r){modal('<h3 style="color:var(--gold)">Offers response</h3><pre>'+esc(r.text)+'</pre><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')})}
+function cpI(i){var t=AD.wds[i].phone;if(navigator.clipboard)navigator.clipboard.writeText(t).then(function(){toast('Copied: '+t)}).catch(function(){toast(t)});else toast(t)}
+function decI(i,ok){var w=AD.wds[i];if(!confirm((ok?'Paid':'Reject')+' করবেন? '+w.name+' - '+w.amount))return;api('admin/wd/'+w._id,'POST',{ok:!!ok},ah()).then(aWd).catch(aErr)}
+function aWd(){api('admin/wd-list','GET',null,ah()).then(function(d){AD.wds=d.pending;
+ var tot=d.pending.reduce(function(a,w){return a+w.amount},0);
+ $('abody').innerHTML='<div class="grid">'+sc([['অপেক্ষমাণ',d.pending.length],['মোট টাকা',money(tot)]])+'</div><h3>পাঠাতে হবে</h3>'+
+ (d.pending.map(function(w,i){return '<div class="th"><div class="hd"><span>'+esc(w.name)+'</span><span style="color:var(--gold)">'+money(w.amount)+'</span></div><div style="font-size:13px">'+esc(w.method)+': <b>'+esc(w.phone)+'</b></div><small style="color:var(--mu)">'+new Date(w.at).toLocaleString()+'</small><div class="gap"><button class="btn s" onclick="cpI('+i+')">নাম্বার কপি</button><button class="btn s g" onclick="decI('+i+',1)">Paid</button><button class="btn s r" onclick="decI('+i+',0)">Reject</button></div></div>'}).join('')||'<div class="row">কোনো রিকোয়েস্ট নেই</div>')+
+ '<h3 style="margin-top:14px">সর্বশেষ সম্পন্ন</h3>'+(d.done.map(function(w){return '<div class="row"><div>'+esc(w.name)+'<small>'+esc(w.method)+' '+esc(w.phone)+'</small></div><div>'+money(w.amount)+' <span class="chip '+w.status+'">'+w.status+'</span></div></div>'}).join('')||'<div class="row">নেই</div>')}).catch(aErr)}
+function repI(i){var t=$('rp'+i).value.trim();if(!t)return;api('admin/reply','POST',{uid:AD.th[i].uid,text:t},ah()).then(aSp).catch(aErr)}
+function aSp(){api('admin/support','GET',null,ah()).then(function(d){AD.th=d;
+ $('abody').innerHTML=d.length?d.map(function(t,i){return '<div class="th"><div class="hd"><span>'+esc(t.name)+'</span>'+(t.needs?'<span class="chip" style="color:var(--red)">উত্তর দিন</span>':'<span class="chip approved">উত্তর দেওয়া হয়েছে</span>')+'</div><div class="chat" style="max-height:30vh">'+t.msgs.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join('')+'</div><textarea id="rp'+i+'" rows="2" maxlength="500" placeholder="উত্তর লিখুন"></textarea><button class="btn s" style="margin-top:8px" onclick="repI('+i+')">Send</button></div>'}).join(''):'<div class="row">কোনো মেসেজ নেই</div>'}).catch(aErr)}
+function aUs(){api('admin/users','GET',null,ah()).then(function(d){
+ $('abody').innerHTML='<div class="grid">'+sc([['আজ ঢুকেছে',d.active.length],['আজ নতুন',d.newToday]])+'</div><h3>আজ যারা ঢুকেছে</h3>'+
+ (d.active.map(function(u){return '<div class="row"><div>'+esc(u.name)+'<small>'+esc(u.phone)+' · শেষ '+tm(u.seen)+'</small></div><div style="text-align:right"><b style="color:var(--grn)">+'+money(u.today)+'</b><small>ব্যালেন্স '+money(u.balance)+'</small></div></div>'}).join('')||'<div class="row">আজ কেউ ঢোকেনি</div>')}).catch(aErr)}
+function aEa(){api('admin/users','GET',null,ah()).then(function(d){
+ $('abody').innerHTML='<h3>আজ যারা আয় করেছে ('+d.earners.length+' জন)</h3>'+
+ (d.earners.map(function(u){return '<div class="row"><div>'+esc(u.name)+'<small>'+esc(u.phone)+'</small></div><b style="color:var(--grn)">'+money(u.t)+'</b></div>'}).join('')||'<div class="row">আজ এখনো কেউ আয় করেনি</div>')+
+ '<h3 style="margin-top:14px">সর্বকালের শীর্ষ আয়কারী</h3>'+
+ d.top.map(function(u,i){return '<div class="row"><div>#'+(i+1)+' '+esc(u.name)+'<small>'+esc(u.phone)+' · ব্যালেন্স '+money(u.balance)+'</small></div><b style="color:var(--gold)">'+money(u.earned)+'</b></div>'}).join('')}).catch(aErr)}
+
 document.addEventListener('DOMContentLoaded',function(){$('logoA').innerHTML=logo(88);$('logoT').innerHTML=logo(40);initG();
  if(REF)mode('reg');
  if(T)api('me').then(enter).catch(function(){$('auth').style.display='block'});else $('auth').style.display='block'});
