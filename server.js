@@ -242,7 +242,7 @@ const PAGE = `<!DOCTYPE html>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Roboto,Arial,sans-serif}
 body{background:var(--bg);color:var(--tx);display:flex;justify-content:center;min-height:100vh;padding:8px}
 .app{width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:26px;height:96vh;display:flex;flex-direction:column;overflow:hidden;position:relative}
-#auth{position:absolute;inset:0;z-index:50;background:radial-gradient(circle at top,#1e1b4b,#060913 70%);padding:22px;overflow-y:auto;text-align:center;display:none}
+#auth{position:absolute;inset:0;z-index:50;background:radial-gradient(circle at top,#1e1b4b,#060913 70%);padding:22px;overflow-y:auto;text-align:center;display:block}
 .card{background:rgba(15,23,42,.92);border:1px solid rgba(251,191,36,.3);border-radius:18px;padding:16px;text-align:left}
 .brand{font-family:Georgia,serif;font-size:24px;font-weight:700;color:var(--gold);margin:6px 0 2px;letter-spacing:.5px}
 .sub{font-size:12px;color:var(--mu);margin-bottom:14px}
@@ -407,7 +407,7 @@ function vHelp(){
  $('main').innerHTML='<div style="text-align:center;margin-bottom:10px"><div style="width:40px;height:40px;background:var(--blu);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;position:relative">👩<span style="position:absolute;bottom:0;right:0;width:10px;height:10px;background:var(--grn);border-radius:50%;border:2px solid var(--card)"></span></div><small style="display:block;color:var(--grn);font-weight:bold;margin-top:4px">অনলাইন কাস্টমার কেয়ার</small></div>'+
  '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:10px">'+
  '<button class="btn s" onclick="toast(\\'ডিপোজিট সমস্যা: অনুগ্রহ করে ট্রানজ্যাকশন আইডি সহ চ্যাটে জানান।\\')">ডিপোজিট</button>'+
- '<button class="btn s" onclick="toast(\randomIndex=\\'উইথড্র সমস্যা: নিয়ম অনুযায়ী ২৪ ঘণ্টার মধ্যে পেমেন্ট দেওয়া হয়।\\')">উইথড্র</button>'+
+ '<button class="btn s" onclick="toast(\\'উইথড্র সমস্যা: নিয়ম অনুযায়ী ২৪ ঘণ্টার মধ্যে পেমেন্ট দেওয়া হয়।\\')">উইথড্র</button>'+
  '<button class="btn s" onclick="toast(\\'টাস্ক সমস্যা: অফার সঠিকভাবে কমপ্লিট করুন।\\')">টাস্ক</button>'+
  '<button class="btn s" onclick="go(\\'acc\\')">একাউন্ট</button></div>'+
  '<div class="chat" id="ch"></div><textarea id="st" rows="2" maxlength="500" placeholder="আপনার সমস্যা লিখুন..."></textarea><button class="btn" onclick="sendS()">সেন্ড করুন</button>';
@@ -442,7 +442,7 @@ function chk(){api('admin/offers-raw','GET',null,ah()).then(function(r){modal('<
 
 document.addEventListener('DOMContentLoaded',function(){$('logoA').innerHTML=logo(88);$('logoT').innerHTML=logo(40);initG();
  if(REF)mode('reg');
- if(T)api('me').then(enter).catch(function(){$('auth').style.display='block'});else $('auth').style.display='block'});
+ if(T){api('me').then(enter).catch(function(){$('auth').style.display='block'});}else{$('auth').style.display='block';}});
 </script></body></html>`;
 
 app.get('/', (req, res) => res.send(PAGE.replace('__GID__', GID.replace(/[^\w.\-]/g, ''))));
