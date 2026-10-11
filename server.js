@@ -69,7 +69,6 @@ h3{font-size:13px;color:var(--mu);margin:4px 0 10px}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
 .stat{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}.stat b{display:block;font-size:16px;color:var(--gold)}.stat small{font-size:11px;color:var(--mu)}
 
-/* New Podium and Support Styles from user request */
 .podium-box{display:flex;justify-content:center;align-items:flex-end;gap:10px;margin-bottom:20px}
 .podium-col{background:linear-gradient(180deg,#1e293b,#0f172a);border:1px solid var(--line);border-radius:16px;padding:16px 6px 12px 6px;text-align:center;flex:1;position:relative}
 .podium-col.rank-1{border-color:var(--gold);transform:scale(1.05);background:linear-gradient(180deg,rgba(251,191,36,.15),#0f172a);box-shadow:0 0 20px rgba(251,191,36,.25)}
@@ -153,7 +152,7 @@ function initG(){if(!GID){$('gWrap').style.display='none';return}
  google.accounts.id.initialize({client_id:GID,callback:gCb});google.accounts.id.renderButton($('gBtn'),{theme:'filled_black',size:'large',text:'continue_with',width:280})}
 
 var TABS=[['home','🏠','Home'],['packages','📦','Packages'],['tasks','📋','Tasks'],['rank','🏆','Ranking'],['ref','👥','Refer'],['help','💬','Support'],['acc','👤','Account']];
-function enter(m){ME=m;$('auth').style.display='none';$('nav').innerHTML=TABS.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');head();go('home')}
+function enter(m){ME=m;$('auth').style.display='none';$('nav').innerHTML=TABS.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\''+t[0]+'\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');head();go('home')}
 function head(){$('hName').textContent=ME.name;$('hBal').textContent=money(ME.balance)}
 function go(t){TAB=t;clearInterval(TIMER);TABS.forEach(function(x){$('n_'+x[0]).className=x[0]===t?'on':''});({home:vHome,packages:vPackages,tasks:vTasks,rank:vRank,ref:vRef,help:vHelp,acc:vAcc})[t]()}
 function toast(m){alert(m)}
@@ -164,10 +163,10 @@ function vHome(){
  '<div class="notice-bar"><marquee>RS Growth Matrix-এ স্বাগতম! প্যাকেজ কিনে ইনকাম করুন। বিকাশ, নগদ ও রকেটের মাধ্যমে সহজেই টাকা উত্তোলন করতে পারবেন।</marquee></div>'+
  '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.rsCoins||0)+'</b><small>RS Coins</small></div></div>'+
  '<h3>শুরু করুন</h3>'+
- '<div class="row"><div>লগইন বোনাস<small>২৪ ঘণ্টায় একবার</small></div><button class="btn s" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed')+'</button></div>'+
- '<div class="row"><div>ডেইলি বোনাস<small>২৪ ঘণ্টায় একবার চেক-ইন</small></div><button class="btn s" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done':'Check in')+'</button></div>'+
- '<div class="row"><div>টাস্ক অপশন<small>অফারওয়াল টাস্ক করুন</small></div><button class="btn s" onclick="go(\\'tasks\\')">যান</button></div>'+
- '<div class="row"><div>প্যাকেজ সিস্টেম<small>প্যাকেজ কিনে আয় বাড়ান</small></div><button class="btn s" onclick="go(\\'packages\\')">দেখুন</button></div>'+
+ '<div class="row"><div>লগইন বোনাস<small>২৪ ঘণ্টায় একবার</small></div><button class="btn s" onclick="act(\'daily\')">'+(ok?'Claim':'Claimed')+'</button></div>'+
+ '<div class="row"><div>ডেইলি বোনাস<small>২৪ ঘণ্টায় একবার চেক-ইন</small></div><button class="btn s" onclick="act(\'checkin\')">'+(ME.checkedIn?'Done':'Check in')+'</button></div>'+
+ '<div class="row"><div>টাস্ক অপশন<small>অফারওয়াল টাস্ক করুন</small></div><button class="btn s" onclick="go(\'tasks\')">যান</button></div>'+
+ '<div class="row"><div>প্যাকেজ সিস্টেম<small>প্যাকেজ কিনে আয় বাড়ান</small></div><button class="btn s" onclick="go(\'packages\')">দেখুন</button></div>'+
  '<div class="company-banner" style="background:#131d38;border:1px solid var(--line);border-radius:14px;padding:15px;text-align:center;margin-top:15px"><b style="color:var(--gold)">RS Growth Matrix</b><small style="display:block;color:var(--mu);margin-top:4px">আপনার বিশ্বস্ত ইনকাম প্ল্যাটফর্ম</small></div>';
 }
 function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('বোনাস যোগ হয়েছে।')}).catch(function(e){toast(e.message)})}
@@ -183,7 +182,7 @@ function vPackages(){
   }).join('')+'</div>';
 }
 function unlockPkg(p){
- modal('<h3 style="color:var(--gold)">প্যাকেজ আনলক</h3><p style="font-size:13px;margin:10px 0">এই প্যাকেজটি কিনতে হলে আপনাকে ডিপোজিট করতে হবে।</p><button class="btn g" onclick="closeM();go(\\'acc\\')">ডিপোজিট করুন</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">বাতিল</button>');
+ modal('<h3 style="color:var(--gold)">প্যাকেজ আনলক</h3><p style="font-size:13px;margin:10px 0">এই প্যাকেজটি কিনতে হলে আপনাকে ডিপোজিট করতে হবে।</p><button class="btn g" onclick="closeM();go(\'acc\')">ডিপোজিট করুন</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">বাতিল</button>');
 }
 
 function vTasks(){
@@ -198,7 +197,6 @@ function startO(i){api('offers/'+encodeURIComponent(OF[i].id)+'/start','POST').t
 function modal(h){$('mBody').innerHTML=h;$('modal').style.display='flex'}
 function closeM(){$('modal').style.display='none'}
 
-// 1. RANKING SYSTEM (Replaced with your new code)
 const maleNames = ["Alexander", "Benjamin", "Christopher", "Daniel", "Ethan", "Felix", "Gabriel", "Harrison", "Ian", "Julian", "Kevin", "Liam", "Mason", "Nathan", "Oliver", "Patrick", "Quentin", "Ryan", "Samuel", "Tristan"];
 const femaleNames = ["Sophia", "Emma", "Olivia", "Ava", "Isabella", "Mia", "Harper", "Evelyn", "Abigail", "Emily", "Elizabeth", "Sofia", "Avery", "Ella", "Scarlett", "Grace", "Chloe", "Victoria", "Aria", "Luna"];
 
@@ -208,10 +206,10 @@ for(let i = 1; i <= 100; i++) {
     let nameList = isFemale ? femaleNames : maleNames;
     let fName = nameList[i % nameList.length];
     let lName = ["Smith", "Johnson", "Brown", "Taylor", "Miller", "Wilson", "Moore", "Clark", "Hall"][i % 9];
-    let fullName = \`\${fName} \${lName}\`;
+    let fullName = fName + " " + lName;
     let score = 50000 - (i * 350) + Math.floor(Math.random() * 200);
     let rsCoinEarned = Math.floor(Math.random() * 5000) + 500;
-    let avatarUrl = \`https://i.pravatar.cc/100?img=\${(i % 70) + 1}\`;
+    let avatarUrl = "https://i.pravatar.cc/100?img=" + ((i % 70) + 1);
     usersData.push({ rank: i, name: fullName, score: score, rsCoins: rsCoinEarned, avatar: avatarUrl });
 }
 
@@ -230,54 +228,49 @@ function renderLeaderboard() {
     usersData.forEach((u, index) => u.rank = index + 1);
 
     let top3HTML = '';
-    top3HTML += \`
-        <div class="podium-col" style="border-color: #3b82f6;">
-            <div class="crown">👑</div>
-            <div class="p-ava" style="border-color: #3b82f6;"><img src="\${usersData[1].avatar}" alt="2"></div>
-            <h5 style="font-size: 11px;">\${usersData[1].name}</h5>
-            <p style="font-size: 9px; color: var(--accent-green, #22c55e);">৳ \${usersData[1].score.toLocaleString()}</p>
-            <p style="font-size: 8px; color: var(--gold);">🪙 \${formatCoinNumber(usersData[1].rsCoins)} RS</p>
-            <span style="font-size: 9px; background: #3b82f6; padding: 1px 6px; border-radius: 8px; margin-top: 4px; display: inline-block;">#২</span>
-        </div>
-    \`;
-    top3HTML += \`
-        <div class="podium-col rank-1">
-            <div class="crown" style="font-size: 24px;">👑</div>
-            <div class="p-ava" style="border-color: var(--gold); box-shadow: 0 0 15px var(--gold);"><img src="\${usersData[0].avatar}" alt="1"></div>
-            <h5 style="font-size: 12px; color: var(--gold); font-weight: bold;">\${usersData[0].name}</h5>
-            <p style="font-size: 10px; color: var(--accent-green, #22c55e);">৳ \${usersData[0].score.toLocaleString()}</p>
-            <p style="font-size: 9px; color: var(--gold);">🪙 \${formatCoinNumber(usersData[0].rsCoins)} RS</p>
-            <span style="font-size: 9px; background: var(--gold); color: #000; padding: 1px 6px; border-radius: 8px; margin-top: 4px; display: inline-block; font-weight: bold;">#১</span>
-        </div>
-    \`;
-    top3HTML += \`
-        <div class="podium-col" style="border-color: #b45309;">
-            <div class="crown">👑</div>
-            <div class="p-ava" style="border-color: #b45309;"><img src="\${usersData[2].avatar}" alt="3"></div>
-            <h5 style="font-size: 11px;">\${usersData[2].name}</h5>
-            <p style="font-size: 9px; color: var(--accent-green, #22c55e);">৳ \${usersData[2].score.toLocaleString()}</p>
-            <p style="font-size: 8px; color: var(--gold);">🪙 \${formatCoinNumber(usersData[2].rsCoins)} RS</p>
-            <span style="font-size: 9px; background: #b45309; padding: 1px 6px; border-radius: 8px; margin-top: 4px; display: inline-block;">#৩</span>
-        </div>
-    \`;
+    top3HTML += '<div class="podium-col" style="border-color: #3b82f6;">' +
+        '<div class="crown">👑</div>' +
+        '<div class="p-ava" style="border-color: #3b82f6;"><img src="' + usersData[1].avatar + '" alt="2"></div>' +
+        '<h5 style="font-size: 11px;">' + usersData[1].name + '</h5>' +
+        '<p style="font-size: 9px; color: var(--grn);">৳ ' + usersData[1].score.toLocaleString() + '</p>' +
+        '<p style="font-size: 8px; color: var(--gold);">🪙 ' + formatCoinNumber(usersData[1].rsCoins) + ' RS</p>' +
+        '<span style="font-size: 9px; background: #3b82f6; padding: 1px 6px; border-radius: 8px; margin-top: 4px; display: inline-block;">#২</span>' +
+    '</div>';
+    
+    top3HTML += '<div class="podium-col rank-1">' +
+        '<div class="crown" style="font-size: 24px;">👑</div>' +
+        '<div class="p-ava" style="border-color: var(--gold); box-shadow: 0 0 15px var(--gold);"><img src="' + usersData[0].avatar + '" alt="1"></div>' +
+        '<h5 style="font-size: 12px; color: var(--gold); font-weight: bold;">' + usersData[0].name + '</h5>' +
+        '<p style="font-size: 10px; color: var(--grn);">৳ ' + usersData[0].score.toLocaleString() + '</p>' +
+        '<p style="font-size: 9px; color: var(--gold);">🪙 ' + formatCoinNumber(usersData[0].rsCoins) + ' RS</p>' +
+        '<span style="font-size: 9px; background: var(--gold); color: #000; padding: 1px 6px; border-radius: 8px; margin-top: 4px; display: inline-block; font-weight: bold;">#১</span>' +
+    '</div>';
+    
+    top3HTML += '<div class="podium-col" style="border-color: #b45309;">' +
+        '<div class="crown">👑</div>' +
+        '<div class="p-ava" style="border-color: #b45309;"><img src="' + usersData[2].avatar + '" alt="3"></div>' +
+        '<h5 style="font-size: 11px;">' + usersData[2].name + '</h5>' +
+        '<p style="font-size: 9px; color: var(--grn);">৳ ' + usersData[2].score.toLocaleString() + '</p>' +
+        '<p style="font-size: 8px; color: var(--gold);">🪙 ' + formatCoinNumber(usersData[2].rsCoins) + ' RS</p>' +
+        '<span style="font-size: 9px; background: #b45309; padding: 1px 6px; border-radius: 8px; margin-top: 4px; display: inline-block;">#৩</span>' +
+    '</div>';
+    
     document.getElementById('podiumTop3Container').innerHTML = top3HTML;
 
     let remainingHTML = '';
     for(let i = 3; i < usersData.length; i++) {
         let u = usersData[i];
-        remainingHTML += \`
-            <div class="transaction-row">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 11px; font-weight: bold; color: var(--blu);">#\${u.rank}</span>
-                    <img src="\${u.avatar}" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
-                    <div>
-                        <span style="font-size: 12px; display: block;">\${u.name}</span>
-                        <span style="font-size: 9px; color: var(--gold);">🪙 \${formatCoinNumber(u.rsCoins)} RS Collected</span>
-                    </div>
-                </div>
-                <span style="font-size: 12px; color: var(--accent-green, #22c55e); font-weight: bold;">৳ \${u.score.toLocaleString()}</span>
-            </div>
-        \`;
+        remainingHTML += '<div class="transaction-row">' +
+            '<div style="display: flex; align-items: center; gap: 10px;">' +
+                '<span style="font-size: 11px; font-weight: bold; color: var(--blu);">#' + u.rank + '</span>' +
+                '<img src="' + u.avatar + '" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">' +
+                '<div>' +
+                    '<span style="font-size: 12px; display: block;">' + u.name + '</span>' +
+                    '<span style="font-size: 9px; color: var(--gold);">🪙 ' + formatCoinNumber(u.rsCoins) + ' RS Collected</span>' +
+                '</div>' +
+            '</div>' +
+            '<span style="font-size: 12px; color: var(--grn); font-weight: bold;">৳ ' + u.score.toLocaleString() + '</span>' +
+        '</div>';
     }
     document.getElementById('rankingListContainer').innerHTML = remainingHTML;
 }
@@ -292,16 +285,12 @@ function formatCoinNumber(num) {
 }
 
 function vRank(){
-    $('main').innerHTML = \`
-        <div id="rankingView" class="view-section active" style="display:block;">
-            <div class="section-heading"><span>🏆 গ্লোবাল টপ র‍্যাঙ্কিং লিডারবোর্ড</span> <span style="font-size: 10px; color: var(--gold);">টপ ১ থেকে ১০ কয়েন ক্রমান্বয়ে বৃদ্ধি পাবে</span></div>
-            
-            <div class="podium-box" id="podiumTop3Container"></div>
-
-            <div class="section-heading"><span>অন্যান্য আর্নারগণ</span></div>
-            <div id="rankingListContainer"></div>
-        </div>
-    \`;
+    $('main').innerHTML = '<div id="rankingView" class="view-section active" style="display:block;">' +
+        '<div class="section-heading"><span>🏆 গ্লোবাল টপ র‍্যাঙ্কিং লিডারবোর্ড</span> <span style="font-size: 10px; color: var(--gold);">টপ ১ থেকে ১০ কয়েন ক্রমান্বয়ে বৃদ্ধি পাবে</span></div>' +
+        '<div class="podium-box" id="podiumTop3Container"></div>' +
+        '<div class="section-heading"><span>অন্যান্য আর্নারগণ</span></div>' +
+        '<div id="rankingListContainer"></div>' +
+    '</div>';
     renderLeaderboard();
 }
 
@@ -330,7 +319,6 @@ function vRef(){
 function copyL(imo){(navigator.clipboard?navigator.clipboard.writeText(RL):Promise.reject()).then(function(){toast(imo?'লিংক কপি হয়েছে। ইমুতে পেস্ট করুন।':'লিংক কপি হয়েছে।')}).catch(function(){$('rl').select();toast('কপি করুন।')})}
 function nat(){if(navigator.share)navigator.share({title:'RS Growth Matrix',url:RL});else copyL()}
 
-// 2. SUPPORT SYSTEM (Replaced with your new code logic & UI)
 const agentNames = ["মাহিয়া", "জান্নাত", "ফাতেমা", "সাবিহা", "নুসরাত"];
 let currentAgentIndex = 0;
 setInterval(() => {
@@ -379,107 +367,64 @@ function sendSupportMsg() {
 }
 
 function vHelp(){
-    $('main').innerHTML = \`
-        <div id="supportView" class="view-section active" style="display:block;">
-            <div class="support-banner">
-                <div style="font-size: 28px; position: relative;">
-                    👩‍💼
-                    <span style="position: absolute; bottom: 0; right: -4px; width: 12px; height: 12px; background: var(--grn); border-radius: 50%; border: 2px solid #0f172a; display: flex; align-items: center; justify-content: center; font-size: 8px; color: white;">✓</span>
-                </div>
-                <div>
-                    <h4 style="font-size: 13px; font-weight: bold;">RS সাপোর্ট টিম</h4>
-                    <p style="font-size: 10px; color: var(--mu);">সার্ভিস এজেন্ট: <span id="supportAgentNameDisplay" style="color: var(--gold); font-weight: bold;">মাহিয়া</span> | ● অনলাইন (24/7)</p>
-                </div>
-            </div>
-
-            <div class="grid4" style="margin-bottom: 15px;">
-                <div class="stat" style="cursor:pointer;" onclick="openSupportPopup('deposit')">
-                    <div style="font-size: 20px;">💳</div>
-                    <small style="font-size: 9px; color:var(--tx);">ডিপোজিট</small>
-                </div>
-                <div class="stat" style="cursor:pointer;" onclick="openSupportPopup('withdraw')">
-                    <div style="font-size: 20px;">🏦</div>
-                    <small style="font-size: 9px; color:var(--tx);">উইথড্র</small>
-                </div>
-                <div class="stat" style="cursor:pointer;" onclick="openSupportPopup('bonus')">
-                    <div style="font-size: 20px;">🎁</div>
-                    <small style="font-size: 9px; color:var(--tx);">বোনাস</small>
-                </div>
-                <div class="stat" style="cursor:pointer;" onclick="openSupportPopup('task')">
-                    <div style="font-size: 20px;">📋</div>
-                    <small style="font-size: 9px; color:var(--tx);">ডেইলি টাস্ক</small>
-                </div>
-            </div>
-
-            <div class="chat-box-area" id="chatBoxContainer">
-                <div class="chat-msg support">হ্যালো! আমি RS সাপোর্ট টিম থেকে বলছি। আপনার যেকোনো সমস্যায় আমাদের সাথে কথা বলতে পারেন।</div>
-            </div>
-
-            <div style="display: flex; gap: 6px; margin-top: 10px;">
-                <input type="text" class="form-control" id="supportInput" placeholder="আপনার সমস্যার বিস্তারিত লিখুন..." style="margin-top:0;">
-                <button type="button" class="btn s" onclick="sendSupportMsg()">প্রেরণ</button>
-            </div>
-        </div>
-    \`;
+    $('main').innerHTML = '<div id="supportView" class="view-section active" style="display:block;">' +
+        '<div class="support-banner">' +
+            '<div style="font-size: 28px; position: relative;">👩‍💼<span style="position: absolute; bottom: 0; right: -4px; width: 12px; height: 12px; background: var(--grn); border-radius: 50%; border: 2px solid #0f172a; display: flex; align-items: center; justify-content: center; font-size: 8px; color: white;">✓</span></div>' +
+            '<div>' +
+                '<h4 style="font-size: 13px; font-weight: bold;">RS সাপোর্ট টিম</h4>' +
+                '<p style="font-size: 10px; color: var(--mu);">সার্ভিস এজেন্ট: <span id="supportAgentNameDisplay" style="color: var(--gold); font-weight: bold;">মাহিয়া</span> | ● অনলাইন (24/7)</p>' +
+            '</div>' +
+        '</div>' +
+        '<div class="grid4" style="margin-bottom: 15px;">' +
+            '<div class="stat" style="cursor:pointer;" onclick="openSupportPopup(\'deposit\')"><div style="font-size: 20px;">💳</div><small style="font-size: 9px; color:var(--tx);">ডিপোজিট</small></div>' +
+            '<div class="stat" style="cursor:pointer;" onclick="openSupportPopup(\'withdraw\')"><div style="font-size: 20px;">🏦</div><small style="font-size: 9px; color:var(--tx);">উইথড্র</small></div>' +
+            '<div class="stat" style="cursor:pointer;" onclick="openSupportPopup(\'bonus\')"><div style="font-size: 20px;">🎁</div><small style="font-size: 9px; color:var(--tx);">বোনাস</small></div>' +
+            '<div class="stat" style="cursor:pointer;" onclick="openSupportPopup(\'task\')"><div style="font-size: 20px;">📋</div><small style="font-size: 9px; color:var(--tx);">ডেইলি টাস্ক</small></div>' +
+        '</div>' +
+        '<div class="chat-box-area" id="chatBoxContainer">' +
+            '<div class="chat-msg support">হ্যালো! আমি RS সাপোর্ট টিম থেকে বলছি। আপনার যেকোনো সমস্যায় আমাদের সাথে কথা বলতে পারেন।</div>' +
+        '</div>' +
+        '<div style="display: flex; gap: 6px; margin-top: 10px;">' +
+            '<input type="text" class="form-control" id="supportInput" placeholder="আপনার সমস্যার বিস্তারিত লিখুন..." style="margin-top:0;">' +
+            '<button type="button" class="btn s" onclick="sendSupportMsg()">প্রেরণ</button>' +
+        '</div>' +
+    '</div>';
 }
 
-// 3. MY ACCOUNT / ACCOUNT SECTION (Replaced with your new code UI & logic)
 function vAcc(){
-    $('main').innerHTML = \`
-        <div id="accountView" class="view-section active" style="display:block;">
-            <div class="section-heading"><span>অ্যাকাউন্ট ওভারভিউ</span></div>
-            
-            <div class="update-card" style="align-items: center; background: rgba(30, 41, 59, 0.7);">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div id="accScreenAvatar" style="width: 45px; height: 45px; border-radius: 50%; background:#334155; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#fff;">RS</div>
-                    <div>
-                        <h4 style="font-size: 13px;" id="accScreenName">\${esc(ME.name)}</h4>
-                        <p style="font-size: 10px; color: var(--gold);" id="accScreenUserPhone">নম্বর: \${esc(ME.phone || '01700000000')}</p>
-                    </div>
-                </div>
-                <button type="button" class="btn s" onclick="out()">লগআউট</button>
-            </div>
-
-            <button type="button" class="btn" style="background: linear-gradient(90deg, #a855f7, #6366f1); color: #fff; margin-top:0;" onclick="admin()">
-                🔐 এডমিন প্যানেল লগইন
-            </button>
-
-            <div class="acc-grid-4" style="margin-top: 12px;">
-                <div class="acc-stat-card">
-                    <div style="font-size: 10px; color: var(--mu);">পেন্ডিং</div>
-                    <div style="font-size: 11px; font-weight: bold; color: var(--gold); margin-top: 2px;" id="statPending">৳ ০.০০</div>
-                </div>
-                <div class="acc-stat-card">
-                    <div style="font-size: 10px; color: var(--mu);">লেনদেন</div>
-                    <div style="font-size: 12px; font-weight: bold; color: var(--blu); margin-top: 2px;" id="statTransactions">০</div>
-                </div>
-                <div class="acc-stat-card">
-                    <div style="font-size: 10px; color: var(--mu);">আজকের আয়</div>
-                    <div style="font-size: 11px; font-weight: bold; color: var(--grn); margin-top: 2px;" id="statTodayEarn">৳ ০.০০</div>
-                </div>
-                <div class="acc-stat-card">
-                    <div style="font-size: 10px; color: var(--mu);">রেফার আয়</div>
-                    <div style="font-size: 11px; font-weight: bold; color: #a855f7; margin-top: 2px;" id="statRefEarn">৳ ০.০০</div>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px;">
-                <button type="button" class="btn g" style="margin-top:0;" onclick="wdForm()">➕ ডিপোজিট</button>
-                <button type="button" class="btn r" style="margin-top:0;" onclick="wdForm()">➖ উইথড্র</button>
-            </div>
-
-            <button type="button" class="btn s" style="width:100%; justify-content:center; background:rgba(34, 197, 94, 0.2); color:var(--grn); border:1px solid var(--grn); margin-bottom:8px;" onclick="loadWdHistory()">📋 রিয়েল ডিপোজিট ও উইথড্র হিস্ট্রি</button>
-
-            <div class="section-heading" style="margin-top: 15px;"><span>🌐 গ্লোবাল লাইভ ট্রানজেকশন ফিড</span></div>
-            <div class="live-ticker-box-large">
-                <div class="ticker-list" id="globalLiveTickerList">
-                    <div class="ticker-item"><span class="t-dep">📥 ডিপোজিট (বিকাশ): +৳ ১,০০০.০০ (Success)</span><span style="font-size:9px; color:var(--mu)">017****94</span></div>
-                    <div class="ticker-item"><span class="t-wd">📤 উইথড্র (নগদ): -৳ ৫০০.০০ (Success)</span><span style="font-size:9px; color:var(--mu)">018****22</span></div>
-                    <div class="ticker-item"><span class="t-bon">🎁 বোনাস অর্জন: +৫০০ RS (Success)</span><span style="font-size:9px; color:var(--mu)">019****11</span></div>
-                </div>
-            </div>
-        </div>
-    \`;
+    $('main').innerHTML = '<div id="accountView" class="view-section active" style="display:block;">' +
+        '<div class="section-heading"><span>অ্যাকাউন্ট ওভারভিউ</span></div>' +
+        '<div class="update-card" style="align-items: center; background: rgba(30, 41, 59, 0.7);">' +
+            '<div style="display: flex; align-items: center; gap: 10px;">' +
+                '<div id="accScreenAvatar" style="width: 45px; height: 45px; border-radius: 50%; background:#334155; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#fff;">RS</div>' +
+                '<div>' +
+                    '<h4 style="font-size: 13px;" id="accScreenName">' + esc(ME.name) + '</h4>' +
+                    '<p style="font-size: 10px; color: var(--gold);" id="accScreenUserPhone">নম্বর: ' + esc(ME.phone || '01700000000') + '</p>' +
+                '</div>' +
+            '</div>' +
+            '<button type="button" class="btn s" onclick="out()">লগআউট</button>' +
+        '</div>' +
+        '<button type="button" class="btn" style="background: linear-gradient(90deg, #a855f7, #6366f1); color: #fff; margin-top:0;" onclick="admin()">🔐 এডমিন প্যানেল লগইন</button>' +
+        '<div class="acc-grid-4" style="margin-top: 12px;">' +
+            '<div class="acc-stat-card"><div style="font-size: 10px; color: var(--mu);">পেন্ডিং</div><div style="font-size: 11px; font-weight: bold; color: var(--gold); margin-top: 2px;" id="statPending">৳ ০.০০</div></div>' +
+            '<div class="acc-stat-card"><div style="font-size: 10px; color: var(--mu);">লেনদেন</div><div style="font-size: 12px; font-weight: bold; color: var(--blu); margin-top: 2px;" id="statTransactions">০</div></div>' +
+            '<div class="acc-stat-card"><div style="font-size: 10px; color: var(--mu);">আজকের আয়</div><div style="font-size: 11px; font-weight: bold; color: var(--grn); margin-top: 2px;" id="statTodayEarn">৳ ০.০০</div></div>' +
+            '<div class="acc-stat-card"><div style="font-size: 10px; color: var(--mu);">রেফার আয়</div><div style="font-size: 11px; font-weight: bold; color: #a855f7; margin-top: 2px;" id="statRefEarn">৳ ০.০০</div></div>' +
+        '</div>' +
+        '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px;">' +
+            '<button type="button" class="btn g" style="margin-top:0;" onclick="wdForm()">➕ ডিপোজিট</button>' +
+            '<button type="button" class="btn r" style="margin-top:0;" onclick="wdForm()">➖ উইথড্র</button>' +
+        '</div>' +
+        '<button type="button" class="btn s" style="width:100%; justify-content:center; background:rgba(34, 197, 94, 0.2); color:var(--grn); border:1px solid var(--grn); margin-bottom:8px;" onclick="loadWdHistory()">📋 রিয়েল ডিপোজিট ও উইথড্র হিস্ট্রি</button>' +
+        '<div class="section-heading" style="margin-top: 15px;"><span>🌐 গ্লোবাল লাইভ ট্রানজেকশন ফিড</span></div>' +
+        '<div class="live-ticker-box-large">' +
+            '<div class="ticker-list" id="globalLiveTickerList">' +
+                '<div class="ticker-item"><span class="t-dep">📥 ডিপোজিট (বিকাশ): +৳ ১,০০০.০০ (Success)</span><span style="font-size:9px; color:var(--mu)">017****94</span></div>' +
+                '<div class="ticker-item"><span class="t-wd">📤 উইথড্র (নগদ): -৳ ৫০০.০০ (Success)</span><span style="font-size:9px; color:var(--mu)">018****22</span></div>' +
+                '<div class="ticker-item"><span class="t-bon">🎁 বোনাস অর্জন: +৫০০ RS (Success)</span><span style="font-size:9px; color:var(--mu)">019****11</span></div>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
 }
 
 function loadWdHistory() {
@@ -497,12 +442,12 @@ function ah(){return{'x-admin-pass':ADM}}
 function loadAdm(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
  var cards=[['Users',s.users],['Active (24h)',s.active],['Pending tasks',s.pending],['Success tasks',s.success],['Cancelled tasks',s.cancelled],['Paid to users today',money(s.today)],['Users balance',money(s.balance)]].map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('');
  modal('<h3 style="color:var(--gold)">ওভারভিউ</h3><div class="grid">'+cards+'</div>'+
- '<h3>পেন্ডিং উইথড্র</h3>'+(d.wds.map(function(x){return '<div class="row"><div>'+esc(x.name)+' '+x.amount+'<small>'+esc(x.method)+' '+esc(x.phone)+'</small></div><div><button class="btn s g" onclick="dec(\\''+x._id+'\\',1)">Paid</button> <button class="btn s r" onclick="dec(\\''+x._id+'\\',0)">Reject</button></div></div>'}).join('')||'<div class="row">কিছু নেই</div>')+
- '<h3>সাপোর্ট মেসেজ</h3>'+(d.msgs.map(function(x){return '<div class="row"><div>'+esc(x.name)+'<small>'+esc(x.text)+'</small></div><button class="btn s" onclick="rep(\\''+x.uid+'\\')">উত্তর</button></div>'}).join('')||'<div class="row">কিছু নেই</div>')+
+ '<h3>পেন্ডিং উইথড্র</h3>'+(d.wds.map(function(x){return '<div class="row"><div>'+esc(x.name)+' '+x.amount+'<small>'+esc(x.method)+' '+esc(x.phone)+'</small></div><div><button class="btn s g" onclick="dec(\''+x._id+'\',1)">Paid</button> <button class="btn s r" onclick="dec(\''+x._id+'\',0)">Reject</button></div></div>'}).join('')||'<div class="row">কিছু নেই</div>')+
+ '<h3>সাপোর্ট মেসেজ</h3>'+(d.msgs.map(function(x){return '<div class="row"><div>'+esc(x.name)+'<small>'+esc(x.text)+'</small></div><button class="btn s" onclick="rep(\''+x.uid+'\')">উত্তর</button></div>'}).join('')||'<div class="row">কিছু নেই</div>')+
  '<button class="btn" style="background:#1e293b;color:#fff" onclick="chk()">অফার চেক</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">বন্ধ করুন</button>')}).catch(function(e){toast(e.message)})}
 function dec(id,ok){api('admin/wd/'+id,'POST',{ok:!!ok},ah()).then(loadAdm)}
 function rep(uid){var t=prompt('উত্তর লিখুন');if(t)api('admin/reply','POST',{uid:uid,text:t},ah()).then(function(){toast('পাঠানো হয়েছে')})}
-function chk(){api('admin/offers-raw','GET',null,ah()).then(function(r){modal('<h3 style="color:var(--gold)">অফার রেসপন্স</h3><pre>'+esc(r.text)+'</pre><button class="btn" style="background:#1e293b;color:#fff" onclick="loadAdm()">পেছনে</button>')})}
+function chk(){api('admin/offers-raw','GET',null,ah()).then(function(r){modal('<h3 style="color:var(--gold)">অফার রেসপন্স</h3><pre>'+esc(r.text)+'</pre><button class="btn" style="background:#1e293b;color://fff" onclick="loadAdm()">পেছনে</button>')})}
 
 document.addEventListener('DOMContentLoaded',function(){$('logoA').innerHTML=logo(88);$('logoT').innerHTML=logo(40);initG();
  if(REF)mode('reg');
