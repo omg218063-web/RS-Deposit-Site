@@ -86,61 +86,6 @@ app.get('/', (req, res) => {
             height: 94vh;
         }
 
-        #authScreen {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, #1e1b4b 0%, #060913 100%);
-            z-index: 2000;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: center;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        .auth-logo-circle {
-            width: 85px; height: 85px; border-radius: 50%;
-            background: linear-gradient(135deg, #fbbf24, #d97706);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 30px; font-weight: bold; color: #000;
-            border: 2px solid #fff; box-shadow: 0 0 25px rgba(251,191,36,0.6);
-            margin-bottom: 8px; margin-top: 10px;
-        }
-        
-        .auth-logo-title {
-            font-size: 20px; font-weight: bold; color: var(--accent-gold);
-            text-shadow: 0 0 15px rgba(251,191,36,0.4); margin-bottom: 2px;
-        }
-        .auth-subtitle {
-            font-size: 10px; color: var(--text-muted); margin-bottom: 12px;
-        }
-        
-        .auth-box-card {
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(251,191,36,0.3);
-            border-radius: 18px;
-            padding: 15px;
-            width: 100%;
-            text-align: left;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-        }
-        .auth-form-group {
-            width: 100%; margin-bottom: 8px;
-        }
-        .auth-form-group label {
-            font-size: 9px; color: var(--text-muted); margin-bottom: 2px; display: block;
-        }
-        .auth-switch-tab {
-            display: flex; background: #060913; border-radius: 10px; padding: 3px; margin-bottom: 10px; border: 1px solid var(--card-border);
-        }
-        .ast-btn {
-            flex: 1; text-align: center; padding: 6px; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 8px; color: var(--text-muted); transition: 0.3s;
-        }
-        .ast-btn.active {
-            background: linear-gradient(90deg, var(--accent-gold), #f59e0b); color: #000;
-        }
-
         .top-user-bar {
             padding: 15px;
             display: flex;
@@ -535,50 +480,6 @@ app.get('/', (req, res) => {
     </style>
 </head>
 <body>
-
-    <!-- Authentication Screen -->
-    <div id="authScreen">
-        <div class="auth-logo-circle">RS</div>
-        <div class="auth-logo-title">RS Growth Matrix</div>
-        <div class="auth-subtitle">নিরাপদ আর্নিং ও মাইনিং প্ল্যাটফর্ম ২০২৬</div>
-        
-        <div class="auth-box-card">
-            <div class="auth-switch-tab">
-                <div class="ast-btn active" id="tabRegBtn" onclick="switchAuthMode('reg')">রেজিস্ট্রেশন</div>
-                <div class="ast-btn" id="tabLoginBtn" onclick="switchAuthMode('login')">লগইন</div>
-            </div>
-
-            <!-- Registration Form -->
-            <div id="registrationFormSection">
-                <div class="auth-form-group">
-                    <label>আপনার নাম:</label>
-                    <input type="text" id="regName" class="form-control" placeholder="আপনার নাম লিখুন">
-                </div>
-                <div class="auth-form-group">
-                    <label>মোবাইল নম্বর (১১ ডিজিট):</label>
-                    <input type="text" id="regPhone" class="form-control" placeholder="017xxxxxxxx" maxlength="11">
-                </div>
-                <div class="auth-form-group">
-                    <label>পাসওয়ার্ড (কমপক্ষে ২ সংখ্যা):</label>
-                    <input type="password" id="regPass" class="form-control" placeholder="পাসওয়ার্ড দিন" maxlength="6">
-                </div>
-                <button type="button" class="banner-btn" style="width:100%; justify-content:center; margin-top:8px; background:var(--accent-green); color:#fff;" onclick="submitManualRegistration()">রেজিস্ট্রেশন কনফার্ম করুন</button>
-            </div>
-
-            <!-- Login Form -->
-            <div id="loginFormSection" style="display: none;">
-                <div class="auth-form-group">
-                    <label>আপনার মোবাইল নম্বর:</label>
-                    <input type="text" id="loginPhone" class="form-control" placeholder="017xxxxxxxx" maxlength="11">
-                </div>
-                <div class="auth-form-group">
-                    <label>আপনার পাসওয়ার্ড:</label>
-                    <input type="password" id="loginPass" class="form-control" placeholder="পাসওয়ার্ড দিন" maxlength="6">
-                </div>
-                <button type="button" class="banner-btn" style="width:100%; justify-content:center; margin-top:10px; background:var(--accent-gold); color:#000;" onclick="submitUserLogin()">লগইন করুন</button>
-            </div>
-        </div>
-    </div>
 
     <div class="container">
         <div class="top-user-bar">
@@ -1048,91 +949,14 @@ app.get('/', (req, res) => {
     </div>
 
     <script>
-        let currentUserName = localStorage.getItem('rs_username') || "";
-        let currentUserPhone = localStorage.getItem('rs_phone') || "";
+        let currentUserName = localStorage.getItem('rs_username') || "Rakibul Islam";
+        let currentUserPhone = localStorage.getItem('rs_phone') || "01700000000";
         let currentUserAvatar = localStorage.getItem('rs_avatar') || "";
         
         window.addEventListener('DOMContentLoaded', () => {
-            if (!currentUserPhone) {
-                document.getElementById('authScreen').style.display = 'flex';
-            } else {
-                document.getElementById('authScreen').style.display = 'none';
-                updateAccountStatsUI();
-                fetchServerTasks();
-            }
+            updateAccountStatsUI();
+            fetchServerTasks();
         });
-
-        function switchAuthMode(mode) {
-            if(mode === 'reg') {
-                document.getElementById('tabRegBtn').classList.add('active');
-                document.getElementById('tabLoginBtn').classList.remove('active');
-                document.getElementById('registrationFormSection').style.display = 'block';
-                document.getElementById('loginFormSection').style.display = 'none';
-            } else {
-                document.getElementById('tabLoginBtn').classList.add('active');
-                document.getElementById('tabRegBtn').classList.remove('active');
-                document.getElementById('loginFormSection').style.display = 'block';
-                document.getElementById('registrationFormSection').style.display = 'none';
-            }
-        }
-
-        function submitManualRegistration() {
-            let uname = document.getElementById('regName').value.trim();
-            let phone = document.getElementById('regPhone').value.trim();
-            let pass = document.getElementById('regPass').value.trim();
-
-            if (!uname || !phone || !pass) {
-                alert('⚠️ দয়া করে নাম, মোবাইল নম্বর এবং পাসওয়ার্ড দিন।');
-                return;
-            }
-            if (phone.length !== 11 || !/^\d+$/.test(phone)) {
-                alert('❌ সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন!');
-                return;
-            }
-            if (pass.length < 2) {
-                alert('❌ পাসওয়ার্ড অন্তত ২ সংখ্যার হতে হবে!');
-                return;
-            }
-
-            currentUserName = uname;
-            currentUserPhone = phone;
-            localStorage.setItem('rs_username', currentUserName);
-            localStorage.setItem('rs_phone', currentUserPhone);
-            localStorage.setItem('rs_password', pass);
-
-            document.getElementById('authScreen').style.display = 'none';
-            updateAccountStatsUI();
-            fetchServerTasks();
-            alert('🎉 আপনার রেজিস্ট্রেশন সফল হয়েছে!');
-        }
-
-        function submitUserLogin() {
-            let phone = document.getElementById('loginPhone').value.trim();
-            let pass = document.getElementById('loginPass').value.trim();
-
-            if (!phone || !pass) {
-                alert('⚠️ মোবাইল নম্বর এবং পাসওয়ার্ড দিন।');
-                return;
-            }
-            if (phone.length !== 11) {
-                alert('❌ সঠিক ১১ ডিজিটের নম্বর দিন।');
-                return;
-            }
-
-            currentUserPhone = phone;
-            let storedName = localStorage.getItem('rs_username');
-            if(storedName) currentUserName = storedName;
-            else currentUserName = "User_" + phone.slice(-4);
-
-            localStorage.setItem('rs_username', currentUserName);
-            localStorage.setItem('rs_phone', currentUserPhone);
-            localStorage.setItem('rs_password', pass);
-
-            document.getElementById('authScreen').style.display = 'none';
-            updateAccountStatsUI();
-            fetchServerTasks();
-            alert('✅ সফলভাবে লগইন হয়েছে!');
-        }
 
         let userBalance = parseFloat(localStorage.getItem('rs_balance'));
         if(isNaN(userBalance)) { userBalance = 25.00; }
