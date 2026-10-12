@@ -27,19 +27,25 @@ const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS
 const PENDING_HOURS = 48;
 // ❤️ LATE_CREDIT = true হলে ৪৮ ঘণ্টা পরেও অফারওয়াল টাকা পাঠালে ইউজারকে দেওয়া হবে (বিজ্ঞাপনদাতা আপনাকে টাকা দিয়েছে বলে)। না দিতে চাইলে false করুন।
 const LATE_CREDIT = true;
-// ❤️ SPIN = লাকি ড্রয়ের সত্যিকারের পুরস্কার। প্রতিটা [টাকা, সম্ভাবনার ভাগ]। এখন: ১ টাকা ৪০%, ২ টাকা ৩০%, ৩ টাকা ২০%, ৫ টাকা ১০%। (গড়ে ইউজার প্রতি স্পিনে ২.১ টাকা পায়, এটা আপনার খরচ)
+// ❤️ SPIN = লাকি ড্রয়ের সত্যিকারের পুরস্কার। প্রতিটা [টাকা, সম্ভাবনার ভাগ]। এখন: ১ টাকা ৪০%, ২ টাকা ৩০%, ৩ টাকা ২০%, ৫ টাকা ১০%।
 const SPIN = [[1, 40], [2, 30], [3, 20], [5, 10]];
 // ❤️ MAX_USD = এর চেয়ে বড় (ডলারে) অফার ইউজারকে দেখানো হবে না। টাস্ক কম এলে এটা বাড়ান (যেমন 20)।
 const MAX_USD = 5;
-// ❤️ COUNTRY_FILTER = true করলে ইউজারের দেশের সাথে মেলে এমন অফারই আসবে (অফার প্রায় সব US-only, তাই false রাখা আছে)।
-const COUNTRY_FILTER = false;
+// ❤️ COUNTRY_FILTER = true হলে শুধু TARGET_COUNTRY (বাংলাদেশ = BD) অথবা সব দেশের জন্য খোলা অফার আসবে।
+// ❤️ টাস্ক একদম না এলে সাময়িক false করে দেখতে পারেন, কিন্তু US-only অফার বাংলাদেশ থেকে করলে টাকা আসে না।
+const COUNTRY_FILTER = true;
+const TARGET_COUNTRY = 'BD';
 // ❤️ এই ধরনের অফার কোড নিজেই লুকিয়ে ফেলবে (অফারওয়ালের Blocked categories এর পাশাপাশি)
 const BLOCK_CATS = ['signup', 'signups', 'deposit', 'deposits', 'creditcard', 'creditcards', 'oneclick', 'multireward', 'freetrial', 'freetrials', 'shopping', 'extension', 'extensions'];
 app.use(express.json({ limit: '100kb' }));
 
 // ❤️ MONGO_URI = আপনার ডাটাবেসের লিংক। এটা আগে থেকেই Render Environment এ আছে, আবার দিতে হবে না।
 if (!process.env.MONGO_URI) console.error('MONGO_URI is not set: accounts cannot be saved.');
-else mongoose.connect(process.env.MONGO_URI).then(() => console.log('MongoDB connected')).catch(e => console.error('MongoDB error:', e.message));
+else mongoose.connect(process.env.MONGO_URI).then(async () => {
+  console.log('MongoDB connected');
+  // পুরনো ভুল ইনডেক্স ঠিক করে নেয় (রেজিস্ট্রেশনে Server error হওয়ার কারণ এটাই হতে পারে)
+  try { await User.syncIndexes(); console.log('User indexes synced'); } catch (e) { console.error('Index sync error:', e.message); }
+}).catch(e => console.error('MongoDB error:', e.message));
 
 const User = mongoose.model('User', new mongoose.Schema({
   name: String, nameKey: { type: String, unique: true, sparse: true }, phone: String,
@@ -54,7 +60,11 @@ const Conv = mongoose.model('Conv', new mongoose.Schema({ key: { type: String, u
 const Wd = mongoose.model('Wd', new mongoose.Schema({ uid: String, name: String, amount: Number, method: String, phone: String, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
 const Msg = mongoose.model('Msg', new mongoose.Schema({ uid: String, name: String, from: String, text: String, at: { type: Date, default: Date.now } }));
 
-const h = fn => (q, s) => fn(q, s).catch(e => { console.error(e); s.status(500).json({ error: 'Server error. Please try again.' }); });
+const h = fn => (q, s) => fn(q, s).catch(e => {
+  console.error('ERROR', q.method, q.path, e && e.code, e && e.message);
+  if (e && e.code === 11000) return s.status(400).json({ error: 'This name or phone is already registered. Try a different name.' });
+  s.status(500).json({ error: 'Server error. Please try again.' });
+});
 const bad = (s, m, c) => s.status(c || 400).json({ error: m });
 const hmac = b => crypto.createHmac('sha256', SECRET).update(b).digest('hex');
 const sign = id => { const b = id + '.' + (Date.now() + 30 * 864e5); return b + '.' + hmac(b); };
@@ -162,10 +172,13 @@ async function fetchOffers(uid, ctx, dbg) {
       dev: arrOf(o.devices)
     };
   }).filter(o => o.id && o.clickUrl);
-  if (dbg) dbg.total = l.length;
+  if (dbg) {
+    dbg.total = l.length; dbg.cn = {};
+    l.forEach(o => (o.cnt.length ? o.cnt : ['ALL']).forEach(c => { dbg.cn[c] = (dbg.cn[c] || 0) + 1; }));
+  }
   l = l.filter(o => o.usd <= MAX_USD); if (dbg) dbg.price = l.length;
   l = l.filter(o => !o.cats.some(c => BLOCK_CATS.includes(c))); if (dbg) dbg.cat = l.length;
-  l = l.filter(o => !COUNTRY_FILTER || !ctx.country || !o.cnt.length || o.cnt.includes(ctx.country)); if (dbg) dbg.country = l.length;
+  l = l.filter(o => !COUNTRY_FILTER || !o.cnt.length || o.cnt.includes(TARGET_COUNTRY)); if (dbg) dbg.country = l.length;
   l = l.filter(o => !ctx.device || devOk(o.dev, ctx.device)); if (dbg) dbg.device = l.length;
   return l;
 }
@@ -335,9 +348,8 @@ app.get('/api/admin/offers-raw', admin, h(async (q, s) => {
   if (!OW_KEY || !OW_SECRET) return s.json({ text: 'OFFERWALL_KEY or OFFERWALL_SECRET is not set in Environment.' });
   const dbg = {};
   await fetchOffers('admin-test', ctxOf(q), dbg);
-  const r = await fetch('https://offerwall.gg/api/v1/offers?appId=' + OW_KEY + '&userId=admin-test&limit=2', { headers: { 'X-Api-Key': OW_SECRET } });
-  const raw = (await r.text()).slice(0, 900);
-  s.json({ text: 'Offers from offerwall: ' + dbg.total + '\nAfter price limit ($' + MAX_USD + '): ' + dbg.price + '\nAfter category block: ' + dbg.cat + '\nAfter country filter: ' + dbg.country + '\nShown to user (after device filter): ' + dbg.device + '\n\nHTTP ' + r.status + '\n' + raw });
+  const cs = Object.entries(dbg.cn || {}).sort((a, b) => b[1] - a[1]).slice(0, 10).map(x => x[0] + ':' + x[1]).join(', ');
+  s.json({ text: 'Offers from offerwall: ' + dbg.total + '\nCountries (offers per country): ' + cs + '\n\nAfter price limit ($' + MAX_USD + '): ' + dbg.price + '\nAfter category block: ' + dbg.cat + '\nAfter country filter (' + TARGET_COUNTRY + '): ' + dbg.country + '\nShown to user (after device filter): ' + dbg.device });
 }));
 
 const PAGE = `<!DOCTYPE html>
@@ -439,8 +451,7 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .bi .btn{margin-top:0;padding:9px;font-size:12px}
 .bi .btn.dn{background:#1e293b;color:var(--mu)}
 .lk{display:flex;align-items:center;gap:12px;text-align:left}
-.lk .ic{font-size:42px;animation:spn 6s linear infinite}
-@keyframes spn{to{transform:rotate(360deg)}}
+.lk .ic{font-size:42px;animation:none}
 .lk small{margin:0}
 .wheel{position:relative;width:250px;margin:14px auto 6px}
 .wheel .pt{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:28px;color:#fbbf24;z-index:3;text-shadow:0 2px 6px #000}
@@ -553,7 +564,7 @@ function vTasks(){$('main').innerHTML='<div class="grid4" id="st"></div><div cla
  $('st').innerHTML=[['Pending',s.pending],['Success',s.success],['Cancelled',s.cancelled],['Total',s.total]].map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('');
  window.OF=d.list;
  $('tl').innerHTML=d.list.length?d.list.map(function(t,i){var op=t.status==='open',b=op?'<button class="btn s">Details</button>':'<span class="chip '+(t.status==='success'?'approved':t.status)+'">'+t.status+'</span>';
- return '<div class="row"'+(op?' style="cursor:pointer" onclick="showT('+i+')"':'')+'><div style="display:flex;gap:10px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="38" height="38" style="border-radius:10px" alt="">':'')+'<div>'+esc(t.title)+'<small>Reward: '+money(t.bdt)+' BDT</small></div></div>'+b+'</div>'}).join(''):'<div class="row">No tasks right now. Check again later.</div>'}).catch(function(e){if($('tl'))$('tl').textContent=e.message})}
+ return '<div class="row"'+(op?' style="cursor:pointer" onclick="showT('+i+')"':'')+'><div style="display:flex;gap:10px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="38" height="38" style="border-radius:10px" alt="">':'')+'<div>'+esc(t.title)+'<small>Reward: '+money(t.bdt)+' BDT</small></div></div>'+b+'</div>'}).join(''):'<div class="row">এই মুহূর্তে বাংলাদেশের জন্য কোনো নতুন টাস্ক নেই। কিছুক্ষণ পর আবার দেখুন।</div>'}).catch(function(e){if($('tl'))$('tl').textContent=e.message})}
  load();TIMER=setInterval(load,30000)}
 function showT(i){var t=OF[i],cn=t.cnt||[],dv=t.dev||[],okC=!cn.length||cn.indexOf('BD')>=0;
  modal('<div style="display:flex;gap:12px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="54" height="54" style="border-radius:14px" alt="">':'')+'<div><b style="font-size:15px">'+esc(t.title)+'</b><div style="color:var(--grn);font-weight:800;margin-top:3px">Reward: '+money(t.bdt)+' BDT</div></div></div>'+
