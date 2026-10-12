@@ -20,11 +20,13 @@ const OW_SECRET = process.env.OFFERWALL_SECRET || '';
 const RATE = Number(process.env.BDT_PER_USD) || 120;
 
 // ❤️ নিচের সংখ্যাগুলো আপনি এখানেই বদলাতে পারবেন:
-// ❤️ REF_BONUS = কেউ রেফার করলে বোনাস (টাকা), DAILY = ডেইলি টাস্কের বোনাস, CHECKIN = চেক-ইন বোনাস
+// ❤️ REF_BONUS = রেফার বোনাস (টাকা), DAILY = Login Bonus (এখন ২ টাকা), CHECKIN = Check-in Bonus (এখন ৪ টাকা)
 // ❤️ MIN_WD / MAX_WD = উইথড্রের সর্বনিম্ন ও সর্বোচ্চ টাকা, SLOTS = প্রতিদিন কয়টা টাস্ক দেখাবে
-const REF_BONUS = 10, DAILY = 30, CHECKIN = 10, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
-// ❤️ MAX_USD = এর চেয়ে বড় (ডলারে) অফার ইউজারকে দেখানো হবে না। ছোট কাজ চাইলে কমান, বেশি চাইলে বাড়ান।
+const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
+// ❤️ MAX_USD = এর চেয়ে বড় (ডলারে) অফার ইউজারকে দেখানো হবে না। টাস্ক কম এলে এটা বাড়ান (যেমন 20)।
 const MAX_USD = 5;
+// ❤️ COUNTRY_FILTER = true করলে ইউজারের দেশের সাথে মেলে এমন অফারই আসবে (অফার প্রায় সব US-only, তাই false রাখা আছে)।
+const COUNTRY_FILTER = false;
 // ❤️ এই ধরনের অফার কোড নিজেই লুকিয়ে ফেলবে (অফারওয়ালের Blocked categories এর পাশাপাশি)
 const BLOCK_CATS = ['signup', 'signups', 'deposit', 'deposits', 'creditcard', 'creditcards', 'oneclick', 'multireward', 'freetrial', 'freetrials', 'shopping', 'extension', 'extensions'];
 app.use(express.json({ limit: '100kb' }));
@@ -56,7 +58,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 // "আজ" মানে বাংলাদেশ সময় (UTC+6) অনুযায়ী রাত ১২টা থেকে। অ্যাডমিন প্যানেলের "আজকের" হিসাব এটা দিয়ে হয়।
 const dayStart = () => { const o = 6 * 36e5, n = Date.now() + o; return new Date(n - (n % 864e5) - o); };
 const credit = (id, n) => User.updateOne({ _id: id }, { $inc: { balance: n, earned: n } });
-const me = u => ({ name: u.name, phone: u.phone || '', email: u.email || '', balance: u.balance, earned: u.earned, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, checkedIn: u.lastCheckin === today() });
+const me = u => ({ name: u.name, phone: u.phone || '', email: u.email || '', balance: u.balance, earned: u.earned, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN });
 // ❤️ নিচের লাইনে ইউজারের ভাগ ঠিক করা আছে: ১ ডলারের বেশি হলে ০.৫ (৫০%), ১ ডলার বা কম হলে ০.৭ (৭০%)। বদলাতে চাইলে এই দুটো সংখ্যা বদলান।
 const bdtFor = usd => Math.round(usd * RATE * (usd > 1 ? 0.5 : 0.7) * 100) / 100;
 
@@ -122,7 +124,7 @@ app.get('/api/me', auth, (q, s) => s.json(me(q.user)));
 const pick = (o, ks) => { for (const k of ks) if (o[k] != null && o[k] !== '') return o[k]; };
 const arrOf = v => Array.isArray(v) ? v : [];
 
-// ইউজারের ফোন (Android/iPhone/কম্পিউটার) আর দেশ বের করে। দেশ না পেলে খালি থাকে, তখন দেশ দিয়ে ফিল্টার হয় না।
+// ইউজারের ফোন (Android/iPhone/কম্পিউটার) আর দেশ বের করে।
 const ctxOf = q => {
   const ua = String(q.headers['user-agent'] || '');
   const device = /android/i.test(ua) ? 'android' : /iphone|ipad|ipod/i.test(ua) ? 'ios' : 'desktop';
@@ -135,13 +137,14 @@ const devOk = (list, device) => {
   return list.some(d => words.some(w => String(d).toLowerCase().includes(w)));
 };
 
-async function fetchOffers(uid, ctx) {
+// ❤️ dbg দিলে প্রতিটা ফিল্টারের পরে কয়টা অফার বাকি থাকল সেটা গুনে রাখে (Admin → Check offers এ দেখা যায়)
+async function fetchOffers(uid, ctx, dbg) {
   ctx = ctx || { device: '', country: '' };
   if (!OW_KEY || !OW_SECRET) return [];
   const r = await fetch('https://offerwall.gg/api/v1/offers?appId=' + OW_KEY + '&userId=' + encodeURIComponent(uid) + '&limit=100', { headers: { 'X-Api-Key': OW_SECRET } });
   const j = await r.json();
   const arr = Array.isArray(j) ? j : ((j.data && j.data.offers) || j.offers || (Array.isArray(j.data) ? j.data : []));
-  return arr.map(o => {
+  let l = arr.map(o => {
     const coins = +pick(o, ['currencyAmount', 'rewardAmount', 'reward', 'coins', 'amount', 'payout']) || 0;
     return {
       id: String(pick(o, ['id', 'offerId']) || ''), title: String(pick(o, ['name', 'title', 'offerName']) || 'Offer').slice(0, 80),
@@ -151,12 +154,13 @@ async function fetchOffers(uid, ctx) {
       cnt: arrOf(o.countries).map(c => String(c).toUpperCase()),
       dev: arrOf(o.devices)
     };
-  })
-  .filter(o => o.id && o.clickUrl)
-  .filter(o => o.usd <= MAX_USD)
-  .filter(o => !o.cats.some(c => BLOCK_CATS.includes(c)))
-  .filter(o => !ctx.country || !o.cnt.length || o.cnt.includes(ctx.country))
-  .filter(o => !ctx.device || devOk(o.dev, ctx.device));
+  }).filter(o => o.id && o.clickUrl);
+  if (dbg) dbg.total = l.length;
+  l = l.filter(o => o.usd <= MAX_USD); if (dbg) dbg.price = l.length;
+  l = l.filter(o => !o.cats.some(c => BLOCK_CATS.includes(c))); if (dbg) dbg.cat = l.length;
+  l = l.filter(o => !COUNTRY_FILTER || !ctx.country || !o.cnt.length || o.cnt.includes(ctx.country)); if (dbg) dbg.country = l.length;
+  l = l.filter(o => !ctx.device || devOk(o.dev, ctx.device)); if (dbg) dbg.device = l.length;
+  return l;
 }
 
 app.get('/api/offers', auth, h(async (q, s) => {
@@ -308,8 +312,11 @@ app.post('/api/admin/reply', admin, h(async (q, s) => {
 }));
 app.get('/api/admin/offers-raw', admin, h(async (q, s) => {
   if (!OW_KEY || !OW_SECRET) return s.json({ text: 'OFFERWALL_KEY or OFFERWALL_SECRET is not set in Environment.' });
+  const dbg = {};
+  await fetchOffers('admin-test', ctxOf(q), dbg);
   const r = await fetch('https://offerwall.gg/api/v1/offers?appId=' + OW_KEY + '&userId=admin-test&limit=2', { headers: { 'X-Api-Key': OW_SECRET } });
-  s.json({ text: 'HTTP ' + r.status + '\n' + (await r.text()).slice(0, 1500) });
+  const raw = (await r.text()).slice(0, 900);
+  s.json({ text: 'Offers from offerwall: ' + dbg.total + '\nAfter price limit ($' + MAX_USD + '): ' + dbg.price + '\nAfter category block: ' + dbg.cat + '\nAfter country filter: ' + dbg.country + '\nShown to user (after device filter): ' + dbg.device + '\n\nHTTP ' + r.status + '\n' + raw });
 }));
 
 const PAGE = `<!DOCTYPE html>
@@ -339,6 +346,9 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 nav{display:flex;border-bottom:1px solid var(--line);background:#0b1224}
 nav div{flex:1;text-align:center;font-size:10px;color:var(--mu);padding:8px 0;cursor:pointer;border-bottom:2px solid transparent}
 nav div i{display:block;font-style:normal;font-size:16px}nav .on{color:var(--gold);border-color:var(--gold)}
+nav #n_book{color:var(--gold);font-weight:700}
+nav #n_book i{font-size:19px;animation:glow 2.2s ease-in-out infinite}
+@keyframes glow{50%{transform:scale(1.18);filter:drop-shadow(0 0 7px #fbbf24)}}
 main{flex:1;overflow-y:auto;padding:14px}
 .row{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px}
 .row small{display:block;color:var(--mu);font-size:11px;margin-top:2px}
@@ -368,6 +378,9 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .ar{font-size:20px;line-height:2.1;direction:rtl;text-align:right;color:var(--gold);font-family:'Amiri','Traditional Arabic',serif;margin:6px 0}
 .bkc{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;font-size:13px;line-height:1.7}
 .bkc b{color:var(--gold)}.bkc small{display:block;color:var(--mu);font-size:11px;margin-top:4px}
+.bkh{text-align:center;margin-bottom:14px;border-radius:20px;padding:10px;border:1px solid rgba(251,191,36,.45);background:linear-gradient(180deg,#14263f,#0b1224)}
+.bkh .t{font-size:20px;font-weight:700;color:var(--gold);margin-top:6px}
+.bkh .u{font-size:12px;color:var(--mu)}
 .adm{display:none;position:fixed;inset:0;z-index:120;background:var(--bg);flex-direction:column;max-width:440px;margin:0 auto}
 .adm.on{display:flex}
 .ah{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#131d38,#0f172a)}
@@ -379,7 +392,6 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .th{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
 .th .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:700}
 .gap{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-/* Home themes carousel */
 .hs{position:relative;height:200px;border-radius:24px;overflow:hidden;margin-bottom:10px;border:1px solid rgba(251,191,36,.45);box-shadow:0 8px 24px rgba(0,0,0,.45)}
 .sl{position:absolute;inset:0;padding:18px 16px;opacity:0;transform:scale(.96);transition:opacity .7s,transform .7s;display:flex;flex-direction:column;justify-content:center;pointer-events:none;overflow:hidden}
 .sl.on{opacity:1;transform:none;pointer-events:auto}
@@ -434,14 +446,24 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 <div class="adm" id="adm"><div class="ah"><b>Admin Panel</b><button class="btn s" onclick="admClose()">Close</button></div><div id="abody"></div><div id="anav"></div></div>
 <div class="modal" id="modal"><div id="mBody"></div></div>
 <script>
-var GID='__GID__',T=localStorage.getItem('t'),ME=null,ADM='',TAB='home',TIMER=null,AD={},HSI=0;
+var GID='__GID__',T=localStorage.getItem('t'),ME=null,ADM='',TAB='home',TIMER=null,AD={},HSI=0,LC=0;
 var REF=new URLSearchParams(location.search).get('ref')||localStorage.getItem('ref')||'';
 if(REF)localStorage.setItem('ref',REF);
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function money(n){return Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function tm(t){return new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}
-function logo(s){return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 100 100" aria-label="RS Growth Matrix"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset=".5" stop-color="#fbbf24"/><stop offset="1" stop-color="#b45309"/></linearGradient></defs><path d="M50 4 90 20v30c0 25-17 42-40 48C27 92 10 75 10 50V20z" fill="#0b1020" stroke="url(#lg)" stroke-width="4"/><text x="50" y="60" text-anchor="middle" font-size="34" font-weight="800" fill="url(#lg)" font-family="Georgia,serif">RS</text><path d="M30 71h40M38 77h24" stroke="url(#lg)" stroke-width="2.5" stroke-linecap="round"/></svg>'}
+function logo(s){var g='lg'+(LC++);return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 100 100" aria-label="RS Growth Matrix"><defs><linearGradient id="'+g+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset=".5" stop-color="#fbbf24"/><stop offset="1" stop-color="#b45309"/></linearGradient></defs><path d="M50 4 90 20v30c0 25-17 42-40 48C27 92 10 75 10 50V20z" fill="#0b1020" stroke="url(#'+g+')" stroke-width="4"/><text x="50" y="60" text-anchor="middle" font-size="34" font-weight="800" fill="url(#'+g+')" font-family="Georgia,serif">RS</text><path d="M30 71h40M38 77h24" stroke="url(#'+g+')" stroke-width="2.5" stroke-linecap="round"/></svg>'}
+function mosque(w){var g='mg'+(LC++);return '<svg width="'+w+'" viewBox="0 0 200 120" style="max-width:100%" aria-label="Mosque"><defs><linearGradient id="'+g+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset="1" stop-color="#b45309"/></linearGradient><linearGradient id="'+g+'s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e1b4b"/><stop offset="1" stop-color="#0f3d2e"/></linearGradient><clipPath id="'+g+'c"><rect width="200" height="120" rx="16"/></clipPath></defs><g clip-path="url(#'+g+'c)"><rect width="200" height="120" fill="url(#'+g+'s)"/>'+
+ '<circle cx="165" cy="26" r="12" fill="#fde68a"/><circle cx="171" cy="22" r="10" fill="#1e1b4b"/>'+
+ '<circle cx="28" cy="20" r="1.8" fill="#fff"/><circle cx="55" cy="34" r="1.3" fill="#fff"/><circle cx="80" cy="14" r="1.6" fill="#fde68a"/><circle cx="130" cy="18" r="1.4" fill="#fff"/><circle cx="188" cy="58" r="1.3" fill="#fff"/><circle cx="14" cy="60" r="1.2" fill="#fde68a"/>'+
+ '<rect x="26" y="52" width="14" height="56" fill="#0b1020" stroke="url(#'+g+')" stroke-width="1.5"/><path d="M26 52l7-18 7 18z" fill="url(#'+g+')"/><circle cx="33" cy="31" r="2" fill="#fde68a"/><rect x="31" y="62" width="4" height="8" rx="2" fill="#fbbf24"/>'+
+ '<rect x="160" y="52" width="14" height="56" fill="#0b1020" stroke="url(#'+g+')" stroke-width="1.5"/><path d="M160 52l7-18 7 18z" fill="url(#'+g+')"/><circle cx="167" cy="31" r="2" fill="#fde68a"/><rect x="165" y="62" width="4" height="8" rx="2" fill="#fbbf24"/>'+
+ '<rect x="58" y="80" width="84" height="28" fill="#0b1020" stroke="url(#'+g+')" stroke-width="1.5"/>'+
+ '<path d="M68 80a32 32 0 0 1 64 0z" fill="url(#'+g+')"/><rect x="99" y="36" width="2" height="14" fill="#fde68a"/><circle cx="100" cy="35" r="2.6" fill="#fde68a"/>'+
+ '<path d="M91 108V96a9 9 0 0 1 18 0v12z" fill="url(#'+g+')"/>'+
+ '<path d="M66 96V90a5 5 0 0 1 10 0v6z" fill="#fbbf24" opacity=".8"/><path d="M124 96V90a5 5 0 0 1 10 0v6z" fill="#fbbf24" opacity=".8"/>'+
+ '<rect y="108" width="200" height="12" fill="#052e1a"/></g></svg>'}
 function api(p,m,b,hd){hd=hd||{};hd['Content-Type']='application/json';if(T)hd.Authorization='Bearer '+T;
  return fetch('/api/'+p,{method:m||'GET',headers:hd,body:b?JSON.stringify(b):undefined}).then(function(r){return r.json().then(function(d){if(r.status===401&&T){out();throw new Error(d.error)}if(!r.ok)throw new Error(d.error||'Error');return d})})}
 function out(){localStorage.removeItem('t');T=null;ME=null;admClose();$('auth').style.display='block'}
@@ -454,7 +476,7 @@ function gCb(r){api('google','POST',{credential:r.credential,ref:REF}).then(done
 function initG(){if(!GID){$('gWrap').style.display='none';return}
  if(!window.google||!google.accounts){return setTimeout(initG,400)}
  google.accounts.id.initialize({client_id:GID,callback:gCb});google.accounts.id.renderButton($('gBtn'),{theme:'filled_black',size:'large',text:'continue_with',width:280})}
-var TABS=[['home','🏠','Home'],['tasks','📋','Tasks'],['rank','🏆','Ranking'],['ref','👥','Refer'],['help','💬','Support'],['acc','👤','Account'],['book','📖','Book']];
+var TABS=[['home','🏠','Home'],['tasks','📋','Tasks'],['rank','🏆','Ranking'],['ref','👥','Refer'],['help','💬','Support'],['acc','👤','Account'],['book','🕌','Islam']];
 function enter(m){ME=m;$('auth').style.display='none';$('nav').innerHTML=TABS.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');head();go('home')}
 function head(){$('hName').textContent=ME.name;$('hBal').textContent=money(ME.balance)}
 function go(t){TAB=t;clearInterval(TIMER);TABS.forEach(function(x){$('n_'+x[0]).className=x[0]===t?'on':''});({home:vHome,tasks:vTasks,rank:vRank,ref:vRef,help:vHelp,acc:vAcc,book:vBook})[t]()}
@@ -470,12 +492,12 @@ function hsGo(i){HSI=i;var s=document.querySelectorAll('.sl'),d=document.querySe
 function vHome(){var ok=Date.now()-ME.lastDaily>=864e5;HSI=0;
  var sl=HS.map(function(x,i){return '<div class="sl '+x[0]+(i===0?' on':'')+'"><span class="tag">'+x[1]+'</span><h4>'+x[2]+'</h4><p>'+x[3]+'</p><span class="em">'+x[4]+'</span><span class="e2">'+x[5]+'</span><span class="e3">'+x[6]+'</span></div>'}).join('');
  var dt=HS.map(function(x,i){return '<i class="'+(i===0?'on':'')+'" onclick="hsGo('+i+')"></i>'}).join('');
- $('main').innerHTML='<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
+ $('main').innerHTML='<div class="mq"><span>🌙 RS Growth Matrix-এ স্বাগতম! আপনার নামাজের কথা মনে আছে তো? 🤲 নামাজ পড়ুন, তারপর কাজে মন দিন। ✨ আমাদের এই সাইটে আপনি নিশ্চিন্তে সহজ টাস্ক করে আয় করতে পারেন। 🤝 কোনো সমস্যা হলে Support-এ জানান। 💬</span></div>'+
+ '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
  '<div class="hs">'+sl+'</div><div class="dots">'+dt+'</div>'+
  '<h3>আজকের বোনাস</h3><div class="bn">'+
- '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>প্রতি ২৪ ঘণ্টায় একবার</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
- '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+
- '<div class="mq"><span>🌙 RS Growth Matrix-এ স্বাগতম! আপনার নামাজের কথা মনে আছে তো? 🤲 নামাজ পড়ুন, তারপর কাজে মন দিন। ✨ আমাদের এই সাইটে আপনি নিশ্চিন্তে সহজ টাস্ক করে আয় করতে পারেন। 🤝 কোনো সমস্যা হলে Support-এ জানান। 💬</span></div>';
+ '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT · প্রতি ২৪ ঘণ্টায় একবার</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
+ '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT · প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>';
  TIMER=setInterval(function(){if(!document.querySelector('.hs')){clearInterval(TIMER);return}hsGo((HSI+1)%HS.length)},4500)}
 function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added to your balance.')}).catch(function(e){toast(e.message)})}
 
@@ -530,7 +552,7 @@ function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="
 function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\\''+p+'\\')">&lsaquo; ফিরে যান</button>'}
 function vBook(){bk('menu')}
 function bk(p){var h='';
- if(p==='menu'){h='<div class="card" style="text-align:center;margin-bottom:12px">'+logo(54)+'<div class="brand" style="font-size:18px">ইসলামিক বই</div><div class="sub" style="margin:0">নাম, দোয়া ও হাদিস</div></div>'+
+ if(p==='menu'){h='<div class="bkh">'+mosque(230)+'<div class="t">ইসলামিক বই</div><div class="u">নাম, দোয়া ও হাদিস</div></div>'+
   bkb('names','🌙','ইসলামিক নাম','ছেলে ও মেয়েদের নাম ও অর্থ')+bkb('dua','🤲','নামাজের দোয়া','নামাজে যা যা পড়তে হয়')+bkb('rakat','🕌','পাঁচ ওয়াক্ত নামাজ','ফরজ রাকাতের সংখ্যা')+bkb('hadith','📜','হাদিস','কিছু সহিহ হাদিস')}
  else if(p==='names'){h=bkBack('menu')+'<h3>কাদের নাম দেখতে চান?</h3>'+bkb('boys','👦','ছেলেদের নাম','ইসলামিক ছেলে শিশুর নাম')+bkb('girls','👧','মেয়েদের নাম','ইসলামিক মেয়ে শিশুর নাম')}
  else if(p==='boys'||p==='girls'){var L=p==='boys'?NB:NG;h=bkBack('names')+'<h3>'+(p==='boys'?'ছেলেদের':'মেয়েদের')+' ইসলামিক নাম</h3>'+L.map(function(n){return '<div class="bkc"><b>'+esc(n[0])+'</b><small>'+esc(n[1])+'</small></div>'}).join('')}
