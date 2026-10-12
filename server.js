@@ -25,25 +25,27 @@ const RATE = Number(process.env.BDT_PER_USD) || 120;
 const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
 // ❤️ PENDING_HOURS = কত ঘণ্টা পেন্ডিং থাকলে টাস্ক তালিকা থেকে সরে যাবে (এখন ৪৮ ঘণ্টা)
 const PENDING_HOURS = 48;
-// ❤️ LATE_CREDIT = true হলে ৪৮ ঘণ্টা পরেও অফারওয়াল টাকা পাঠালে ইউজারকে দেওয়া হবে (বিজ্ঞাপনদাতা আপনাকে টাকা দিয়েছে বলে)। না দিতে চাইলে false করুন।
+// ❤️ LATE_CREDIT = true হলে ৪৮ ঘণ্টা পরেও অফারওয়াল টাকা পাঠালে ইউজারকে দেওয়া হবে। না দিতে চাইলে false করুন।
 const LATE_CREDIT = true;
 // ❤️ SPIN = লাকি ড্রয়ের সত্যিকারের পুরস্কার। প্রতিটা [টাকা, সম্ভাবনার ভাগ]। এখন: ১ টাকা ৪০%, ২ টাকা ৩০%, ৩ টাকা ২০%, ৫ টাকা ১০%।
 const SPIN = [[1, 40], [2, 30], [3, 20], [5, 10]];
 // ❤️ MAX_USD = এর চেয়ে বড় (ডলারে) অফার ইউজারকে দেখানো হবে না। টাস্ক কম এলে এটা বাড়ান (যেমন 20)।
 const MAX_USD = 5;
-// ❤️ COUNTRY_FILTER = true হলে শুধু TARGET_COUNTRY (বাংলাদেশ = BD) অথবা সব দেশের জন্য খোলা অফার আসবে।
-// ❤️ টাস্ক একদম না এলে সাময়িক false করে দেখতে পারেন, কিন্তু US-only অফার বাংলাদেশ থেকে করলে টাকা আসে না।
+// ❤️ COUNTRY_FILTER = true হলে শুধু TARGETS দেশের (বাংলাদেশ BD, ভারত IN, পাকিস্তান PK, নেপাল NP) অথবা সব দেশের জন্য খোলা অফার আসবে।
 const COUNTRY_FILTER = true;
-const TARGET_COUNTRY = 'BD';
+const TARGETS = ['BD', 'IN', 'PK', 'NP'];
 // ❤️ এই ধরনের অফার কোড নিজেই লুকিয়ে ফেলবে (অফারওয়ালের Blocked categories এর পাশাপাশি)
 const BLOCK_CATS = ['signup', 'signups', 'deposit', 'deposits', 'creditcard', 'creditcards', 'oneclick', 'multireward', 'freetrial', 'freetrials', 'shopping', 'extension', 'extensions'];
 app.use(express.json({ limit: '100kb' }));
+
+// ❤️ names.js = ইসলামিক নামের তালিকা (আলাদা ফাইল)। না থাকলে নামের পেজ খালি দেখাবে, বাকি সাইট ঠিক চলবে।
+let NAMES = { boys: [], girls: [] };
+try { NAMES = require('./names.js'); } catch (e) { console.error('names.js not found:', e.message); }
 
 // ❤️ MONGO_URI = আপনার ডাটাবেসের লিংক। এটা আগে থেকেই Render Environment এ আছে, আবার দিতে হবে না।
 if (!process.env.MONGO_URI) console.error('MONGO_URI is not set: accounts cannot be saved.');
 else mongoose.connect(process.env.MONGO_URI).then(async () => {
   console.log('MongoDB connected');
-  // পুরনো ভুল ইনডেক্স ঠিক করে নেয় (রেজিস্ট্রেশনে Server error হওয়ার কারণ এটাই হতে পারে)
   try { await User.syncIndexes(); console.log('User indexes synced'); } catch (e) { console.error('Index sync error:', e.message); }
 }).catch(e => console.error('MongoDB error:', e.message));
 
@@ -53,6 +55,7 @@ const User = mongoose.model('User', new mongoose.Schema({
   balance: { type: Number, default: 0 }, earned: { type: Number, default: 0 },
   refCode: { type: String, unique: true }, refBy: String,
   refEarn: { type: Number, default: 0 }, refCount: { type: Number, default: 0 },
+  avatar: { type: String, default: '' },
   lastDaily: { type: Number, default: 0 }, lastCheckin: String, lastSpin: { type: Number, default: 0 }, lastSeen: Number, created: { type: Date, default: Date.now }
 }));
 const Click = mongoose.model('Click', new mongoose.Schema({ uid: String, offerId: String, title: String, icon: String, bdt: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now }, doneAt: Number }));
@@ -71,11 +74,11 @@ const sign = id => { const b = id + '.' + (Date.now() + 30 * 864e5); return b + 
 const hashPw = (p, salt) => crypto.scryptSync(p, salt, 32).toString('hex');
 const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 const today = () => new Date().toISOString().slice(0, 10);
-// "আজ" মানে বাংলাদেশ সময় (UTC+6) অনুযায়ী রাত ১২টা থেকে। অ্যাডমিন প্যানেলের "আজকের" হিসাব এটা দিয়ে হয়।
+// "আজ" মানে বাংলাদেশ সময় (UTC+6) অনুযায়ী রাত ১২টা থেকে।
 const dayStart = () => { const o = 6 * 36e5, n = Date.now() + o; return new Date(n - (n % 864e5) - o); };
 const credit = (id, n) => User.updateOne({ _id: id }, { $inc: { balance: n, earned: n } });
-const me = u => ({ name: u.name, phone: u.phone || '', email: u.email || '', balance: u.balance, earned: u.earned, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN });
-// ❤️ নিচের লাইনে ইউজারের ভাগ ঠিক করা আছে: ১ ডলারের বেশি হলে ০.৫ (৫০%), ১ ডলার বা কম হলে ০.৭ (৭০%)। বদলাতে চাইলে এই দুটো সংখ্যা বদলান।
+const me = u => ({ name: u.name, phone: u.phone || '', email: u.email || '', av: u.avatar || '', balance: u.balance, earned: u.earned, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS });
+// ❤️ ইউজারের ভাগ: ১ ডলারের বেশি হলে ০.৫ (৫০%), ১ ডলার বা কম হলে ০.৭ (৭০%)।
 const bdtFor = usd => Math.round(usd * RATE * (usd > 1 ? 0.5 : 0.7) * 100) / 100;
 // ❤️ ৪৮ ঘণ্টার বেশি পেন্ডিং থাকা টাস্ক "expired" হয়ে তালিকা থেকে সরে যায়।
 const expire = uid => Click.updateMany(Object.assign({ status: 'pending', at: { $lt: new Date(Date.now() - PENDING_HOURS * 36e5) } }, uid ? { uid } : {}), { status: 'expired' });
@@ -138,6 +141,17 @@ app.post('/api/google', h(async (q, s) => {
 
 app.get('/api/me', auth, (q, s) => s.json(me(q.user)));
 
+// ❤️ প্রোফাইল ছবি: ক্লায়েন্ট ছবি ১২৮px করে পাঠায়। এখানে শুধু নিরাপদ JPEG ও ছোট সাইজ নেওয়া হয়।
+app.post('/api/avatar', auth, h(async (q, s) => {
+  const img = String((q.body || {}).img || '');
+  if (img.length > 30000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(img)) return bad(s, 'Photo is invalid or too large. Try another photo.');
+  await User.updateOne({ _id: q.user.id }, { avatar: img });
+  s.json({ av: img });
+}));
+
+// ইসলামিক নামের তালিকা
+app.get('/api/names/:t', auth, (q, s) => s.json(q.params.t === 'girls' ? NAMES.girls : NAMES.boys));
+
 // ---------- Offerwall ----------
 const pick = (o, ks) => { for (const k of ks) if (o[k] != null && o[k] !== '') return o[k]; };
 const arrOf = v => Array.isArray(v) ? v : [];
@@ -178,7 +192,7 @@ async function fetchOffers(uid, ctx, dbg) {
   }
   l = l.filter(o => o.usd <= MAX_USD); if (dbg) dbg.price = l.length;
   l = l.filter(o => !o.cats.some(c => BLOCK_CATS.includes(c))); if (dbg) dbg.cat = l.length;
-  l = l.filter(o => !COUNTRY_FILTER || !o.cnt.length || o.cnt.includes(TARGET_COUNTRY)); if (dbg) dbg.country = l.length;
+  l = l.filter(o => !COUNTRY_FILTER || !o.cnt.length || o.cnt.some(c => TARGETS.includes(c))); if (dbg) dbg.country = l.length;
   l = l.filter(o => !ctx.device || devOk(o.dev, ctx.device)); if (dbg) dbg.device = l.length;
   return l;
 }
@@ -349,7 +363,8 @@ app.get('/api/admin/offers-raw', admin, h(async (q, s) => {
   const dbg = {};
   await fetchOffers('admin-test', ctxOf(q), dbg);
   const cs = Object.entries(dbg.cn || {}).sort((a, b) => b[1] - a[1]).slice(0, 10).map(x => x[0] + ':' + x[1]).join(', ');
-  s.json({ text: 'Offers from offerwall: ' + dbg.total + '\nCountries (offers per country): ' + cs + '\n\nAfter price limit ($' + MAX_USD + '): ' + dbg.price + '\nAfter category block: ' + dbg.cat + '\nAfter country filter (' + TARGET_COUNTRY + '): ' + dbg.country + '\nShown to user (after device filter): ' + dbg.device });
+  const tg = TARGETS.map(c => c + ':' + ((dbg.cn || {})[c] || 0)).join(', ');
+  s.json({ text: 'Offers from offerwall: ' + dbg.total + '\nTop countries: ' + cs + '\nYour countries (' + tg + ') + ALL:' + ((dbg.cn || {}).ALL || 0) + '\n\nAfter price limit ($' + MAX_USD + '): ' + dbg.price + '\nAfter category block: ' + dbg.cat + '\nAfter country filter: ' + dbg.country + '\nShown to user (after device filter): ' + dbg.device }); 
 }));
 
 const PAGE = `<!DOCTYPE html>
@@ -375,20 +390,26 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .btn.g{background:var(--grn);color:#fff}.btn.r{background:var(--red);color:#fff}.btn.s{width:auto;padding:6px 12px;font-size:12px;margin:0;border-radius:14px}
 .or{font-size:11px;color:var(--mu);margin:14px 0 8px;text-align:center}
 .top{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#131d38,#0f172a)}
-.top .l{display:flex;align-items:center;gap:10px}.top b{font-size:14px}.bal{text-align:right;font-size:17px;font-weight:800;color:var(--grn)}.bal small{display:block;font-size:10px;color:var(--mu);font-weight:400}
-nav{display:flex;border-bottom:1px solid var(--line);background:#0b1224}
-nav div{flex:1;text-align:center;font-size:10px;color:var(--mu);padding:8px 0;cursor:pointer;border-bottom:2px solid transparent}
-nav div i{display:block;font-style:normal;font-size:16px}nav .on{color:var(--gold);border-color:var(--gold)}
+.top .l{display:flex;align-items:center;gap:9px;min-width:0}.top b{font-size:14px}.bal{text-align:right;font-size:17px;font-weight:800;color:var(--grn)}.bal small{display:block;font-size:10px;color:var(--mu);font-weight:400}
+.av{width:40px;height:40px;border-radius:50%;border:2px solid var(--gold);background:#16213f;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;overflow:hidden;flex-shrink:0;box-shadow:0 0 10px rgba(251,191,36,.3)}
+.av img{width:100%;height:100%;object-fit:cover;display:block}
+nav{display:flex;gap:4px;padding:7px 5px 9px;background:#0b1224;box-shadow:0 10px 20px rgba(0,0,0,.6);position:relative;z-index:5}
+nav div{flex:1;text-align:center;font-size:10px;color:var(--mu);padding:7px 0;cursor:pointer;border-radius:13px;background:linear-gradient(180deg,#18244a,#0e1730);box-shadow:0 4px 9px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.07);transition:transform .2s}
+nav div i{display:block;font-style:normal;font-size:16px;position:relative;width:26px;height:26px;line-height:26px;margin:0 auto}
+nav .on{color:var(--gold);transform:translateY(-1px);background:linear-gradient(180deg,#2a2208,#13100a);box-shadow:0 0 0 1px var(--gold),0 6px 14px rgba(251,191,36,.28),inset 0 1px 0 rgba(255,255,255,.1)}
 nav #n_book{color:var(--gold);font-weight:700}
-nav #n_book i{font-size:19px;animation:glow 2.2s ease-in-out infinite}
+nav #n_book i{animation:glow 2.2s ease-in-out infinite}
 @keyframes glow{50%{transform:scale(1.18);filter:drop-shadow(0 0 7px #fbbf24)}}
+nav #n_tasks.on i::before{content:"";position:absolute;inset:-4px;border:2px dashed #fbbf24;border-radius:50%;animation:rot 3s linear infinite}
+nav #n_tasks.on i::after{content:"";position:absolute;inset:-8px;border:2px solid transparent;border-top-color:#38bdf8;border-bottom-color:#22c55e;border-radius:50%;animation:rot 1.8s linear infinite reverse}
+@keyframes rot{to{transform:rotate(360deg)}}
 main{flex:1;overflow-y:auto;padding:14px}
-.row{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px}
+.row{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;box-shadow:0 4px 10px rgba(0,0,0,.35)}
 .row small{display:block;color:var(--mu);font-size:11px;margin-top:2px}
 h3{font-size:13px;color:var(--mu);margin:4px 0 10px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
-.stat{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}.stat b{display:block;font-size:16px;color:var(--gold)}.stat small{font-size:11px;color:var(--mu)}
+.stat{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center;box-shadow:0 4px 10px rgba(0,0,0,.35)}.stat b{display:block;font-size:16px;color:var(--gold)}.stat small{font-size:11px;color:var(--mu)}
 .pod{display:flex;gap:8px;align-items:flex-end;margin-bottom:14px}
 .pod div{flex:1;text-align:center;border-radius:16px;padding:14px 6px;background:#131d38;border:1px solid var(--line);font-size:12px}
 .pod .p1{border-color:var(--gold);padding-bottom:26px;background:linear-gradient(180deg,rgba(251,191,36,.18),#131d38)}
@@ -409,8 +430,10 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .mq.u span{color:#bae6fd;text-decoration:underline;font-size:12px;animation-duration:36s}
 @keyframes mq{to{transform:translateX(-100%)}}
 .ar{font-size:20px;line-height:2.1;direction:rtl;text-align:right;color:var(--gold);font-family:'Amiri','Traditional Arabic',serif;margin:6px 0}
-.bkc{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;font-size:13px;line-height:1.7}
+.bkc{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;font-size:13px;line-height:1.7;box-shadow:0 4px 10px rgba(0,0,0,.35)}
 .bkc b{color:var(--gold)}.bkc small{display:block;color:var(--mu);font-size:11px;margin-top:4px}
+.nm{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;margin-bottom:8px;line-height:1.4}
+.nm .ar2{font-size:26px;color:var(--gold);font-family:'Amiri','Traditional Arabic',serif;direction:rtl;text-align:right;white-space:nowrap}
 .bkh{text-align:center;margin-bottom:14px;border-radius:20px;padding:10px;border:1px solid rgba(251,191,36,.45);background:linear-gradient(180deg,#14263f,#0b1224)}
 .bkh .t{font-size:20px;font-weight:700;color:var(--gold);margin-top:6px}
 .bkh .u{font-size:12px;color:var(--mu)}
@@ -419,9 +442,10 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .ah{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#131d38,#0f172a)}
 .ah b{color:var(--gold);font-size:15px}
 #abody{flex:1;overflow-y:auto;padding:14px}
-#anav{display:flex;border-top:1px solid var(--line);background:#0b1224;padding-bottom:6px}
-#anav div{flex:1;text-align:center;font-size:10px;color:var(--mu);padding:8px 0;cursor:pointer;border-top:2px solid transparent}
-#anav div i{display:block;font-style:normal;font-size:18px}#anav .on{color:var(--gold);border-color:var(--gold)}
+#anav{display:flex;gap:4px;padding:8px 5px 10px;background:#0b1224;box-shadow:0 -8px 18px rgba(0,0,0,.6)}
+#anav div{flex:1;text-align:center;font-size:10px;color:var(--mu);padding:7px 0;cursor:pointer;border-radius:13px;background:linear-gradient(180deg,#18244a,#0e1730);box-shadow:0 4px 9px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.07)}
+#anav div i{display:block;font-style:normal;font-size:18px}
+#anav .on{color:var(--gold);background:linear-gradient(180deg,#2a2208,#13100a);box-shadow:0 0 0 1px var(--gold),0 6px 14px rgba(251,191,36,.28)}
 .th{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
 .th .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:700}
 .gap{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
@@ -459,6 +483,13 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .tdw b{color:var(--gold)}
 .tdw.w{border-color:rgba(239,68,68,.5);color:#fecaca}
 .stp{font-size:12.5px;line-height:1.9;color:#cbd5e1;margin:8px 0 4px;padding-left:4px}
+.thero{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,#0c2a4a,#0b1224);border:1px solid rgba(56,189,248,.35);border-radius:20px;padding:14px;margin-bottom:12px;box-shadow:0 8px 20px rgba(0,0,0,.45)}
+.thero b{font-size:16px;color:#fff}.thero small{display:block;color:var(--mu);font-size:11.5px;margin-top:4px;line-height:1.5}
+.rg{position:relative;width:78px;height:78px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:30px}
+.rg .r{position:absolute;border-radius:50%;border:2px solid transparent}
+.rg .r1{inset:0;border-top-color:#fbbf24;border-bottom-color:#fbbf24;animation:rot 3.2s linear infinite}
+.rg .r2{inset:9px;border-left-color:#38bdf8;border-right-color:#38bdf8;animation:rot 2.2s linear infinite reverse}
+.rg .r3{inset:18px;border-top-color:#22c55e;border-right-color:#22c55e;animation:rot 1.4s linear infinite}
 </style></head><body>
 <div class="app">
 <div id="auth">
@@ -481,14 +512,15 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
     <div id="gWrap"><div class="or">or continue with</div><div id="gBtn" style="display:flex;justify-content:center"></div></div>
   </div>
 </div>
-<div class="top"><div class="l"><div id="logoT"></div><div><b id="hName"></b><small style="display:block;color:var(--gold);font-size:11px">Member</small></div></div><div class="bal"><span id="hBal">0.00</span><small>Balance (BDT)</small></div></div>
+<div class="top"><div class="l"><div id="logoT"></div><div class="av" id="avT" onclick="$('avf').click()">📷</div><div><b id="hName"></b><small style="display:block;color:var(--gold);font-size:11px">Member</small></div></div><div class="bal"><span id="hBal">0.00</span><small>Balance (BDT)</small></div></div>
+<input type="file" id="avf" accept="image/*" style="display:none" onchange="avUp(this)">
 <nav id="nav"></nav>
 <main id="main"></main>
 </div>
 <div class="adm" id="adm"><div class="ah"><b>Admin Panel</b><button class="btn s" onclick="admClose()">Close</button></div><div id="abody"></div><div id="anav"></div></div>
 <div class="modal" id="modal"><div id="mBody"></div></div>
 <script>
-var GID='__GID__',T=localStorage.getItem('t'),ME=null,ADM='',TAB='home',TIMER=null,AD={},HSI=0,LC=0,ROT=0,SPUN=false;
+var GID='__GID__',T=localStorage.getItem('t'),ME=null,ADM='',TAB='home',TIMER=null,AD={},HSI=0,LC=0,ROT=0,SPUN=false,NML=[];
 var SEG=[1,2,3,5,1,2,3,1];
 var REF=new URLSearchParams(location.search).get('ref')||localStorage.getItem('ref')||'';
 if(REF)localStorage.setItem('ref',REF);
@@ -521,9 +553,18 @@ function initG(){if(!GID){$('gWrap').style.display='none';return}
  google.accounts.id.initialize({client_id:GID,callback:gCb});google.accounts.id.renderButton($('gBtn'),{theme:'filled_black',size:'large',text:'continue_with',width:280})}
 var TABS=[['home','🏠','Home'],['tasks','📋','Tasks'],['rank','🏆','Ranking'],['ref','👥','Refer'],['help','💬','Support'],['acc','👤','Account'],['book','🕌','Islam']];
 function enter(m){ME=m;$('auth').style.display='none';$('nav').innerHTML=TABS.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');head();go('home')}
-function head(){$('hName').textContent=ME.name;$('hBal').textContent=money(ME.balance)}
+function head(){$('hName').textContent=ME.name;$('hBal').textContent=money(ME.balance);$('avT').innerHTML=ME.av?'<img src="'+esc(ME.av)+'" alt="">':'📷'}
 function go(t){TAB=t;clearInterval(TIMER);TABS.forEach(function(x){$('n_'+x[0]).className=x[0]===t?'on':''});({home:vHome,tasks:vTasks,rank:vRank,ref:vRef,help:vHelp,acc:vAcc,book:vBook})[t]()}
 function toast(m){alert(m)}
+
+/* ---------- Profile photo ---------- */
+function avUp(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();
+ r.onload=function(){var im=new Image();
+  im.onload=function(){var c=document.createElement('canvas');c.width=c.height=128;var x=c.getContext('2d'),m=Math.min(im.width,im.height);
+   x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,128,128);
+   api('avatar','POST',{img:c.toDataURL('image/jpeg',0.8)}).then(function(d){ME.av=d.av;head()}).catch(function(e){toast(e.message)})};
+  im.onerror=function(){toast('ছবিটি পড়া যায়নি, অন্য ছবি দিন।')};im.src=r.result};
+ r.readAsDataURL(f);inp.value=''}
 
 /* ---------- Home ---------- */
 var HS=[
@@ -559,14 +600,14 @@ function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style
 function closeSpin(){closeM();if(TAB==='home')vHome()}
 
 /* ---------- Tasks ---------- */
-function vTasks(){$('main').innerHTML='<div class="grid4" id="st"></div><div class="mq u"><span>⏳ আপনার টাস্ক পেন্ডিং থাকা মানে যাচাই চলছে, চিন্তার কোনো কারণ নেই। টাস্ক কমপ্লিট হতে কিছুটা সময় লাগে। যাচাই শেষে সফল হলে টাকা আপনার ব্যালেন্সে যোগ হবে। ৪৮ ঘণ্টার মধ্যে যাচাই না হলে টাস্কটি তালিকা থেকে সরে যায়। ধৈর্য ধরুন। 🤍</span></div><h3>Live tasks</h3><div id="tl">Loading...</div>';
+function vTasks(){$('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>📋</div><div><b>Live Tasks</b><small>টাস্কে চাপুন, বিস্তারিত পড়ুন, তারপর Start দিন।</small></div></div><div class="grid4" id="st"></div><div class="mq u"><span>⏳ আপনার টাস্ক পেন্ডিং থাকা মানে যাচাই চলছে, চিন্তার কোনো কারণ নেই। টাস্ক কমপ্লিট হতে কিছুটা সময় লাগে। যাচাই শেষে সফল হলে টাকা আপনার ব্যালেন্সে যোগ হবে। ৪৮ ঘণ্টার মধ্যে যাচাই না হলে টাস্কটি তালিকা থেকে সরে যায়। ধৈর্য ধরুন। 🤍</span></div><div id="tl">Loading...</div>';
  function load(){api('offers').then(function(d){var s=d.stats;if(!$('st'))return;
  $('st').innerHTML=[['Pending',s.pending],['Success',s.success],['Cancelled',s.cancelled],['Total',s.total]].map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('');
  window.OF=d.list;
  $('tl').innerHTML=d.list.length?d.list.map(function(t,i){var op=t.status==='open',b=op?'<button class="btn s">Details</button>':'<span class="chip '+(t.status==='success'?'approved':t.status)+'">'+t.status+'</span>';
- return '<div class="row"'+(op?' style="cursor:pointer" onclick="showT('+i+')"':'')+'><div style="display:flex;gap:10px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="38" height="38" style="border-radius:10px" alt="">':'')+'<div>'+esc(t.title)+'<small>Reward: '+money(t.bdt)+' BDT</small></div></div>'+b+'</div>'}).join(''):'<div class="row">এই মুহূর্তে বাংলাদেশের জন্য কোনো নতুন টাস্ক নেই। কিছুক্ষণ পর আবার দেখুন।</div>'}).catch(function(e){if($('tl'))$('tl').textContent=e.message})}
+ return '<div class="row"'+(op?' style="cursor:pointer" onclick="showT('+i+')"':'')+'><div style="display:flex;gap:10px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="38" height="38" style="border-radius:10px" alt="">':'')+'<div>'+esc(t.title)+'<small>Reward: '+money(t.bdt)+' BDT</small></div></div>'+b+'</div>'}).join(''):'<div class="row">এই মুহূর্তে বাংলাদেশ, ভারত, পাকিস্তান ও নেপালের জন্য কোনো নতুন টাস্ক নেই। কিছুক্ষণ পর আবার দেখুন।</div>'}).catch(function(e){if($('tl'))$('tl').textContent=e.message})}
  load();TIMER=setInterval(load,30000)}
-function showT(i){var t=OF[i],cn=t.cnt||[],dv=t.dev||[],okC=!cn.length||cn.indexOf('BD')>=0;
+function showT(i){var t=OF[i],cn=t.cnt||[],dv=t.dev||[],tc=(ME&&ME.tc)||[],okC=!cn.length||cn.some(function(c){return tc.indexOf(c)>=0});
  modal('<div style="display:flex;gap:12px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="54" height="54" style="border-radius:14px" alt="">':'')+'<div><b style="font-size:15px">'+esc(t.title)+'</b><div style="color:var(--grn);font-weight:800;margin-top:3px">Reward: '+money(t.bdt)+' BDT</div></div></div>'+
  '<div class="tdw"><b>কাজ কী:</b> '+esc(t.desc||'বিস্তারিত দেওয়া নেই')+'</div>'+
  (t.req?'<div class="tdw"><b>শর্ত:</b> '+esc(t.req)+'</div>':'')+
@@ -603,8 +644,6 @@ function wdForm(){modal('<h3 style="color:var(--gold)">Withdraw (300 - 5000 BDT)
 function doWd(){api('withdraw','POST',{method:$('wm').value,amount:$('wa').value,phone:$('wp').value}).then(function(m){ME=m;head();closeM();toast('Withdraw request sent.');vAcc()}).catch(function(e){toast(e.message)})}
 
 /* ---------- Islamic Book ---------- */
-var NB=[["মুহাম্মদ","প্রশংসিত"],["আহমদ","অধিক প্রশংসাকারী"],["আবদুল্লাহ","আল্লাহর বান্দা"],["ইবরাহিম","নবী ইবরাহিম (আ.)-এর নাম"],["ইসমাইল","নবী ইসমাইল (আ.)-এর নাম"],["ইউসুফ","নবী ইউসুফ (আ.)-এর নাম"],["ইয়াহইয়া","নবী ইয়াহইয়া (আ.)-এর নাম"],["ইদরিস","নবী ইদরিস (আ.)-এর নাম"],["উমর","সাহাবীর নাম, দ্বিতীয় খলিফা"],["আলী","উচ্চ মর্যাদাসম্পন্ন"],["হামজা","সাহাবীর নাম, শক্তিশালী"],["বিলাল","সাহাবীর নাম, নবী (সা.)-এর মুয়াজ্জিন"],["সালমান","শান্তিপ্রিয়, নিরাপদ"],["হাসান","সুন্দর, উত্তম"],["হুসাইন","ছোট্ট সুন্দর, প্রিয়"]];
-var NG=[["আয়েশা","প্রাণবন্ত, জীবন্ত"],["ফাতিমা","নবী (সা.)-এর কন্যার নাম"],["খাদিজা","নবী (সা.)-এর প্রথম স্ত্রী"],["মারিয়াম","নবী ঈসা (আ.)-এর মাতা"],["জয়নব","সুগন্ধি বৃক্ষ"],["রুকাইয়া","নবী (সা.)-এর কন্যার নাম"],["হাফসা","সাহাবিয়া, নবী (সা.)-এর স্ত্রী"],["সুমাইয়া","ইসলামের প্রথম শহীদ নারী"],["আসমা","উচ্চ মর্যাদাসম্পন্না"],["সালমা","শান্তিপ্রিয়, নিরাপদ"],["আমিনা","বিশ্বস্ত, নিরাপদ"],["জান্নাত","বেহেশত"],["নূর","আলো"],["সাফিয়া","খাঁটি, নির্মল"],["হালিমা","ধৈর্যশীলা, কোমল"]];
 var DUA=[
 ["১. সানা (নামাজের শুরুতে)","سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ وَتَبَارَكَ اسْمُكَ وَتَعَالَى جَدُّكَ وَلَا إِلَهَ غَيْرُكَ","সুবহানাকাল্লাহুম্মা ওয়া বিহামদিকা ওয়া তাবারাকাসমুকা ওয়া তাআলা জাদ্দুকা ওয়া লা ইলাহা গাইরুক।","হে আল্লাহ, আপনি পবিত্র, আপনার প্রশংসা করছি। আপনার নাম বরকতময়, আপনার মর্যাদা সুউচ্চ, আপনি ছাড়া কোনো ইলাহ নেই।"],
 ["২. সূরা ফাতিহা (প্রতি রাকাতে)","بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ الرَّحْمَٰنِ الرَّحِيمِ مَالِكِ يَوْمِ الدِّينِ إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ","","পরম করুণাময় দয়ালু আল্লাহর নামে শুরু। সমস্ত প্রশংসা জগতের প্রতিপালক আল্লাহর। তিনি পরম করুণাময়, অতি দয়ালু, বিচার দিনের মালিক। আমরা শুধু আপনারই ইবাদত করি ও আপনারই কাছে সাহায্য চাই। আমাদের সরল পথ দেখান, তাদের পথ, যাদের আপনি নিয়ামত দিয়েছেন; তাদের পথ নয়, যারা গজবপ্রাপ্ত ও পথভ্রষ্ট।"],
@@ -617,11 +656,15 @@ var HD=[["কাজ নিয়তের ওপর নির্ভরশীল�
 function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\\''+p+'\\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
 function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\\''+p+'\\')">&lsaquo; ফিরে যান</button>'}
 function vBook(){bk('menu')}
+function nmF(){var q=($('nq').value||'').trim().toLowerCase(),a=NML.filter(function(x){return !q||x.toLowerCase().indexOf(q)>=0});
+ $('nl').innerHTML='<h3>'+a.length+'টি নাম</h3>'+(a.length?a.map(function(x){var p=x.split('|');return '<div class="bkc nm"><div><b>'+esc(p[0])+'</b><small>'+esc(p[2]||'')+'</small></div><div class="ar2">'+esc(p[1]||'')+'</div></div>'}).join(''):'<div class="row">'+(NML.length?'কোনো নাম মেলেনি':'নামের ফাইল (names.js) পাওয়া যায়নি')+'</div>')}
 function bk(p){var h='';
  if(p==='menu'){h='<div class="bkh">'+mosque(230)+'<div class="t">ইসলামিক বই</div><div class="u">নাম, দোয়া ও হাদিস</div></div>'+
-  bkb('names','🌙','ইসলামিক নাম','ছেলে ও মেয়েদের নাম ও অর্থ')+bkb('dua','🤲','নামাজের দোয়া','নামাজে যা যা পড়তে হয়')+bkb('rakat','🕌','পাঁচ ওয়াক্ত নামাজ','ফরজ রাকাতের সংখ্যা')+bkb('hadith','📜','হাদিস','কিছু সহিহ হাদিস')}
+  bkb('names','🌙','ইসলামিক নাম','ছেলে ও মেয়েদের নাম, আরবি লেখা ও অর্থ')+bkb('dua','🤲','নামাজের দোয়া','নামাজে যা যা পড়তে হয়')+bkb('rakat','🕌','পাঁচ ওয়াক্ত নামাজ','ফরজ রাকাতের সংখ্যা')+bkb('hadith','📜','হাদিস','কিছু সহিহ হাদিস')}
  else if(p==='names'){h=bkBack('menu')+'<h3>কাদের নাম দেখতে চান?</h3>'+bkb('boys','👦','ছেলেদের নাম','ইসলামিক ছেলে শিশুর নাম')+bkb('girls','👧','মেয়েদের নাম','ইসলামিক মেয়ে শিশুর নাম')}
- else if(p==='boys'||p==='girls'){var L=p==='boys'?NB:NG;h=bkBack('names')+'<h3>'+(p==='boys'?'ছেলেদের':'মেয়েদের')+' ইসলামিক নাম</h3>'+L.map(function(n){return '<div class="bkc"><b>'+esc(n[0])+'</b><small>'+esc(n[1])+'</small></div>'}).join('')}
+ else if(p==='boys'||p==='girls'){NML=[];h=bkBack('names')+'<h3>'+(p==='boys'?'ছেলেদের':'মেয়েদের')+' ইসলামিক নাম</h3><input id="nq" placeholder="নাম বা অর্থ খুঁজুন..." oninput="nmF()"><div id="nl" style="margin-top:10px"><div class="row">Loading...</div></div>';
+  $('main').innerHTML=h;$('main').scrollTop=0;
+  api('names/'+p).then(function(a){NML=a;nmF()}).catch(function(e){var l=$('nl');if(l)l.textContent=e.message});return}
  else if(p==='dua'){h=bkBack('menu')+'<h3>নামাজের দোয়া</h3>'+DUA.map(function(d){return '<div class="bkc"><b>'+esc(d[0])+'</b><div class="ar">'+esc(d[1])+'</div>'+(d[2]?'<div>'+esc(d[2])+'</div>':'')+'<small>অর্থ: '+esc(d[3])+'</small></div>'}).join('')}
  else if(p==='rakat'){h=bkBack('menu')+'<h3>পাঁচ ওয়াক্ত নামাজ</h3>'+RK.map(function(r){return '<div class="row"><div><b style="color:var(--gold)">'+r[0]+'</b></div><div>'+r[1]+'</div></div>'}).join('')+'<div class="bkc"><small>এখানে শুধু ফরজ রাকাত দেওয়া হয়েছে। সুন্নত ও নফল সম্পর্কে আপনার আলেম বা নির্ভরযোগ্য বই থেকে জেনে নিন।</small></div>'}
  else if(p==='hadith'){h=bkBack('menu')+'<h3>হাদিস</h3>'+HD.map(function(x){return '<div class="bkc">'+esc(x[0])+'<small>সূত্র: '+esc(x[1])+'</small></div>'}).join('')}
