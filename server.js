@@ -724,7 +724,7 @@ function showT(i){var t=OF[i],cn=t.cnt||[],dv=t.dev||[],tc=(ME&&ME.tc)||[],okC=!
  (t.req?'<div class="tdw"><b>শর্ত:</b> '+esc(t.req)+'</div>':'')+
  '<div class="tdw"><b>ডিভাইস:</b> '+(dv.length?esc(dv.join(', ')):'সব ডিভাইস')+'<br><b>যোগ্য দেশ:</b> '+(cn.length?esc(cn.join(', ')):'সব দেশ')+'</div>'+
  (okC?'':'<div class="tdw w">⚠️ এই অফার শুধু '+esc(cn.join(', '))+' দেশের ইউজারদের জন্য। আপনার দেশ এই তালিকায় না থাকলে কাজ শেষ করলেও টাকা নাও আসতে পারে।</div>')+
- '<h3 style="margin-top:10px">কীভাবে করবেন</h3><div class="stp">১. নিচের Start চাপুন。<br>২. যে পেজ খুলবে সেখানে শর্ত অনুযায়ী কাজটা শেষ করুন। কোনো অফারওয়াল অ্যাকাউন্ট লাগবে না。<br>৩. কাজ শেষে আমাদের সাইটে ফিরে আসুন, টাস্ক Pending দেখাবে।<br>৪. যাচাই শেষে সফল হলে টাকা ব্যালেন্সে যোগ হবে。</div>'+
+ '<h3 style="margin-top:10px">কীভাবে করবেন</h3><div class="stp">১. নিচের Start চাপুন।<br>২. যে পেজ খুলবে সেখানে শর্ত অনুযায়ী কাজটা শেষ করুন। কোনো অফারওয়াল অ্যাকাউন্ট লাগবে না।<br>৩. কাজ শেষে আমাদের সাইটে ফিরে আসুন, টাস্ক Pending দেখাবে।<br>৪. যাচাই শেষে সফল হলে টাকা ব্যালেন্সে যোগ হবে।</div>'+
  '<button class="btn g" onclick="closeM();startO('+i+')">Start</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
 function startO(i){api('offers/'+encodeURIComponent(OF[i].id)+'/start','POST').then(function(r){var w=window.open(r.url,'_blank');if(!w)location.href=r.url;vTasks()}).catch(function(e){toast(e.message)})}
 function modal(h){$('mBody').innerHTML=h;$('modal').style.display='flex'}
@@ -736,7 +736,7 @@ function vPkg(){var pkgs=[
  {p:1500,c:2000,d:'Platinum RS Coin Package'},{p:2000,c:2750,d:'Diamond RS Coin Package'},
  {p:2500,c:3550,d:'Master RS Coin Package'},{p:3000,c:4350,d:'Elite RS Coin Package'}
 ];
-$('main').innerHTML=hb('ref','📦','RS Coin Packages','৳২০০ থেকে ৳৩০০০ টাকার মধ্যে পছন্দমতো প্যাকেজ কিনুন ও কয়েন কালেক্ট করুন。') +
+$('main').innerHTML=hb('ref','📦','RS Coin Packages','৳২০০ থেকে ৳৩০০০ টাকার মধ্যে পছন্দমতো প্যাকেজ কিনুন ও কয়েন কালেক্ট করুন।') +
 pkgs.map(function(x){return '<div class="card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center"><div><b style="color:var(--gold);font-size:15px">'+x.d+'</b><div style="font-size:12px;color:var(--mu);margin-top:2px">মূল্য: <b>'+x.p+' BDT</b></div><div style="font-size:13px;color:var(--grn);margin-top:4px">রিওয়ার্ড: <b>'+x.c+' RS Coins</b></div></div><button class="btn s g" onclick="go(\'acc\');depForm('+x.p+')">Buy Now</button></div></div>'}).join('');
 }
 
@@ -874,7 +874,7 @@ function bk(p){var h='';
   $('main').innerHTML=h;$('main').scrollTop=0;
   api('names/'+p).then(function(a){NML=a;nmF()}).catch(function(e){var l=$('nl');if(l)l.textContent=e.message});return}
  else if(p==='dua'){h=bkBack('menu')+'<h3>নামাজের দোয়া</h3>'+DUA.map(function(d){return '<div class="bkc"><b>'+esc(d[0])+'</b><div class="ar">'+esc(d[1])+'</div>'+(d[2]?'<div>'+esc(d[2])+'</div>':'')+'<small>অর্থ: '+esc(d[3])+'</small></div>'}).join('')}
- else if(p==='rakat'){h=bkBack('menu')+'<h3>পাঁচ ওয়াক্ত নামাজ</h3>'+RK.map(function(r){return '<div class="row"><div><b style="color:var(--gold)">'+r[0]+'</b></div><div>'+r[1]+'</div></div>'}).join('')+'<div class="bkc"><small>এখানে শুধু ফরজ রাকাত দেওয়া হয়েছে। সুন্নত ও নফল সম্পর্কে আপনার আলেম বা নির্ভরযোগ্য বই থেকে জেনে নিন。</small></div>'}
+ else if(p==='rakat'){h=bkBack('menu')+'<h3>পাঁচ ওয়াক্ত নামাজ</h3>'+RK.map(function(r){return '<div class="row"><div><b style="color:var(--gold)">'+r[0]+'</b></div><div>'+r[1]+'</div></div>'}).join('')+'<div class="bkc"><small>এখানে শুধু ফরজ রাকাত দেওয়া হয়েছে। সুন্নত ও নফল সম্পর্কে আপনার আলেম বা নির্ভরযোগ্য বই থেকে জেনে নিন।</small></div>'}
  else if(p==='hadith'){h=bkBack('menu')+'<h3>হাদিস</h3>'+HD.map(function(x){return '<div class="bkc">'+esc(x[0])+'<small>সূত্র: '+esc(x[1])+'</small></div>'}).join('')}
  $('main').innerHTML=h;$('main').scrollTop=0}
 
