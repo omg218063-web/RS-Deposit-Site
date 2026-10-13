@@ -28,7 +28,7 @@ const CO = {
 const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
 const PENDING_HOURS = 48;
 const LATE_CREDIT = true;
-const SPIN = [[1, 40], [2, 30], [3, 20], [5, 10]];
+const SPIN = [[1, 40], [2, 30], [3, 20], [5, 8], [8, 2]];
 const MAX_USD = 5;
 const COUNTRY_FILTER = true;
 const TARGETS = ['BD', 'IN', 'PK', 'NP'];
@@ -614,7 +614,21 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 <div class="modal" id="modal"><div id="mBody"></div></div>
 <script>
 var GID='__GID__',T=localStorage.getItem('t'),ME=null,ADM='',TAB='home',TIMER=null,AD={},HSI=0,LC=0,ROT=0,SPUN=false,NML=[],TWU='';
-var SPIN=[[1, 40], [2, 30], [3, 20], [5, 8], [8, 2]];
+var WHEEL_ITEMS=[
+  {label:'1৳', val:1, win:true},
+  {label:'iPhone 18', val:0, win:false},
+  {label:'2৳', val:2, win:true},
+  {label:'Laptop', val:0, win:false},
+  {label:'3৳', val:3, win:true},
+  {label:'iPhone 18 Pro', val:0, win:false},
+  {label:'5৳', val:5, win:true},
+  {label:'Smart Watch', val:0, win:false},
+  {label:'8৳', val:8, win:true},
+  {label:'Bluetooth', val:0, win:false},
+  {label:'1৳', val:1, win:true},
+  {label:'iPhone 18 Pro Max', val:0, win:false}
+];
+var SPIN_WIN_POOL=[[1, 40], [2, 30], [3, 20], [5, 8], [8, 2]];
 var REF=new URLSearchParams(location.search).get('ref')||localStorage.getItem('ref')||'';
 if(REF)localStorage.setItem('ref',REF);
 function $(i){return document.getElementById(i)}
@@ -649,7 +663,7 @@ function initG(){if(!GID){$('gWrap').style.display='none';return}
 var TABS=[['home','🏠','Home'],['tasks','📋','Tasks'],['pkg','📦','Package'],['rank','🏆','Ranking'],['ref','👥','Refer'],['help','💬','Support'],['acc','👤','Account'],['book','🕌','Islam']];
 function enter(m){ME=m;$('auth').style.display='none';$('nav').innerHTML=TABS.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');head();go('home')}
 function head(){$('hName').textContent=ME.name;$('hBal').textContent=money(ME.balance);$('avT').innerHTML=ME.av?'<img src="'+esc(ME.av)+'" alt="">':'📷'}
-function go(t){TAB=t;clearInterval(TIMER);TABS.forEach(function(x){$('n_'+x[0]).className=x[0]===t?'on':''});({home:vHome,tasks:vTasks,pkg:vPkg,rank:vRank,ref:vRef,help:vHelp,acc:vAcc,book:vBook})[t]()}
+function go(t){TAB=t;clearInterval(TIMER);if(window.REF_TIMER)clearInterval(window.REF_TIMER);if(window.GLOB_TIMER)clearInterval(window.GLOB_TIMER);TABS.forEach(function(x){$('n_'+x[0]).className=x[0]===t?'on':''});({home:vHome,tasks:vTasks,pkg:vPkg,rank:vRank,ref:vRef,help:vHelp,acc:vAcc,book:vBook})[t]()}
 function toast(m){alert(m)}
 
 function avUp(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();
@@ -669,7 +683,7 @@ function hsGo(i){HSI=i;var s=document.querySelectorAll('.sl'),d=document.querySe
 function ico(c,p){return '<svg width="46" height="46" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="'+c+'"/>'+p+'</svg>'}
 function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
  var fb=ico('#1877f2','<path d="M13.2 19v-6.2h2.1l.4-2.6h-2.5V8.6c0-.8.3-1.3 1.4-1.3h1.2V5.1c-.2 0-1-.1-1.9-.1-1.9 0-3.2 1.2-3.2 3.3v1.9H8.6v2.6h2.1V19z" fill="#fff"/>');
- var tg=ico('#29a9eb','<path d="M18.6 6.2L5.4 11.3c-.9.4-.9.9-.2 1.1l3.3 1 1.3 4c.2.5.1.7.7.7.4 0 .6-.2.8-.4l1.6-1.6 3.3 2.4c.6.3 1 .2 1.2-.6l2-9.5c.2-.9-.3-1.3-.8-1 z" fill="#fff"/>');
+ var tg=ico('#29a9eb','<path d="M18.6 6.2L5.4 11.3c-.9.4-.9.9-.2 1.1l3.3 1 1.3 4c.2.5.1.7.7.7.4 0 .6-.2.8-.4l1.6-1.6 3.3 2.4c.6.3 1 .2 1.2-.6l2-9.5c.2-.9-.3-1.3-.8-1z" fill="#fff"/>');
  var wa=ico('#25d366','<path d="M12 5.2a6.8 6.8 0 0 0-5.8 10.3L5.2 18.8l3.4-.9A6.8 6.8 0 1 0 12 5.2z" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M9.6 9.3c.2 2 2 3.8 4 4.1l.9-.9-1.3-.9-.6.5c-.7-.3-1.4-1-1.7-1.7l.5-.6-.9-1.3z" fill="#fff"/>');
  return '<div class="ft"><div class="ftl">'+logo(46)+'<div><b>'+esc(c.n)+'</b><small>টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম</small></div></div>'+
  '<div class="fd">'+esc(c.d||'')+'</div>'+
@@ -690,23 +704,40 @@ function vHome(){var ok=Date.now()-ME.lastDaily>=864e5,sp=Date.now()-(ME.lastSpi
  $('main').innerHTML='<div class="mq"><span>🌙 RS Growth Matrix-এ স্বাগতম! আপনার নামাজের কথা মনে আছে তো? 🤲 নামাজ পড়ুন, তারপর কাজে মন দিন। ✨ আমাদের এই সাইটে আপনি নিশ্চিন্তে সহজ টাস্ক করে আয় করতে পারেন। 🤝 কোনো সমস্যা হলে Support-এ জানান। 💬</span></div>'+
  '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
  '<div class="hs">'+sl+'</div><div class="dots">'+dt+'</div>'+
- '<div class="bo" style="margin-bottom:14px"><div class="bi lk"><span class="ic">🎡</span><div style="flex:1"><b style="margin-top:0">Lucky Draw</b><small>প্রতি ২৪ ঘণ্টায় একবার ঘোরান, ১ থেকে ৮ টাকা পর্যন্ত জিতুন</small></div><button class="btn s'+(sp?'':' dn')+'" style="'+(sp?'':'background:#1e293b;color:#94a3b8')+'" onclick="spinOpen()">'+(sp?'Spin':'Done ✅')+'</button></div></div>'+
+ '<div class="bo" style="margin-bottom:14px"><div class="bi lk"><span class="ic">🎡</span><div style="flex:1"><b style="margin-top:0">Lucky Draw</b><small>প্রতি ২৪ ঘণ্টায় একবার ঘোরান, আইফোন ও ক্যাশ প্রাইজ জিতুন</small></div><button class="btn s'+(sp?'':' dn')+'" style="'+(sp?'':'background:#1e293b;color:#94a3b8')+'" onclick="spinOpen()">'+(sp?'Spin':'Done ✅')+'</button></div></div>'+
  '<h3>আজকের বোনাস</h3><div class="bn">'+
  '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT · প্রতি ২৪ ঘণ্টায় একবার</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
  '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT · প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
  TIMER=setInterval(function(){if(!document.querySelector('.hs')){clearInterval(TIMER);return}hsGo((HSI+1)%HS.length)},6000)}
 function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added to your balance.')}).catch(function(e){toast(e.message)})}
 
-function wheelSvg(){var cols=['#b45309','#1e3a8a','#14532d','#7c2d12','#4c1d95','#0c4a6e','#78350f','#164e63'],h='<svg viewBox="0 0 200 200" width="280" height="280" id="whs" style="display:block;transition:transform 4.5s cubic-bezier(.17,.67,.12,1);transform:rotate('+ROT+'deg)"><circle cx="100" cy="100" r="98" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/>';
- for(var i=0;i<8;i++){h+='<g transform="rotate('+(i*45+22.5)+' 100 100)"><path d="M100 100L63.65 12.23A95 95 0 0 1 136.35 12.23Z" fill="'+cols[i]+'" stroke="#fbbf24" stroke-width="1.2"/><text x="100" y="40" text-anchor="middle" font-size="15" font-weight="800" fill="#fff">'+SPIN[i%SPIN.length][0]+'৳</text></g>'}
- return h+'<circle cx="100" cy="100" r="16" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/><text x="100" y="105" text-anchor="middle" font-size="12">⭐</text></svg>'}
+function wheelSvg(){
+  var cols=['#b45309','#1e3a8a','#14532d','#7c2d12','#4c1d95','#0c4a6e','#78350f','#164e63','#92400e','#065f46','#1e293b','#581c87'];
+  var h='<svg viewBox="0 0 200 200" width="280" height="280" id="whs" style="display:block;transition:transform 4.5s cubic-bezier(.17,.67,.12,1);transform:rotate('+ROT+'deg)"><circle cx="100" cy="100" r="98" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/>';
+  var angleStep = 360 / WHEEL_ITEMS.length;
+  for(var i=0; i<WHEEL_ITEMS.length; i++){
+    var rotAngle = i * angleStep + (angleStep / 2);
+    h+='<g transform="rotate('+rotAngle+' 100 100)"><path d="M100 100L63.65 12.23A95 95 0 0 1 136.35 12.23Z" fill="'+cols[i%cols.length]+'" stroke="#fbbf24" stroke-width="1.2"/><text x="100" y="38" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">'+WHEEL_ITEMS[i].label+'</text></g>';
+  }
+  return h+'<circle cx="100" cy="100" r="16" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/><text x="100" y="105" text-anchor="middle" font-size="12">⭐</text></svg>';
+}
 function spinOpen(){SPUN=false;var ok=Date.now()-(ME.lastSpin||0)>=864e5;
  modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Lucky Draw</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন':'আজকের স্পিন শেষ। ২৪ ঘণ্টা পর আবার আসুন।')+'</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeSpin()">Close</button>')}
 function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style.opacity='.5';
- api('spin','POST').then(function(r){var c=[];for(var k=0;k<SPIN.length;k++)if(SPIN[k][0]===r.prize)c.push(k);var i=c[Math.floor(Math.random()*c.length)]||0;
-  ROT=Math.ceil(ROT/360)*360+1800-(i*45+22.5);$('whs').style.transform='rotate('+ROT+'deg)';
-  setTimeout(function(){ME=r.me;head();var m=$('spmsg');if(m)m.innerHTML='🎉 অভিনন্দন! আপনি জিতেছেন <b style="color:#fbbf24">'+r.prize+' টাকা</b>'},4700)})
- .catch(function(e){SPUN=false;toast(e.message);closeSpin()})}
+ api('spin','POST').then(function(r){
+  var prizeVal = r.prize;
+  var targetIndices = [];
+  for(var k=0; k<WHEEL_ITEMS.length; k++){
+    if(WHEEL_ITEMS[k].val === prizeVal && WHEEL_ITEMS[k].win) {
+      targetIndices.push(k);
+    }
+  }
+  var i = targetIndices[Math.floor(Math.random()*targetIndices.length)] || 0;
+  var angleStep = 360 / WHEEL_ITEMS.length;
+  ROT=Math.ceil(ROT/360)*360+1800-(i*angleStep + angleStep/2);
+  $('whs').style.transform='rotate('+ROT+'deg)';
+  setTimeout(function(){ME=r.me;head();var m=$('spmsg');if(m)m.innerHTML='🎉 অভিনন্দন! আপনি জিতেছেন <b style="color:#fbbf24">'+r.prize+' টাকা</b>'},4700);
+ }).catch(function(e){SPUN=false;toast(e.message);closeSpin()})}
 function closeSpin(){closeM();if(TAB==='home')vHome()}
 
 function vTasks(){$('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>📋</div><div><b>Live Tasks</b><small>টাস্কে চাপুন, বিস্তারিত পড়ুন, তারপর Start দিন।</small></div></div><div id="tw"></div><div class="grid4" id="st"></div><div class="mq u"><span>⏳ আপনার টাস্ক পেন্ডিং থাকা মানে যাচাই চলছে, চিন্তার কোনো কারণ নেই। টাস্ক কমপ্লিট হতে কিছুটা সময় লাগে। যাচাই শেষে সফল হলে টাকা আপনার ব্যালেন্সে যোগ হবে। ৪৮ ঘণ্টার মধ্যে যাচাই না হলে টাস্কটি তালিকা থেকে সরে যায়। ধৈর্য ধরুন। 🤍</span></div><div id="tl">Loading...</div>';
@@ -797,31 +828,36 @@ function vHelp(){$('main').innerHTML=hb('help','💬','Support','কোনো �
  load();TIMER=setInterval(load,10000)}
 function sendS(){api('support','POST',{text:$('st').value}).then(function(){$('st').value='';vHelp()}).catch(function(e){toast(e.message)})}
 
-function vAcc(){clearInterval(window.REF_TIMER); 
- var globEvents=['[Tanvir] withdrew 500 BDT','[Rakib] deposited 1000 BDT','[Sumaiya] got Daily Bonus!','[Farhan] upgraded VIP Package','[Nusrat] received Bonus 200 BDT'];
- var gEv=globEvents[Math.floor(Math.random()*globEvents.length)];
+function vAcc(){
+  if(window.REF_TIMER) clearInterval(window.REF_TIMER);
+  if(window.GLOB_TIMER) clearInterval(window.GLOB_TIMER);
+  
+  var globEvents=['[Tanvir] withdrew 500 BDT','[Rakib] deposited 1000 BDT','[Sumaiya] got Daily Bonus!','[Farhan] upgraded VIP Package','[Nusrat] received Bonus 200 BDT'];
+  var gEv=globEvents[Math.floor(Math.random()*globEvents.length)];
 
- $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স, আয় ও উত্তোলনের হিসাব।')+
- '<div style="position:relative;margin-bottom:12px;background:#131d38;border:2px solid var(--grn);border-radius:14px;padding:10px;text-align:center;box-shadow:0 0 12px rgba(34,197,94,0.3)"><div style="position:absolute;inset:-2px;border:1px dashed var(--grn);border-radius:14px;pointer-events:none"></div><b style="color:var(--grn);font-size:12px">🌐 Global Live Transaction</b><div id="globEv" style="font-size:12.5px;color:#fff;margin-top:2px">'+gEv+'</div></div>'+
- '<div class="row"><div>'+esc(ME.name)+'<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
- '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
- '<div style="display:flex;gap:8px"><button class="btn r" style="flex:1;margin-top:0" onclick="wdForm()">Withdraw</button><button class="btn g" style="flex:1;margin-top:0" onclick="depForm()">Deposit</button></div>'+
- '<h3 style="margin-top:16px">Withdraw history</h3><div id="wh">Loading...</div>'+
- '<h3 style="margin-top:16px">Deposit history</h3><div id="dh">Loading...</div>'+
- '<button class="btn" style="background:#1e293b;color:#fff;margin-top:16px" onclick="admOpen()">Admin panel</button>';
- 
- window.GLOB_TIMER=setInterval(function(){
-   var ev=globEvents[Math.floor(Math.random()*globEvents.length)];
-   var b=$('globEv'); if(b) b.textContent=ev;
- }, 3000);
+  $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স, আয় ও উত্তোলনের হিসাব।')+
+  '<div style="position:relative;margin-bottom:12px;background:#131d38;border:2px solid var(--grn);border-radius:14px;padding:10px;text-align:center;box-shadow:0 0 12px rgba(34,197,94,0.3)"><div style="position:absolute;inset:-2px;border:1px dashed var(--grn);border-radius:14px;pointer-events:none"></div><b style="color:var(--grn);font-size:12px">🌐 Global Live Transaction</b><div id="globEv" style="font-size:12.5px;color:#fff;margin-top:2px">'+gEv+'</div></div>'+
+  '<div class="row"><div>'+esc(ME.name)+'<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
+  '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
+  '<div style="display:flex;gap:8px"><button class="btn r" style="flex:1;margin-top:0" onclick="wdForm()">Withdraw</button><button class="btn g" style="flex:1;margin-top:0" onclick="depForm()">Deposit</button></div>'+
+  '<h3 style="margin-top:16px">Withdraw history</h3><div id="wh">Loading...</div>'+
+  '<h3 style="margin-top:16px">Deposit history</h3><div id="dh">Loading...</div>'+
+  '<button class="btn" style="background:#1e293b;color:#fff;margin-top:16px" onclick="admOpen()">Admin panel</button>';
+  
+  window.GLOB_TIMER=setInterval(function(){
+    var ev=globEvents[Math.floor(Math.random()*globEvents.length)];
+    var b=$('globEv'); if(b) b.textContent=ev;
+  }, 3000);
 
- api('withdrawals').then(function(a){$('wh').innerHTML=a.length?a.map(function(w){return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' <span class="chip '+w.status+'">'+w.status+'</span></div></div>'}).join(''):'<div class="row">No withdrawals yet.</div>'});
- api('deposits').then(function(a){$('dh').innerHTML=a.length?a.map(function(d){return '<div class="row"><div>'+esc(d.method)+' (Trx: ...'+esc(d.lastDigits)+')<small>'+new Date(d.at).toLocaleDateString()+'</small></div><div>'+money(d.amount)+' <span class="chip '+d.status+'">'+d.status+'</span></div></div>'}).join(''):'<div class="row">No deposits yet.</div>'})}
+  api('withdrawals').then(function(a){$('wh').innerHTML=a.length?a.map(function(w){return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' <span class="chip '+w.status+'">'+w.status+'</span></div></div>'}).join(''):'<div class="row">No withdrawals yet.</div>'});
+  api('deposits').then(function(a){$('dh').innerHTML=a.length?a.map(function(d){return '<div class="row"><div>'+esc(d.method)+' (Trx: ...'+esc(d.lastDigits)+')<small>'+new Date(d.at).toLocaleDateString()+'</small></div><div>'+money(d.amount)+' <span class="chip '+d.status+'">'+d.status+'</span></div></div>'}).join(''):'<div class="row">No deposits yet.</div>'})
+}
 
 function wdForm(){modal('<h3 style="color:var(--gold)">Withdraw (300 - 5000 BDT)</h3><label>Method</label><select id="wm"><option>bKash</option><option>Nagad</option></select><label>Amount</label><input id="wa" type="number" inputmode="numeric"><label>Your bKash/Nagad number</label><input id="wp" maxlength="11" inputmode="numeric" value="'+esc(ME.phone)+'"><button class="btn r" onclick="doWd()">Send request</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
 function doWd(){api('withdraw','POST',{method:$('wm').value,amount:$('wa').value,phone:$('wp').value}).then(function(m){ME=m;head();closeM();toast('Withdraw request sent.');vAcc()}).catch(function(e){toast(e.message)})}
 
 function depForm(presetAmount){
+  if(window.NUM_ROT) clearInterval(window.NUM_ROT);
   var numbers=[
     {num:'01781682016', note:'⚠️ এই নাম্বারে শুধু নগদে টাকা পাঠানো যাবে। বিকাশ হবে না।'},
     {num:'01951639460', note:'✅ এই নাম্বারে নগদ ও বিকাশ উভয় মাধ্যমেই টাকা পাঠানো যাবে।'}
@@ -876,6 +912,7 @@ var DUA=[
 ["৫. দোয়া মাসুরা","اللَّهُمَّ إِنِّي ظَلَمْتُ نَفْسِي ظُلْمًا كَثِيرًا وَلَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ فَاغْفِرْ لِي مَغْفِرَةً مِنْ عِنْدِكَ وَارْحَمْنِي إِنَّكَ أَنْتَ الْغَفُورُ الرَّحِيمُ","আল্লাহুম্মা ইন্নি জালামতু নাফসি জুলমান কাসিরাঁও ওয়া লা ইয়াগফিরুয যুনুবা ইল্লা আনতা ফাগফিরলি মাগফিরাতাম মিন ইনদিকা ওয়ারহামনি ইন্নাকা আনতাল গাফুরুর রাহিম।","হে আল্লাহ, আমি নিজের ওপর অনেক জুলুম করেছি। আপনি ছাড়া কেউ গুনাহ মাফ করতে পারে না। তাই আপনার পক্ষ থেকে আমাকে ক্ষমা করুন ও দয়া করুন। নিশ্চয়ই আপনি ক্ষমাশীল, দয়ালু।"],
 ["৬. নামাজের পরের দোয়া","رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ","রাব্বানা আতিনা ফিদ্দুনইয়া হাসানাতাঁও ওয়া ফিল আখিরাতি হাসানাতাঁও ওয়া কিনা আজাবান নার।","হে আমাদের রব, আমাদের দুনিয়াতে কল্যাণ দিন, আখিরাতেও কল্যাণ দিন এবং আমাদের জাহান্নামের আজাব থেকে রক্ষা করুন।"]];
 var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
+var HD=[["কাজ নিয়তের ওপর নির্ভরশীল। প্রত্যেক ব্যক্তি তা-ই পাবে, যার নিয়ত সে করেছে।","সহিহ বুখারি ১, সহিহ মুসলিম ১৯০৭"],["তোমাদের মধ্যে সেই ব্যক্তি সর্বোত্তম, যে কুরআন শেখে এবং অন্যকে শেখায়।","সহিহ বুখারি ৫০২৭"],["তোমাদের কেউ প্রকৃত মুমিন হবে না, যতক্ষণ না সে নিজের জন্য যা পছন্দ করে, তার ভাইয়ের জন্যও তা পছন্দ করে।","সহিহ বুখারি ১৩, সহিহ মুসলিম ৪৫"],["পবিত্রতা ঈমানের অর্ধেক।","সহিহ মুসলিম ২২৩"],["প্রকৃত বীর সে নয়, যে কুস্তিতে অন্যকে হারায়। প্রকৃত বীর সে, যে রাগের সময় নিজেকে নিয়ন্ত্রণ করে।","সহিহ বুখারি ৬১]}/${hd}
 var HD=[["কাজ নিয়তের ওপর নির্ভরশীল। প্রত্যেক ব্যক্তি তা-ই পাবে, যার নিয়ত সে করেছে।","সহিহ বুখারি ১, সহিহ মুসলিম ১৯০৭"],["তোমাদের মধ্যে সেই ব্যক্তি সর্বোত্তম, যে কুরআন শেখে এবং অন্যকে শেখায়।","সহিহ বুখারি ৫০২৭"],["তোমাদের কেউ প্রকৃত মুমিন হবে না, যতক্ষণ না সে নিজের জন্য যা পছন্দ করে, তার ভাইয়ের জন্যও তা পছন্দ করে।","সহিহ বুখারি ১৩, সহিহ মুসলিম ৪৫"],["পবিত্রতা ঈমানের অর্ধেক।","সহিহ মুসলিম ২২৩"],["প্রকৃত বীর সে নয়, যে কুস্তিতে অন্যকে হারায়। প্রকৃত বীর সে, যে রাগের সময় নিজেকে নিয়ন্ত্রণ করে।","সহিহ বুখারি ৬১১৪, সহিহ মুসলিম ২৬০৯"],["যে আল্লাহ ও আখিরাতের দিনে বিশ্বাস রাখে, সে যেন ভালো কথা বলে, নয়তো চুপ থাকে।","সহিহ বুখারি ৬০১৮, সহিহ মুসলিম ৪৭"],["যে ব্যক্তি প্রতারণা করে, সে আমাদের দলভুক্ত নয়।","সহিহ মুসলিম ১০১"]];
 function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\\''+p+'\\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
 function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\\''+p+'\\')">&lsaquo; ফিরে যান</button>'}
