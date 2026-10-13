@@ -22,16 +22,22 @@ const RATE = Number(process.env.BDT_PER_USD) || 120;
 // ❤️ TimeWall এর জন্য (Render Environment এ দিন):
 // ❤️ TIMEWALL_SECRET = TimeWall → Placements → আপনার placement → Postback Setup → Your Secret Key (REVEAL চেপে কপি করুন)
 const TW_SECRET = process.env.TIMEWALL_SECRET || '';
-// ❤️ TIMEWALL_RATE = TimeWall এ আপনি যে Currency Conversion Rate দিয়েছেন সেটাই (এখন ৬৫)। ইউজার ১ ডলারের কাজে এত টাকা পাবে।
+// ❤️ TIMEWALL_RATE = TimeWall এ আপনি যে Currency Conversion Rate দিয়েছেন সেটাই (এখন ৬৫)।
 const TW_RATE = Number(process.env.TIMEWALL_RATE) || 65;
-// ❤️ TIMEWALL_URL = ইউজারকে TimeWall এর পেজে পাঠানোর লিংক। যেখানে ইউজার আইডি বসবে সেখানে {uid} লিখুন। (অ্যাপ্রুভাল পেলে TimeWall থেকে লিংকের নিয়ম জেনে বসান। না বসালে TimeWall কার্ড দেখাবে না)
+// ❤️ TIMEWALL_URL = ইউজারকে TimeWall এর পেজে পাঠানোর লিংক। যেখানে ইউজার আইডি বসবে সেখানে {uid} লিখুন। (অ্যাপ্রুভাল পেলে বসান। না বসালে TimeWall কার্ড ও পার্টনার নাম দেখাবে না)
 const TW_URL = process.env.TIMEWALL_URL || '';
-// ❤️ TW_IP_CHECK = true করলে শুধু TimeWall এর তিনটা সার্ভার আইপি থেকে postback নেবে। এখন false, কারণ hash দিয়েই যাচাই হয়।
+// ❤️ TW_IP_CHECK = true করলে শুধু TimeWall এর তিনটা সার্ভার আইপি থেকে postback নেবে।
 const TW_IP_CHECK = false;
 const TW_IPS = ['18.156.132.55', '51.81.120.73', '142.111.248.18'];
 
-// ❤️ footer এর তথ্য (এখানেই বদলাতে পারবেন)
-const CO = { n: 'RS Growth Matrix', e: 'omg218063@gmail.com', p: '01764024069', y: 2026 };
+// ❤️ MIN_AGE = এর নিচের বয়সীদের জন্য প্রবেশ নিষেধ লেখা (ফুটার ও রেজিস্ট্রেশনে দেখায়)
+const MIN_AGE = 18;
+// ❤️ footer এর তথ্য (এখানেই বদলাতে পারবেন): n = নাম, e = ইমেইল, p = ফোন, y = সাল, tg = টেলিগ্রাম ইউজারনেম, wa = হোয়াটসঅ্যাপ (দেশের কোডসহ), fb = ফেসবুক লিংক, d = ডেসক্রিপশন
+const CO = {
+  n: 'RS Growth Matrix', e: 'omg218063@gmail.com', p: '01764024069', y: 2026,
+  tg: 'rkrana33', wa: '8801764024069', fb: 'https://www.facebook.com/share/1CAK8sYqDw/', age: MIN_AGE,
+  d: 'RS Growth Matrix একটি টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম। এখানে সহজ টাস্ক, দৈনিক বোনাস ও লাকি ড্রয়ের মাধ্যমে ব্যালেন্স জমিয়ে bKash বা Nagad-এ উত্তোলন করা যায়। টাস্কের টাকা আমাদের পার্টনার নেটওয়ার্ক থেকে আসে এবং যাচাই শেষে সফল হলে ব্যালেন্সে যোগ হয়। সাথে আছে ইসলামিক নাম, দোয়া ও হাদিসের একটি বই।'
+};
 
 // ❤️ নিচের সংখ্যাগুলো আপনি এখানেই বদলাতে পারবেন:
 // ❤️ REF_BONUS = রেফার বোনাস (টাকা), DAILY = Login Bonus, CHECKIN = Check-in Bonus
@@ -441,6 +447,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .btn{width:100%;border:0;border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:12px;background:linear-gradient(90deg,var(--gold),#f59e0b);color:#000}
 .btn.g{background:var(--grn);color:#fff}.btn.r{background:var(--red);color:#fff}.btn.s{width:auto;padding:6px 12px;font-size:12px;margin:0;border-radius:14px}
 .or{font-size:11px;color:var(--mu);margin:14px 0 8px;text-align:center}
+.agn{font-size:10.5px;color:var(--mu);margin-top:8px;text-align:center;line-height:1.5}
 .top{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#131d38,#0f172a)}
 .top .l{display:flex;align-items:center;gap:9px;min-width:0}.top b{font-size:14px}.bal{text-align:right;font-size:17px;font-weight:800;color:var(--grn)}.bal small{display:block;font-size:10px;color:var(--mu);font-weight:400}
 .av{width:40px;height:40px;border-radius:50%;border:2px solid var(--gold);background:#16213f;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;overflow:hidden;flex-shrink:0;box-shadow:0 0 10px rgba(251,191,36,.3)}
@@ -564,12 +571,23 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .hb-ref{background:linear-gradient(135deg,#0b3a1e,#0b1224);border-color:rgba(34,197,94,.45)}.hb-ref .e{animation:fl 3s ease-in-out infinite}
 .hb-help{background:linear-gradient(135deg,#0c2350,#0b1224);border-color:rgba(59,130,246,.45)}.hb-help .e{animation:wob 1.8s ease-in-out infinite}
 .hb-acc{background:linear-gradient(135deg,#4a1d08,#0b1224);border-color:rgba(249,115,22,.45)}.hb-acc .e{animation:swg 3s ease-in-out infinite}
-.ft{margin-top:6px;border-radius:20px;padding:16px;background:linear-gradient(180deg,#101a33,#0a1020);border:1px solid rgba(251,191,36,.35);box-shadow:0 8px 20px rgba(0,0,0,.45)}
-.ftl{display:flex;align-items:center;gap:12px;margin-bottom:12px}.ftl b{font-size:15px;color:var(--gold)}.ftl small{display:block;font-size:11px;color:var(--mu)}
+.ft{margin-top:6px;border-radius:22px;padding:18px 16px;background:linear-gradient(180deg,#0d1a2e,#070d1a);border:1px solid rgba(251,191,36,.35);box-shadow:0 10px 24px rgba(0,0,0,.5)}
+.ftl{display:flex;align-items:center;gap:12px;margin-bottom:10px}.ftl b{font-size:16px;color:var(--gold)}.ftl small{display:block;font-size:11px;color:var(--mu)}
+.fd{font-size:12px;line-height:1.75;color:#94a3b8;margin-bottom:14px}
+.fcols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.fcols h5{font-size:12px;color:var(--gold);margin-bottom:6px;letter-spacing:.3px}
+.fcols a{display:block;font-size:12.5px;color:#94a3b8;padding:5px 0;cursor:pointer;text-decoration:none}
+.fsoc{display:flex;align-items:center;justify-content:center;gap:14px;padding:14px 0;border-top:1px solid #1e293b;border-bottom:1px solid #1e293b;margin-bottom:12px}
+.fsoc a{display:block;width:46px;height:46px;border-radius:50%;box-shadow:0 4px 10px rgba(0,0,0,.5);transition:transform .2s}
+.fsoc a:active{transform:scale(.9)}
+.fage{display:flex;align-items:center;gap:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.4);border-radius:14px;padding:10px;margin-bottom:12px}
+.fage .bd{width:46px;height:46px;border-radius:50%;border:3px solid var(--red);color:var(--red);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0}
+.fage div{font-size:11.5px;line-height:1.6;color:#fecaca}
+.fchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.fchip{font-size:11px;padding:5px 10px;border-radius:12px;background:#16213f;border:1px solid #243352;color:#e2e8f0}
+.fh{font-size:11px;color:var(--mu);margin:10px 0 2px}
 .fr{display:flex;align-items:center;gap:10px;font-size:12.5px;color:#cbd5e1;padding:7px 0;border-top:1px solid #1e293b}
 .fr a{color:#7dd3fc;text-decoration:none}
-.fh{font-size:11px;color:var(--mu);margin-top:10px}
-.fp{font-size:12.5px;color:#e2e8f0;line-height:1.7;margin-top:3px}
 .fc{font-size:10.5px;color:#64748b;text-align:center;margin-top:12px;border-top:1px solid #1e293b;padding-top:10px}
 </style></head><body>
 <div class="app">
@@ -583,6 +601,7 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
       <label>Password (at least 6 characters)</label><input id="rW" type="password" autocomplete="new-password">
       <label>Confirm password</label><input id="rC" type="password" autocomplete="new-password">
       <button class="btn g" onclick="reg()">Confirm</button>
+      <div class="agn">রেজিস্ট্রেশন করলে আপনি নিশ্চিত করছেন আপনার বয়স __AGE__ বছর বা তার বেশি।</div>
     </div>
     <div id="fLog" style="display:none">
       <label>Name</label><input id="lN" autocomplete="username">
@@ -655,12 +674,22 @@ var HS=[
  ['s2','📋 টাস্ক ও আয়','সহজ টাস্ক, নিয়মিত আয়','Tasks ট্যাবে গিয়ে পছন্দের টাস্কে চাপুন, বিস্তারিত পড়ুন এবং Start দিন। যাচাই শেষে সফল হলে টাকা ব্যালেন্সে যোগ হবে। পেন্ডিং দেখালে ধৈর্য ধরুন।','📱','💰','🎯'],
  ['s3','💸 উত্তোলন','সহজে টাকা তুলুন','Account থেকে Withdraw চেপে bKash বা Nagad নাম্বার দিন। উত্তোলন ৩০০ থেকে ৫০০০ টাকা পর্যন্ত করা যায়। রিকোয়েস্ট যাচাই করে আমরা নিজে টাকা পাঠাই।','💸','🏦','✅']];
 function hsGo(i){HSI=i;var s=document.querySelectorAll('.sl'),d=document.querySelectorAll('.dots i');for(var k=0;k<s.length;k++){s[k].className='sl '+HS[k][0]+(k===i?' on':'');d[k].className=k===i?'on':''}}
-function foot(){var c=ME.ct||{},p=ME.pt||[];
+function ico(c,p){return '<svg width="46" height="46" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="'+c+'"/>'+p+'</svg>'}
+function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
+ var fb=ico('#1877f2','<path d="M13.2 19v-6.2h2.1l.4-2.6h-2.5V8.6c0-.8.3-1.3 1.4-1.3h1.2V5.1c-.2 0-1-.1-1.9-.1-1.9 0-3.2 1.2-3.2 3.3v1.9H8.6v2.6h2.1V19z" fill="#fff"/>');
+ var tg=ico('#29a9eb','<path d="M18.6 6.2L5.4 11.3c-.9.4-.9.9-.2 1.1l3.3 1 1.3 4c.2.5.1.7.7.7.4 0 .6-.2.8-.4l1.6-1.6 3.3 2.4c.6.3 1 .2 1.2-.6l2-9.5c.2-.9-.3-1.3-.8-1z" fill="#fff"/>');
+ var wa=ico('#25d366','<path d="M12 5.2a6.8 6.8 0 0 0-5.8 10.3L5.2 18.8l3.4-.9A6.8 6.8 0 1 0 12 5.2z" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M9.6 9.3c.2 2 2 3.8 4 4.1l.9-.9-1.3-.9-.6.5c-.7-.3-1.4-1-1.7-1.7l.5-.6-.9-1.3z" fill="#fff"/>');
  return '<div class="ft"><div class="ftl">'+logo(46)+'<div><b>'+esc(c.n)+'</b><small>টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম</small></div></div>'+
- '<div class="fr"><span>📧</span><a href="mailto:'+esc(c.e)+'">'+esc(c.e)+'</a></div>'+
+ '<div class="fd">'+esc(c.d||'')+'</div>'+
+ '<div class="fcols"><div><h5>প্ল্যাটফর্ম</h5><a onclick="go(\\'home\\')">Home</a><a onclick="go(\\'tasks\\')">Tasks</a><a onclick="go(\\'rank\\')">Ranking</a><a onclick="go(\\'ref\\')">Refer</a></div>'+
+ '<div><h5>সহায়তা</h5><a onclick="go(\\'help\\')">Support</a><a onclick="go(\\'acc\\')">Account ও Withdraw</a><a onclick="go(\\'book\\')">ইসলামিক বই</a></div></div>'+
+ '<div class="fsoc"><a href="'+esc(c.fb)+'" target="_blank" rel="noopener" aria-label="Facebook">'+fb+'</a><a href="https://t.me/'+esc(c.tg)+'" target="_blank" rel="noopener" aria-label="Telegram">'+tg+'</a><a href="https://wa.me/'+esc(c.wa)+'" target="_blank" rel="noopener" aria-label="WhatsApp">'+wa+'</a></div>'+
+ '<div class="fage"><span class="bd">'+A+'+</span><div>'+A+' বছরের নিচে কারও এই অ্যাকাউন্টে প্রবেশ করা নিষেধ। অভিভাবকগণ সন্তানদের দিকে নজর রাখুন। কোনো শিশু প্রবেশ করেছে জানলে আমাদের জানান।</div></div>'+
+ '<div class="fh">পেমেন্ট মাধ্যম</div><div class="fchips"><span class="fchip">bKash</span><span class="fchip">Nagad</span></div>'+
+ (p.length?'<div class="fh">আমাদের পার্টনার</div><div class="fchips">'+p.map(function(x){return '<span class="fchip">'+esc(x)+'</span>'}).join('')+'</div>':'')+
+ '<div class="fr" style="margin-top:12px"><span>📧</span><a href="mailto:'+esc(c.e)+'">'+esc(c.e)+'</a></div>'+
  '<div class="fr"><span>📞</span><a href="tel:'+esc(c.p)+'">'+esc(c.p)+'</a></div>'+
- '<div class="fr"><span>💳</span>পেমেন্ট: bKash ও Nagad</div>'+
- (p.length?'<div class="fh">আমাদের পার্টনার</div><div class="fp">'+p.map(esc).join('<br>')+'</div>':'')+
+ '<div class="fr"><span>✈️</span><a href="https://t.me/'+esc(c.tg)+'" target="_blank" rel="noopener">@'+esc(c.tg)+'</a></div>'+
  '<div class="fc">© '+esc(c.y)+' '+esc(c.n)+'. সর্বস্বত্ব সংরক্ষিত।</div></div>'}
 function vHome(){var ok=Date.now()-ME.lastDaily>=864e5,sp=Date.now()-(ME.lastSpin||0)>=864e5;HSI=0;
  var sl=HS.map(function(x,i){return '<div class="sl '+x[0]+(i===0?' on':'')+'"><span class="tag">'+x[1]+'</span><h4>'+x[2]+'</h4><p>'+x[3]+'</p><span class="em">'+x[4]+'</span><span class="e2">'+x[5]+'</span><span class="e3">'+x[6]+'</span></div>'}).join('');
@@ -801,5 +830,5 @@ document.addEventListener('DOMContentLoaded',function(){$('logoA').innerHTML=log
  if(T)api('me').then(enter).catch(function(){$('auth').style.display='block'});else $('auth').style.display='block'});
 </script></body></html>`;
 
-app.get('/', (req, res) => res.send(PAGE.replace('__GID__', GID.replace(/[^\w.\-]/g, ''))));
+app.get('/', (req, res) => res.send(PAGE.replace('__GID__', GID.replace(/[^\w.\-]/g, '')).replace(/__AGE__/g, String(MIN_AGE | 0))));
 app.listen(PORT, () => console.log('Server is running on port ' + PORT));
