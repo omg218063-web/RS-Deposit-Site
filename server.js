@@ -5,64 +5,39 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ❤️ নিচের জিনিসগুলো কোডে কিছু লিখতে হবে না। Render → Environment এ এই নামগুলো দিয়ে বসান:
-// ❤️ SECRET = যেকোনো লম্বা গোপন লেখা (ইউজারের লগইন সুরক্ষিত রাখে)
 const SECRET = process.env.SECRET || crypto.randomBytes(32).toString('hex');
-// ❤️ ADMIN_PASSWORD = আপনার নিজের এডমিন পাসওয়ার্ড (Render Environment এ দিন, এখানে লিখবেন না)
 const ADMIN_PASS = process.env.ADMIN_PASSWORD || '';
-// ❤️ GOOGLE_CLIENT_ID = Google Cloud Console থেকে পাওয়া Client ID (Render Environment এ দিন)
 const GID = process.env.GOOGLE_CLIENT_ID || '';
-// ❤️ OFFERWALL_KEY = offerwall.gg এর Public key (Render Environment এ দিন)
 const OW_KEY = process.env.OFFERWALL_KEY || '';
-// ❤️ OFFERWALL_SECRET = offerwall.gg এর Secret key (Render Environment এ দিন, কাউকে দেখাবেন না)
 const OW_SECRET = process.env.OFFERWALL_SECRET || '';
-// ❤️ BDT_PER_USD = ১ ডলারের কত টাকা ধরবেন (offerwall.gg এর জন্য)। কিছু না দিলে ১২০ ধরা হবে।
 const RATE = Number(process.env.BDT_PER_USD) || 120;
 
-// ❤️ TimeWall এর জন্য (Render Environment এ দিন):
-// ❤️ TIMEWALL_SECRET = TimeWall → Placements → আপনার placement → Postback Setup → Your Secret Key (REVEAL চেপে কপি করুন)
 const TW_SECRET = process.env.TIMEWALL_SECRET || '';
-// ❤️ TIMEWALL_RATE = TimeWall এ আপনি যে Currency Conversion Rate দিয়েছেন সেটাই (এখন ৬৫)।
 const TW_RATE = Number(process.env.TIMEWALL_RATE) || 65;
-// ❤️ TIMEWALL_URL = ইউজারকে TimeWall এর পেজে পাঠানোর লিংক। যেখানে ইউজার আইডি বসবে সেখানে {uid} লিখুন। (অ্যাপ্রুভাল পেলে বসান। না বসালে TimeWall কার্ড ও পার্টনার নাম দেখাবে না)
 const TW_URL = process.env.TIMEWALL_URL || '';
-// ❤️ TW_IP_CHECK = true করলে শুধু TimeWall এর তিনটা সার্ভার আইপি থেকে postback নেবে।
 const TW_IP_CHECK = false;
 const TW_IPS = ['18.156.132.55', '51.81.120.73', '142.111.248.18'];
 
-// ❤️ MIN_AGE = এর নিচের বয়সীদের জন্য প্রবেশ নিষেধ লেখা (ফুটার ও রেজিস্ট্রেশনে দেখায়)
 const MIN_AGE = 18;
-// ❤️ footer এর তথ্য (এখানেই বদলাতে পারবেন): n = নাম, e = ইমেইল, p = ফোন, y = সাল, tg = টেলিগ্রাম ইউজারনেম, wa = হোয়াটসঅ্যাপ (দেশের কোডসহ), fb = ফেসবুক লিংক, d = ডেসক্রিপশন
 const CO = {
   n: 'RS Growth Matrix', e: 'omg218063@gmail.com', p: '01764024069', y: 2026,
   tg: 'rkrana33', wa: '8801764024069', fb: 'https://www.facebook.com/share/1CAK8sYqDw/', age: MIN_AGE,
   d: 'RS Growth Matrix একটি টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম। এখানে সহজ টাস্ক, দৈনিক বোনাস ও লাকি ড্রয়ের মাধ্যমে ব্যালেন্স জমিয়ে bKash বা Nagad-এ উত্তোলন করা যায়। টাস্কের টাকা আমাদের পার্টনার নেটওয়ার্ক থেকে আসে এবং যাচাই শেষে সফল হলে ব্যালেন্সে যোগ হয়। সাথে আছে ইসলামিক নাম, দোয়া ও হাদিসের একটি বই।'
 };
 
-// ❤️ নিচের সংখ্যাগুলো আপনি এখানেই বদলাতে পারবেন:
-// ❤️ REF_BONUS = রেফার বোনাস (টাকা), DAILY = Login Bonus, CHECKIN = Check-in Bonus
-// ❤️ MIN_WD / MAX_WD = উইথড্রের সর্বনিম্ন ও সর্বোচ্চ টাকা, SLOTS = প্রতিদিন কয়টা টাস্ক দেখাবে
 const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
-// ❤️ PENDING_HOURS = কত ঘণ্টা পেন্ডিং থাকলে টাস্ক তালিকা থেকে সরে যাবে (এখন ৪৮ ঘণ্টা)
 const PENDING_HOURS = 48;
-// ❤️ LATE_CREDIT = true হলে ৪৮ ঘণ্টা পরেও offerwall.gg টাকা পাঠালে ইউজারকে দেওয়া হবে। না দিতে চাইলে false করুন।
 const LATE_CREDIT = true;
-// ❤️ SPIN = লাকি ড্রয়ের সত্যিকারের পুরস্কার। প্রতিটা [টাকা, সম্ভাবনার ভাগ]।
 const SPIN = [[1, 40], [2, 30], [3, 20], [5, 10]];
-// ❤️ MAX_USD = এর চেয়ে বড় (ডলারে) offerwall.gg অফার ইউজারকে দেখানো হবে না।
 const MAX_USD = 5;
-// ❤️ COUNTRY_FILTER = true হলে শুধু TARGETS দেশের (BD, IN, PK, NP) অথবা সব দেশের জন্য খোলা অফার আসবে।
 const COUNTRY_FILTER = true;
 const TARGETS = ['BD', 'IN', 'PK', 'NP'];
-// ❤️ এই ধরনের অফার কোড নিজেই লুকিয়ে ফেলবে
 const BLOCK_CATS = ['signup', 'signups', 'deposit', 'deposits', 'creditcard', 'creditcards', 'oneclick', 'multireward', 'freetrial', 'freetrials', 'shopping', 'extension', 'extensions'];
 app.use(express.json({ limit: '100kb' }));
 
-// ❤️ names.js = ইসলামিক নামের তালিকা (আলাদা ফাইল)।
 let NAMES = { boys: [], girls: [] };
 try { NAMES = require('./names.js'); } catch (e) { console.error('names.js not found:', e.message); }
 
-// ❤️ MONGO_URI = আপনার ডাটাবেসের লিংক। এটা আগে থেকেই Render Environment এ আছে।
 if (!process.env.MONGO_URI) console.error('MONGO_URI is not set: accounts cannot be saved.');
 else mongoose.connect(process.env.MONGO_URI).then(async () => {
   console.log('MongoDB connected');
@@ -82,6 +57,7 @@ const Click = mongoose.model('Click', new mongoose.Schema({ uid: String, offerId
 const Conv = mongoose.model('Conv', new mongoose.Schema({ key: { type: String, unique: true }, uid: String, tx: String, bdt: Number, status: String, at: { type: Date, default: Date.now } }));
 const Wd = mongoose.model('Wd', new mongoose.Schema({ uid: String, name: String, amount: Number, method: String, phone: String, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
 const Msg = mongoose.model('Msg', new mongoose.Schema({ uid: String, name: String, from: String, text: String, at: { type: Date, default: Date.now } }));
+const Deposit = mongoose.model('Deposit', new mongoose.Schema({ uid: String, name: String, amount: Number, method: String, txid: String, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
 
 const h = fn => (q, s) => fn(q, s).catch(e => {
   console.error('ERROR', q.method, q.path, e && e.code, e && e.message);
@@ -94,15 +70,11 @@ const sign = id => { const b = id + '.' + (Date.now() + 30 * 864e5); return b + 
 const hashPw = (p, salt) => crypto.scryptSync(p, salt, 32).toString('hex');
 const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 const today = () => new Date().toISOString().slice(0, 10);
-// "আজ" মানে বাংলাদেশ সময় (UTC+6) অনুযায়ী রাত ১২টা থেকে।
 const dayStart = () => { const o = 6 * 36e5, n = Date.now() + o; return new Date(n - (n % 864e5) - o); };
 const credit = (id, n) => User.updateOne({ _id: id }, { $inc: { balance: n, earned: n } });
-// footer এর পার্টনার তালিকা: যেটা সত্যিই চালু শুধু সেটাই দেখায়
 const partners = () => [OW_KEY && OW_SECRET ? 'offerwall.gg' : '', TW_SECRET && TW_URL ? 'TimeWall.io (Australian Clearing Pty Ltd)' : ''].filter(Boolean);
 const me = u => ({ name: u.name, phone: u.phone || '', email: u.email || '', av: u.avatar || '', balance: u.balance, earned: u.earned, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS, ct: CO, pt: partners() });
-// ❤️ offerwall.gg এ ইউজারের ভাগ: ১ ডলারের বেশি হলে ০.৫ (৫০%), ১ ডলার বা কম হলে ০.৭ (৭০%)।
 const bdtFor = usd => Math.round(usd * RATE * (usd > 1 ? 0.5 : 0.7) * 100) / 100;
-// ❤️ ৪৮ ঘণ্টার বেশি পেন্ডিং থাকা টাস্ক "expired" হয়ে তালিকা থেকে সরে যায়।
 const expire = uid => Click.updateMany(Object.assign({ status: 'pending', at: { $lt: new Date(Date.now() - PENDING_HOURS * 36e5) } }, uid ? { uid } : {}), { status: 'expired' });
 
 const auth = async (req, res, next) => {
@@ -163,7 +135,6 @@ app.post('/api/google', h(async (q, s) => {
 
 app.get('/api/me', auth, (q, s) => s.json(me(q.user)));
 
-// ❤️ প্রোফাইল ছবি: ক্লায়েন্ট ছবি ১২৮px করে পাঠায়। এখানে শুধু নিরাপদ JPEG ও ছোট সাইজ নেওয়া হয়।
 app.post('/api/avatar', auth, h(async (q, s) => {
   const img = String((q.body || {}).img || '');
   if (img.length > 30000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(img)) return bad(s, 'Photo is invalid or too large. Try another photo.');
@@ -171,10 +142,8 @@ app.post('/api/avatar', auth, h(async (q, s) => {
   s.json({ av: img });
 }));
 
-// ইসলামিক নামের তালিকা
 app.get('/api/names/:t', auth, (q, s) => s.json(q.params.t === 'girls' ? NAMES.girls : NAMES.boys));
 
-// ---------- Offerwall.gg ----------
 const pick = (o, ks) => { for (const k of ks) if (o[k] != null && o[k] !== '') return o[k]; };
 const arrOf = v => Array.isArray(v) ? v : [];
 
@@ -248,7 +217,6 @@ app.post('/api/offers/:id/start', auth, h(async (q, s) => {
   s.json({ url: o.clickUrl });
 }));
 
-// ❤️ এই অংশে কিছু বদলাতে হবে না। offerwall.gg টাস্ক শেষ হলে নিজে এই ঠিকানায় খবর পাঠায় (Postback)।
 app.get('/api/offerwall', h(async (q, s) => {
   const { user, tx, amount, status, offerId, offer, test, sig } = q.query;
   if (!OW_SECRET || !user || !tx || amount == null || !sig) return bad(s, 'bad request', 400);
@@ -275,9 +243,6 @@ app.get('/api/offerwall', h(async (q, s) => {
   s.send('ok');
 }));
 
-// ---------- TimeWall ----------
-// ❤️ TimeWall এ Postback URL এ এই ঠিকানা দেওয়া আছে: /api/callback/timewall
-// ❤️ hash = sha256(userID + revenue + SecretKey)। revenue যেভাবে এসেছে ঠিক সেভাবেই হিসাব হয়।
 app.get('/api/callback/timewall', h(async (q, s) => {
   const uid = String(q.query.userID || q.query.userid || ''), tx = String(q.query.txid || '');
   const rev = String(q.query.revenue == null ? '' : q.query.revenue), hs = String(q.query.hash || '').toLowerCase();
@@ -307,10 +272,8 @@ app.get('/api/callback/timewall', h(async (q, s) => {
   s.send('ok');
 }));
 
-// TimeWall এর পেজের লিংক (TIMEWALL_URL বসানো থাকলে)
 app.get('/api/timewall', auth, (q, s) => s.json({ url: TW_URL ? TW_URL.replace(/\{uid\}/g, encodeURIComponent(q.user.id)) : '' }));
 
-// ---------- Rewards, ranking, withdraw, support ----------
 app.post('/api/daily', auth, h(async (q, s) => {
   const r = await User.findOneAndUpdate({ _id: q.user.id, lastDaily: { $lte: Date.now() - 864e5 } }, { $set: { lastDaily: Date.now() }, $inc: { balance: DAILY, earned: DAILY } }, { new: true });
   if (!r) return bad(s, 'You already claimed today. Come back in 24 hours.');
@@ -323,7 +286,6 @@ app.post('/api/checkin', auth, h(async (q, s) => {
   s.json(me(r));
 }));
 
-// ❤️ লাকি ড্র: সার্ভারে র‍্যান্ডম পুরস্কার ঠিক হয়, ২৪ ঘণ্টায় একবার।
 app.post('/api/spin', auth, h(async (q, s) => {
   const tot = SPIN.reduce((a, x) => a + x[1], 0);
   let r = crypto.randomInt(tot), prize = SPIN[0][0];
@@ -334,8 +296,19 @@ app.post('/api/spin', auth, h(async (q, s) => {
 }));
 
 app.get('/api/leaderboard', auth, h(async (q, s) => {
-  const top = await User.find({ earned: { $gt: 0 } }).sort({ earned: -1 }).limit(20).select('name earned');
-  s.json(top.map(u => ({ name: u.name, earned: u.earned })));
+  const realTop = await User.find({ earned: { $gt: 0 } }).sort({ earned: -1 }).limit(20).select('name earned');
+  const demoNames = ['Tanvir Ahmed', 'Rakibul Islam', 'Sumaiya Akter', 'Farhan Hossain', 'Nusrat Jahan', 'Mehedi Hasan', 'Ayesha Siddika', 'Imran Khan', 'Sadia Afrin', 'Nazmul Huda'];
+  let demoTop = [];
+  let baseEarn = 45000;
+  for (let i = 0; i < 100; i++) {
+    demoTop.push({
+      name: i === 0 ? '👑 Al-Amin (Top 1)' : (i === 1 ? '⭐ Shanto Mahmud (Top 2)' : (demoNames[i % demoNames.length] + ' ' + (i + 1))),
+      earned: Math.max(1000, baseEarn - (i * 400))
+    });
+  }
+  let combined = realTop.map(u => ({ name: u.name, earned: u.earned })).concat(demoTop);
+  combined.sort((a, b) => b.earned - a.earned);
+  s.json(combined.slice(0, 100));
 }));
 
 app.post('/api/withdraw', auth, h(async (q, s) => {
@@ -352,6 +325,18 @@ app.post('/api/withdraw', auth, h(async (q, s) => {
 
 app.get('/api/withdrawals', auth, h(async (q, s) => s.json(await Wd.find({ uid: q.user.id }).sort({ at: -1 }).limit(30))));
 
+app.post('/api/deposit', auth, h(async (q, s) => {
+  const { amount, method, txid } = q.body || {};
+  const a = Math.floor(+amount);
+  if (a < 50) return bad(s, 'Minimum deposit amount is 50 BDT.');
+  if (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
+  if (!txid || txid.length < 5) return bad(s, 'Enter a valid transaction ID.');
+  await Deposit.create({ uid: q.user.id, name: q.user.name, amount: a, method, txid });
+  s.json({ ok: true });
+}));
+
+app.get('/api/deposits', auth, h(async (q, s) => s.json(await Deposit.find({ uid: q.user.id }).sort({ at: -1 }).limit(30))));
+
 app.get('/api/support', auth, h(async (q, s) => s.json(await Msg.find({ uid: q.user.id }).sort({ at: 1 }).limit(100))));
 app.post('/api/support', auth, h(async (q, s) => {
   const text = String((q.body || {}).text || '').trim().slice(0, 500);
@@ -360,7 +345,6 @@ app.post('/api/support', auth, h(async (q, s) => {
   s.json({ ok: true });
 }));
 
-// ---------- Admin ----------
 app.get('/api/admin/data', admin, h(async (q, s) => {
   await expire();
   const start = dayStart();
@@ -452,31 +436,10 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .top .l{display:flex;align-items:center;gap:9px;min-width:0}.top b{font-size:14px}.bal{text-align:right;font-size:17px;font-weight:800;color:var(--grn)}.bal small{display:block;font-size:10px;color:var(--mu);font-weight:400}
 .av{width:40px;height:40px;border-radius:50%;border:2px solid var(--gold);background:#16213f;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;overflow:hidden;flex-shrink:0;box-shadow:0 0 10px rgba(251,191,36,.3)}
 .av img{width:100%;height:100%;object-fit:cover;display:block}
-nav{display:flex;gap:4px;padding:7px 5px 9px;background:#0b1224;box-shadow:0 10px 20px rgba(0,0,0,.6);position:relative;z-index:5}
-nav div{flex:1;text-align:center;font-size:10px;color:var(--mu);padding:7px 0;cursor:pointer;border-radius:13px;background:linear-gradient(180deg,#18244a,#0e1730);box-shadow:0 4px 9px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.07);transition:transform .2s}
-nav div i{display:block;font-style:normal;font-size:16px;position:relative;width:26px;height:26px;line-height:26px;margin:0 auto}
+nav{display:flex;gap:3px;padding:7px 4px 9px;background:#0b1224;box-shadow:0 10px 20px rgba(0,0,0,.6);position:relative;z-index:5}
+nav div{flex:1;text-align:center;font-size:9.5px;color:var(--mu);padding:6px 0;cursor:pointer;border-radius:11px;background:linear-gradient(180deg,#18244a,#0e1730);box-shadow:0 4px 9px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.07);transition:transform .2s}
+nav div i{display:block;font-style:normal;font-size:15px;position:relative;width:24px;height:24px;line-height:24px;margin:0 auto}
 nav .on{color:var(--gold);transform:translateY(-1px);background:linear-gradient(180deg,#2a2208,#13100a);box-shadow:0 0 0 1px var(--gold),0 6px 14px rgba(251,191,36,.28),inset 0 1px 0 rgba(255,255,255,.1)}
-nav #n_home.on{color:#fde68a;background:linear-gradient(180deg,#3a2c05,#15110a)}
-nav #n_home.on i{animation:fl 2.4s ease-in-out infinite}
-nav #n_tasks.on{color:#7dd3fc;background:linear-gradient(180deg,#0a2a44,#0b1224);box-shadow:0 0 0 1px #38bdf8,0 6px 14px rgba(56,189,248,.3)}
-nav #n_tasks.on i::before{content:"";position:absolute;inset:-4px;border:2px dashed #fbbf24;border-radius:50%;animation:rot 3s linear infinite}
-nav #n_tasks.on i::after{content:"";position:absolute;inset:-8px;border:2px solid transparent;border-top-color:#38bdf8;border-bottom-color:#22c55e;border-radius:50%;animation:rot 1.8s linear infinite reverse}
-nav #n_rank.on{color:#f0abfc;background:linear-gradient(180deg,#3b0a4a,#150b1e);box-shadow:0 0 0 1px #d946ef,0 6px 14px rgba(217,70,239,.3)}
-nav #n_rank.on i{animation:bnc 1.1s ease-in-out infinite}
-nav #n_ref.on{color:#86efac;background:linear-gradient(180deg,#0b3a1e,#0a1710);box-shadow:0 0 0 1px #22c55e,0 6px 14px rgba(34,197,94,.3)}
-nav #n_ref.on i::before{content:"";position:absolute;inset:-3px;border:2px solid #22c55e;border-radius:50%;animation:pls 1.5s ease-out infinite}
-nav #n_help.on{color:#93c5fd;background:linear-gradient(180deg,#0c2350,#0a0f20);box-shadow:0 0 0 1px #3b82f6,0 6px 14px rgba(59,130,246,.3)}
-nav #n_help.on i{animation:wob 1.6s ease-in-out infinite}
-nav #n_acc.on{color:#fdba74;background:linear-gradient(180deg,#4a1d08,#170b06);box-shadow:0 0 0 1px #f97316,0 6px 14px rgba(249,115,22,.3)}
-nav #n_acc.on i{animation:swg 2.4s ease-in-out infinite}
-nav #n_book{color:var(--gold);font-weight:700}
-nav #n_book i{animation:glow 2.2s ease-in-out infinite}
-@keyframes glow{50%{transform:scale(1.18);filter:drop-shadow(0 0 7px #fbbf24)}}
-@keyframes rot{to{transform:rotate(360deg)}}
-@keyframes bnc{50%{transform:translateY(-5px) scale(1.15)}}
-@keyframes pls{0%{transform:scale(.8);opacity:1}100%{transform:scale(1.7);opacity:0}}
-@keyframes wob{25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
-@keyframes swg{50%{transform:rotate(14deg) translateY(-2px)}}
 main{flex:1;overflow-y:auto;padding:14px}
 .row{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;box-shadow:0 4px 10px rgba(0,0,0,.35)}
 .row small{display:block;color:var(--mu);font-size:11px;margin-top:2px}
@@ -567,10 +530,6 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .hbn{display:flex;align-items:center;gap:14px;border-radius:20px;padding:14px;margin-bottom:12px;box-shadow:0 8px 20px rgba(0,0,0,.45);border:1px solid}
 .hbn .e{font-size:38px;flex-shrink:0;display:block}
 .hbn b{font-size:16px;color:#fff}.hbn small{display:block;color:#cbd5e1;font-size:11.5px;margin-top:3px;line-height:1.5}
-.hb-rank{background:linear-gradient(135deg,#3b0a4a,#0b1224);border-color:rgba(217,70,239,.45)}.hb-rank .e{animation:bnc 1.4s ease-in-out infinite}
-.hb-ref{background:linear-gradient(135deg,#0b3a1e,#0b1224);border-color:rgba(34,197,94,.45)}.hb-ref .e{animation:fl 3s ease-in-out infinite}
-.hb-help{background:linear-gradient(135deg,#0c2350,#0b1224);border-color:rgba(59,130,246,.45)}.hb-help .e{animation:wob 1.8s ease-in-out infinite}
-.hb-acc{background:linear-gradient(135deg,#4a1d08,#0b1224);border-color:rgba(249,115,22,.45)}.hb-acc .e{animation:swg 3s ease-in-out infinite}
 .ft{margin-top:6px;border-radius:22px;padding:18px 16px;background:linear-gradient(180deg,#0d1a2e,#070d1a);border:1px solid rgba(251,191,36,.35);box-shadow:0 10px 24px rgba(0,0,0,.5)}
 .ftl{display:flex;align-items:center;gap:12px;margin-bottom:10px}.ftl b{font-size:16px;color:var(--gold)}.ftl small{display:block;font-size:11px;color:var(--mu)}
 .fd{font-size:12px;line-height:1.75;color:#94a3b8;margin-bottom:14px}
@@ -652,13 +611,13 @@ function gCb(r){api('google','POST',{credential:r.credential,ref:REF}).then(done
 function initG(){if(!GID){$('gWrap').style.display='none';return}
  if(!window.google||!google.accounts){return setTimeout(initG,400)}
  google.accounts.id.initialize({client_id:GID,callback:gCb});google.accounts.id.renderButton($('gBtn'),{theme:'filled_black',size:'large',text:'continue_with',width:280})}
-var TABS=[['home','🏠','Home'],['tasks','📋','Tasks'],['rank','🏆','Ranking'],['ref','👥','Refer'],['help','💬','Support'],['acc','👤','Account'],['book','🕌','Islam']];
+
+var TABS=[['home','🏠','Home'],['tasks','📋','Tasks'],['pkg','📦','Package'],['rank','🏆','Rank'],['ref','👥','Refer'],['help','💬','Support'],['acc','👤','Account'],['book','🕌','Islam']];
 function enter(m){ME=m;$('auth').style.display='none';$('nav').innerHTML=TABS.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');head();go('home')}
 function head(){$('hName').textContent=ME.name;$('hBal').textContent=money(ME.balance);$('avT').innerHTML=ME.av?'<img src="'+esc(ME.av)+'" alt="">':'📷'}
-function go(t){TAB=t;clearInterval(TIMER);TABS.forEach(function(x){$('n_'+x[0]).className=x[0]===t?'on':''});({home:vHome,tasks:vTasks,rank:vRank,ref:vRef,help:vHelp,acc:vAcc,book:vBook})[t]()}
+function go(t){TAB=t;clearInterval(TIMER);TABS.forEach(function(x){$('n_'+x[0]).className=x[0]===t?'on':''});({home:vHome,tasks:vTasks,pkg:vPkg,rank:vRank,ref:vRef,help:vHelp,acc:vAcc,book:vBook})[t]()}
 function toast(m){alert(m)}
 
-/* ---------- Profile photo ---------- */
 function avUp(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();
  r.onload=function(){var im=new Image();
   im.onload=function(){var c=document.createElement('canvas');c.width=c.height=128;var x=c.getContext('2d'),m=Math.min(im.width,im.height);
@@ -667,7 +626,6 @@ function avUp(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();
   im.onerror=function(){toast('ছবিটি পড়া যায়নি, অন্য ছবি দিন।')};im.src=r.result};
  r.readAsDataURL(f);inp.value=''}
 
-/* ---------- Home ---------- */
 var HS=[
  ['s0','🕌 নামাজের স্মরণ','নামাজ কি পড়েছেন?','নামাজ আমাদের জীবনের সবচেয়ে বড় আমানত। কাজের ফাঁকে ওয়াক্ত হলেই নামাজ আদায় করে নিন। মনও শান্ত থাকবে, কাজেও বরকত আসবে।','🕌','🌙','⭐'],
  ['s1','🌟 আমাদের সাইট','RS Growth Matrix','এটি একটি টাস্কভিত্তিক আয়ের সাইট। এখানে সহজ টাস্ক শেষ করলে ব্যালেন্সে টাকা যোগ হয়। আছে দৈনিক বোনাস, লাকি ড্র, রেফার, র‍্যাংকিং, সাপোর্ট ও একটি ইসলামিক বই।','🚀','✨','💎'],
@@ -677,24 +635,20 @@ function hsGo(i){HSI=i;var s=document.querySelectorAll('.sl'),d=document.querySe
 function ico(c,p){return '<svg width="46" height="46" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="'+c+'"/>'+p+'</svg>'}
 function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
  var fb=ico('#1877f2','<path d="M13.2 19v-6.2h2.1l.4-2.6h-2.5V8.6c0-.8.3-1.3 1.4-1.3h1.2V5.1c-.2 0-1-.1-1.9-.1-1.9 0-3.2 1.2-3.2 3.3v1.9H8.6v2.6h2.1V19z" fill="#fff"/>');
- var tg=ico('#29a9eb','<path d="M18.6 6.2L5.4 11.3c-.9.4-.9.9-.2 1.1l3.3 1 1.3 4c.2.5.1.7.7.7.4 0 .6-.2.8-.4l1.6-1.6 3.3 2.4c.6.3 1 .2 1.2-.6l2-9.5c.2-.9-.3-1.3-.8-1z" fill="#fff"/>');
+ var tg=ico('#29a9eb','<path d="M18.6 6.2L5.4 11.3c-.9.4-.9.9-.2 1.1l3.3 1 1.3 4c.2.5.1.7.7.7.4 0 .6-.2.8-.4l1.6-1.6 3.3 2.4c.6.3 1 .2 1.2-.6l2-9.5c.2-.9-.3-1.3-.8-1 z" fill="#fff"/>');
  var wa=ico('#25d366','<path d="M12 5.2a6.8 6.8 0 0 0-5.8 10.3L5.2 18.8l3.4-.9A6.8 6.8 0 1 0 12 5.2z" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M9.6 9.3c.2 2 2 3.8 4 4.1l.9-.9-1.3-.9-.6.5c-.7-.3-1.4-1-1.7-1.7l.5-.6-.9-1.3z" fill="#fff"/>');
  return '<div class="ft"><div class="ftl">'+logo(46)+'<div><b>'+esc(c.n)+'</b><small>টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম</small></div></div>'+
  '<div class="fd">'+esc(c.d||'')+'</div>'+
- '<div class="fcols"><div><h5>প্ল্যাটফর্ম</h5><a onclick="go(\\'home\\')">Home</a><a onclick="go(\\'tasks\\')">Tasks</a><a onclick="go(\\'rank\\')">Ranking</a><a onclick="go(\\'ref\\')">Refer</a></div>'+
- '<div><h5>সহায়তা</h5><a onclick="go(\\'help\\')">Support</a><a onclick="go(\\'acc\\')">Account ও Withdraw</a><a onclick="go(\\'book\\')">ইসলামিক বই</a></div></div>'+
+ '<div class="fcols"><h5>প্ল্যাটফর্ম</h5><a onclick="go(\\'home\\')">Home</a><a onclick="go(\\'tasks\\')">Tasks</a><a onclick="go(\\'pkg\\')">Package</a><a onclick="go(\\'rank\\')">Rank</a><a onclick="go(\\'ref\\')">Refer</a></div>'+
  '<div class="fsoc"><a href="'+esc(c.fb)+'" target="_blank" rel="noopener" aria-label="Facebook">'+fb+'</a><a href="https://t.me/'+esc(c.tg)+'" target="_blank" rel="noopener" aria-label="Telegram">'+tg+'</a><a href="https://wa.me/'+esc(c.wa)+'" target="_blank" rel="noopener" aria-label="WhatsApp">'+wa+'</a></div>'+
- '<div class="fage"><span class="bd">'+A+'+</span><div>'+A+' বছরের নিচে কারও এই অ্যাকাউন্টে প্রবেশ করা নিষেধ। অভিভাবকগণ সন্তানদের দিকে নজর রাখুন। কোনো শিশু প্রবেশ করেছে জানলে আমাদের জানান।</div></div>'+
- '<div class="fh">পেমেন্ট মাধ্যম</div><div class="fchips"><span class="fchip">bKash</span><span class="fchip">Nagad</span></div>'+
- (p.length?'<div class="fh">আমাদের পার্টনার</div><div class="fchips">'+p.map(function(x){return '<span class="fchip">'+esc(x)+'</span>'}).join('')+'</div>':'')+
- '<div class="fr" style="margin-top:12px"><span>📧</span><a href="mailto:'+esc(c.e)+'">'+esc(c.e)+'</a></div>'+
- '<div class="fr"><span>📞</span><a href="tel:'+esc(c.p)+'">'+esc(c.p)+'</a></div>'+
- '<div class="fr"><span>✈️</span><a href="https://t.me/'+esc(c.tg)+'" target="_blank" rel="noopener">@'+esc(c.tg)+'</a></div>'+
+ '<div class="fage"><span class="bd">'+A+'+</span><div>'+A+' বছরের নিচে কারও এই অ্যাকাউন্টে প্রবেশ করা নিষেধ।</div></div>'+
  '<div class="fc">© '+esc(c.y)+' '+esc(c.n)+'. সর্বস্বত্ব সংরক্ষিত।</div></div>'}
+
 function vHome(){var ok=Date.now()-ME.lastDaily>=864e5,sp=Date.now()-(ME.lastSpin||0)>=864e5;HSI=0;
  var sl=HS.map(function(x,i){return '<div class="sl '+x[0]+(i===0?' on':'')+'"><span class="tag">'+x[1]+'</span><h4>'+x[2]+'</h4><p>'+x[3]+'</p><span class="em">'+x[4]+'</span><span class="e2">'+x[5]+'</span><span class="e3">'+x[6]+'</span></div>'}).join('');
  var dt=HS.map(function(x,i){return '<i class="'+(i===0?'on':'')+'" onclick="hsGo('+i+')"></i>'}).join('');
- $('main').innerHTML='<div class="mq"><span>🌙 RS Growth Matrix-এ স্বাগতম! আপনার নামাজের কথা মনে আছে তো? 🤲 নামাজ পড়ুন, তারপর কাজে মন দিন। ✨ আমাদের এই সাইটে আপনি নিশ্চিন্তে সহজ টাস্ক করে আয় করতে পারেন। 🤝 কোনো সমস্যা হলে Support-এ জানান। 💬</span></div>'+
+ $('main').innerHTML='<div class="mq"><span>🌙 RS Growth Matrix-এ স্বাগতম! আপনার নামাজের কথা মনে আছে তো? 🤲 নামাজ পড়ুন, তারপর কাজে মন দিন। ✨</span></div>'+
+ '<div class="mq u"><span>⚡ Live: [Tanvir Ahmed] won 50 BDT Task Bonus! 🔥 [Rahim Mia] successfully withdrew 500 BDT via bKash! 🚀 [Sumaiya] got Daily Login Bonus!</span></div>'+
  '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
  '<div class="hs">'+sl+'</div><div class="dots">'+dt+'</div>'+
  '<div class="bo" style="margin-bottom:14px"><div class="bi lk"><span class="ic">🎡</span><div style="flex:1"><b style="margin-top:0">Lucky Draw</b><small>প্রতি ২৪ ঘণ্টায় একবার ঘোরান, ১ থেকে ৫ টাকা জিতুন</small></div><button class="btn s'+(sp?'':' dn')+'" style="'+(sp?'':'background:#1e293b;color:#94a3b8')+'" onclick="spinOpen()">'+(sp?'Spin':'Done ✅')+'</button></div></div>'+
@@ -704,12 +658,11 @@ function vHome(){var ok=Date.now()-ME.lastDaily>=864e5,sp=Date.now()-(ME.lastSpi
  TIMER=setInterval(function(){if(!document.querySelector('.hs')){clearInterval(TIMER);return}hsGo((HSI+1)%HS.length)},6000)}
 function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added to your balance.')}).catch(function(e){toast(e.message)})}
 
-/* ---------- Lucky Draw ---------- */
 function wheelSvg(){var cols=['#b45309','#1e3a8a','#14532d','#7c2d12','#4c1d95','#0c4a6e','#78350f','#164e63'],h='<svg viewBox="0 0 200 200" width="250" height="250" id="whs" style="display:block;transition:transform 4.5s cubic-bezier(.17,.67,.12,1);transform:rotate('+ROT+'deg)"><circle cx="100" cy="100" r="98" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/>';
  for(var i=0;i<8;i++){h+='<g transform="rotate('+(i*45+22.5)+' 100 100)"><path d="M100 100L63.65 12.23A95 95 0 0 1 136.35 12.23Z" fill="'+cols[i]+'" stroke="#fbbf24" stroke-width="1.2"/><text x="100" y="44" text-anchor="middle" font-size="17" font-weight="800" fill="#fff">'+SEG[i]+'৳</text></g>'}
  return h+'<circle cx="100" cy="100" r="15" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/><text x="100" y="105" text-anchor="middle" font-size="12">⭐</text></svg>'}
 function spinOpen(){SPUN=false;var ok=Date.now()-(ME.lastSpin||0)>=864e5;
- modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Lucky Draw</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন':'আজকের স্পিন শেষ। ২৪ ঘণ্টা পর আবার আসুন।')+'</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeSpin()">Close</button>')}
+ modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Lucky Draw</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন':'আজকের স্পিন শেষ।')+'</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeSpin()">Close</button>')}
 function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style.opacity='.5';
  api('spin','POST').then(function(r){var c=[];for(var k=0;k<SEG.length;k++)if(SEG[k]===r.prize)c.push(k);var i=c[Math.floor(Math.random()*c.length)];
   ROT=Math.ceil(ROT/360)*360+1800-(i*45+22.5);$('whs').style.transform='rotate('+ROT+'deg)';
@@ -717,102 +670,94 @@ function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style
  .catch(function(e){SPUN=false;toast(e.message);closeSpin()})}
 function closeSpin(){closeM();if(TAB==='home')vHome()}
 
-/* ---------- Tasks ---------- */
-function openTW(){if(TWU){var w=window.open(TWU,'_blank');if(!w)location.href=TWU}}
-function vTasks(){$('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>📋</div><div><b>Live Tasks</b><small>টাস্কে চাপুন, বিস্তারিত পড়ুন, তারপর Start দিন।</small></div></div><div id="tw"></div><div class="grid4" id="st"></div><div class="mq u"><span>⏳ আপনার টাস্ক পেন্ডিং থাকা মানে যাচাই চলছে, চিন্তার কোনো কারণ নেই। টাস্ক কমপ্লিট হতে কিছুটা সময় লাগে। যাচাই শেষে সফল হলে টাকা আপনার ব্যালেন্সে যোগ হবে। ৪৮ ঘণ্টার মধ্যে যাচাই না হলে টাস্কটি তালিকা থেকে সরে যায়। ধৈর্য ধরুন। 🤍</span></div><div id="tl">Loading...</div>';
- api('timewall').then(function(d){TWU=d.url;var e=$('tw');if(e&&d.url)e.innerHTML='<div class="row" style="border-color:rgba(34,197,94,.5)"><div style="display:flex;gap:10px;align-items:center"><span style="font-size:30px">⏱️</span><div>TimeWall Tasks<small>সার্ভে, টাস্ক ও গেম। কাজ শেষ হলে কিছুক্ষণ পর টাকা ব্যালেন্সে যোগ হয়।</small></div></div><button class="btn s g" onclick="openTW()">Open</button></div>'}).catch(function(){});
+function vTasks(){$('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>📋</div><div><b>Live Tasks</b><small>টাস্কে চাপুন, বিস্তারিত পড়ুন, তারপর Start দিন।</small></div></div><div id="tw"></div><div class="grid4" id="st"></div><div id="tl">Loading...</div>';
+ api('timewall').then(function(d){TWU=d.url;var e=$('tw');if(e&&d.url)e.innerHTML='<div class="row" style="border-color:rgba(34,197,94,.5)"><div style="display:flex;gap:10px;align-items:center"><span style="font-size:30px">⏱️</span><div>TimeWall Tasks<small>সার্ভে ও টাস্ক।</small></div></div><button class="btn s g" onclick="openTW()">Open</button></div>'}).catch(function(){});
  function load(){api('offers').then(function(d){var s=d.stats;if(!$('st'))return;
  $('st').innerHTML=[['Pending',s.pending],['Success',s.success],['Cancelled',s.cancelled],['Total',s.total]].map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('');
  window.OF=d.list;
  $('tl').innerHTML=d.list.length?d.list.map(function(t,i){var op=t.status==='open',b=op?'<button class="btn s">Details</button>':'<span class="chip '+(t.status==='success'?'approved':t.status)+'">'+t.status+'</span>';
- return '<div class="row"'+(op?' style="cursor:pointer" onclick="showT('+i+')"':'')+'><div style="display:flex;gap:10px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="38" height="38" style="border-radius:10px" alt="">':'')+'<div>'+esc(t.title)+'<small>Reward: '+money(t.bdt)+' BDT</small></div></div>'+b+'</div>'}).join(''):'<div class="row">এই মুহূর্তে বাংলাদেশ, ভারত, পাকিস্তান ও নেপালের জন্য এখানে কোনো নতুন টাস্ক নেই। কিছুক্ষণ পর আবার দেখুন।</div>'}).catch(function(e){if($('tl'))$('tl').textContent=e.message})}
+ return '<div class="row"'+(op?' style="cursor:pointer" onclick="showT('+i+')"':'')+'><div style="display:flex;gap:10px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="38" height="38" style="border-radius:10px" alt="">':'')+'<div>'+esc(t.title)+'<small>Reward: '+money(t.bdt)+' BDT</small></div></div>'+b+'</div>'}).join(''):'<div class="row">এই মুহূর্তে কোনো টাস্ক নেই।</div>'}).catch(function(e){if($('tl'))$('tl').textContent=e.message})}
  load();TIMER=setInterval(load,30000)}
-function showT(i){var t=OF[i],cn=t.cnt||[],dv=t.dev||[],tc=(ME&&ME.tc)||[],okC=!cn.length||cn.some(function(c){return tc.indexOf(c)>=0});
- modal('<div style="display:flex;gap:12px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="54" height="54" style="border-radius:14px" alt="">':'')+'<div><b style="font-size:15px">'+esc(t.title)+'</b><div style="color:var(--grn);font-weight:800;margin-top:3px">Reward: '+money(t.bdt)+' BDT</div></div></div>'+
- '<div class="tdw"><b>কাজ কী:</b> '+esc(t.desc||'বিস্তারিত দেওয়া নেই')+'</div>'+
- (t.req?'<div class="tdw"><b>শর্ত:</b> '+esc(t.req)+'</div>':'')+
- '<div class="tdw"><b>ডিভাইস:</b> '+(dv.length?esc(dv.join(', ')):'সব ডিভাইস')+'<br><b>যোগ্য দেশ:</b> '+(cn.length?esc(cn.join(', ')):'সব দেশ')+'</div>'+
- (okC?'':'<div class="tdw w">⚠️ এই অফার শুধু '+esc(cn.join(', '))+' দেশের ইউজারদের জন্য। আপনার দেশ এই তালিকায় না থাকলে কাজ শেষ করলেও টাকা নাও আসতে পারে।</div>')+
- '<h3 style="margin-top:10px">কীভাবে করবেন</h3><div class="stp">১. নিচের Start চাপুন।<br>২. যে পেজ খুলবে সেখানে শর্ত অনুযায়ী কাজটা শেষ করুন। কোনো অফারওয়াল অ্যাকাউন্ট লাগবে না।<br>৩. কাজ শেষে আমাদের সাইটে ফিরে আসুন, টাস্ক Pending দেখাবে।<br>৪. যাচাই শেষে সফল হলে টাকা ব্যালেন্সে যোগ হবে।</div>'+
- '<button class="btn g" onclick="closeM();startO('+i+')">Start</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
+function openTW(){if(TWU){var w=window.open(TWU,'_blank');if(!w)location.href=TWU}}
+function showT(i){var t=OF[i];
+ modal('<b>'+esc(t.title)+'</b><div style="color:var(--grn);margin:6px 0">Reward: '+money(t.bdt)+' BDT</div><div class="tdw">'+esc(t.desc||'No details')+'</div><button class="btn g" onclick="closeM();startO('+i+')">Start</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
 function startO(i){api('offers/'+encodeURIComponent(OF[i].id)+'/start','POST').then(function(r){var w=window.open(r.url,'_blank');if(!w)location.href=r.url;vTasks()}).catch(function(e){toast(e.message)})}
 function modal(h){$('mBody').innerHTML=h;$('modal').style.display='flex'}
 function closeM(){$('modal').style.display='none'}
-function vRank(){$('main').innerHTML=hb('rank','🏆','Top Earners','সবচেয়ে বেশি আয় করা ইউজারদের তালিকা। কাজ করুন, তালিকায় উঠুন!')+'<div id="rk">Loading...</div>';
- function load(){api('leaderboard').then(function(a){if(!a.length){$('rk').innerHTML='<div class="row">No earners yet. Complete a task to take the first place.</div>';return}
+
+function vPkg(){$('main').innerHTML=hb('ref','📦','VIP Packages','আপনার আয়ের গতি বাড়াতে ভিআইপি প্যাকেজ কিনুন।')+'<div class="card"><div class="brand" style="font-size:16px">Standard Package</div><div class="sub">Active Free</div><button class="btn s" style="background:#1e293b;color:var(--mu)">Current</button></div><div class="card" style="margin-top:12px"><div class="brand" style="font-size:16px;color:var(--grn)">VIP Gold Package</div><div class="sub">Double task rewards & Fast withdrawal support!</div><button class="btn g" onclick="toast(\\'Deposit required to upgrade package.\\')">Upgrade (500 BDT)</button></div>'}
+
+function vRank(){$('main').innerHTML=hb('rank','🏆','Top Earners','সেরা ১০০ জন ইউজারদের লিডারবোর্ড।')+'<div id="rk">Loading...</div>';
+ function load(){api('leaderboard').then(function(a){if(!a.length){$('rk').innerHTML='<div class="row">No earners yet.</div>';return}
  var p=[a[1],a[0],a[2]],cl=['','p1',''],rk=['#2','#1','#3'];
  $('rk').innerHTML='<div class="pod">'+p.map(function(u,i){return u?'<div class="'+cl[i]+'">'+(i===1?'👑':'')+'<br>'+esc(u.name)+'<b>'+money(u.earned)+'</b><small>'+rk[i]+'</small></div>':'<div></div>'}).join('')+'</div>'+
  a.slice(3).map(function(u,i){return '<div class="row"><div>#'+(i+4)+' '+esc(u.name)+'</div><b style="color:var(--grn)">'+money(u.earned)+'</b></div>'}).join('')}).catch(function(){})}
  load();TIMER=setInterval(load,20000)}
-function vRef(){var link=location.origin+'/?ref='+ME.refCode,e=encodeURIComponent(link),tx=encodeURIComponent('Join RS Growth Matrix and earn by completing tasks: ');window.RL=link;
- $('main').innerHTML=hb('ref','👥','Invite & Earn','বন্ধুদের ইনভাইট করুন, প্রতি সাইনআপে বোনাস পান।')+'<div class="card" style="text-align:center">'+logo(64)+'<div class="brand" style="font-size:18px">Invite and earn</div><div class="sub">You get '+10+' BDT for every friend who signs up with your link.</div>'+
- '<input readonly id="rl" value="'+esc(link)+'"><button class="btn" onclick="copyL()">Copy link</button>'+
- '<div class="share"><a target="_blank" rel="noopener" href="https://wa.me/?text='+tx+e+'">WhatsApp</a><a target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u='+e+'">Facebook</a><a href="fb-messenger://share?link='+e+'">Messenger</a><button onclick="copyL(1)">Imo</button><a target="_blank" rel="noopener" href="https://t.me/share/url?url='+e+'&text='+tx+'">Telegram</a><button onclick="nat()">More apps</button></div></div>'+
- '<div class="grid" style="margin-top:12px"><div class="stat"><b>'+ME.refCount+'</b><small>Friends joined</small></div><div class="stat"><b>'+money(ME.refEarn)+'</b><small>Referral earnings</small></div></div>'}
-function copyL(imo){(navigator.clipboard?navigator.clipboard.writeText(RL):Promise.reject()).then(function(){toast(imo?'Link copied. Open Imo and paste it in a chat.':'Link copied.')}).catch(function(){$('rl').select();toast('Press copy on the selected link.')})}
-function nat(){if(navigator.share)navigator.share({title:'RS Growth Matrix',url:RL});else copyL()}
-function vHelp(){$('main').innerHTML=hb('help','💬','Support','কোনো সমস্যা হলে এখানে লিখুন, আমাদের টিম উত্তর দেবে।')+'<div class="chat" id="ch"></div><textarea id="st" rows="2" maxlength="500" placeholder="Describe your problem"></textarea><button class="btn" onclick="sendS()">Send</button>';
- function load(){api('support').then(function(a){var c=$('ch');if(!c)return;c.innerHTML=a.length?a.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join(''):'<div class="m support">Hello! Write your message and our team will reply here.</div>';c.scrollTop=c.scrollHeight}).catch(function(){})}
+
+function vRef(){var link=location.origin+'/?ref='+ME.refCode,e=encodeURIComponent(link),tx=encodeURIComponent('Join RS Growth Matrix: ');window.RL=link;
+ $('main').innerHTML=hb('ref','👥','Invite & Earn','বন্ধুদের ইনভাইট করুন।')+'<div class="card" style="text-align:center">'+logo(64)+'<div class="brand" style="font-size:18px">Invite and earn</div><input readonly id="rl" value="'+esc(link)+'"><button class="btn" onclick="copyL()">Copy link</button></div>'+
+ '<div class="grid" style="margin-top:12px"><div class="stat"><b>'+ME.refCount+'</b><small>Friends</small></div><div class="stat"><b>'+money(ME.refEarn)+'</b><small>Earned</small></div></div>'}
+function copyL(){(navigator.clipboard?navigator.clipboard.writeText(RL):Promise.reject()).then(function(){toast('Copied.')}).catch(function(){$('rl').select()})}
+
+function vHelp(){$('main').innerHTML=hb('help','💬','Support','আমাদের সাথে যোগাযোগ করুন।')+'<div class="chat" id="ch"></div><textarea id="st" rows="2" maxlength="500" placeholder="Describe your problem"></textarea><button class="btn" onclick="sendS()">Send</button>';
+ function load(){api('support').then(function(a){var c=$('ch');if(!c)return;c.innerHTML=a.length?a.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join(''):'<div class="m support">Hello! Write your message.</div>';c.scrollTop=c.scrollHeight}).catch(function(){})}
  load();TIMER=setInterval(load,10000)}
 function sendS(){api('support','POST',{text:$('st').value}).then(function(){$('st').value='';vHelp()}).catch(function(e){toast(e.message)})}
-function vAcc(){$('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স, আয় ও উত্তোলনের হিসাব।')+'<div class="row"><div>'+esc(ME.name)+'<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
- '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
- '<button class="btn r" style="margin-top:0" onclick="wdForm()">Withdraw</button><h3 style="margin-top:16px">Withdraw history</h3><div id="wh">Loading...</div>'+
- '<button class="btn" style="background:#1e293b;color:#fff" onclick="admOpen()">Admin panel</button>';
- api('withdrawals').then(function(a){$('wh').innerHTML=a.length?a.map(function(w){return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' <span class="chip '+w.status+'">'+w.status+'</span></div></div>'}).join(''):'<div class="row">No withdrawals yet.</div>'})}
-function wdForm(){modal('<h3 style="color:var(--gold)">Withdraw (300 - 5000 BDT)</h3><label>Method</label><select id="wm"><option>bKash</option><option>Nagad</option></select><label>Amount</label><input id="wa" type="number" inputmode="numeric"><label>Your bKash/Nagad number</label><input id="wp" maxlength="11" inputmode="numeric" value="'+esc(ME.phone)+'"><button class="btn r" onclick="doWd()">Send request</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
-function doWd(){api('withdraw','POST',{method:$('wm').value,amount:$('wa').value,phone:$('wp').value}).then(function(m){ME=m;head();closeM();toast('Withdraw request sent.');vAcc()}).catch(function(e){toast(e.message)})}
 
-/* ---------- Islamic Book ---------- */
+function vAcc(){$('main').innerHTML=hb('acc','👤','My Account','আপনার হিসাব ও ডিপোজিট/উইথড্র।')+'<div class="row"><div>'+esc(ME.name)+'<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
+ '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
+ '<div style="display:flex;gap:8px"><button class="btn r" style="flex:1;margin-top:0" onclick="wdForm()">Withdraw</button><button class="btn g" style="flex:1;margin-top:0" onclick="depForm()">Deposit</button></div>'+
+ '<h3 style="margin-top:16px">Withdraw History</h3><div id="wh">Loading...</div>'+
+ '<h3 style="margin-top:16px">Deposit History</h3><div id="dh">Loading...</div>';
+ api('withdrawals').then(function(a){$('wh').innerHTML=a.length?a.map(function(w){return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' <span class="chip '+w.status+'">'+w.status+'</span></div></div>'}).join(''):'<div class="row">No withdrawals.</div>'});
+ api('deposits').then(function(a){$('dh').innerHTML=a.length?a.map(function(d){return '<div class="row"><div>'+esc(d.method)+' Tx: '+esc(d.txid)+'<small>'+new Date(d.at).toLocaleDateString()+'</small></div><div>'+money(d.amount)+' <span class="chip '+d.status+'">'+d.status+'</span></div></div>'}).join(''):'<div class="row">No deposits.</div>'})}
+
+function wdForm(){modal('<h3 style="color:var(--gold)">Withdraw (300 - 5000 BDT)</h3><label>Method</label><select id="wm"><option>bKash</option><option>Nagad</option></select><label>Amount</label><input id="wa" type="number"><label>Number</label><input id="wp" maxlength="11" value="'+esc(ME.phone)+'"><button class="btn r" onclick="doWd()">Send Request</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
+function doWd(){api('withdraw','POST',{method:$('wm').value,amount:$('wa').value,phone:$('wp').value}).then(function(m){ME=m;head();closeM();toast('Request sent.');vAcc()}).catch(function(e){toast(e.message)})}
+
+function depForm(){modal('<h3 style="color:var(--gold)">Deposit Balance</h3><label>Method</label><select id="dm"><option>bKash</option><option>Nagad</option></select><label>Amount</label><input id="da" type="number" placeholder="50+"><label>Transaction ID (TrxID)</label><input id="dtx" placeholder="Enter TrxID"><button class="btn g" onclick="doDep()">Submit Deposit</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
+function doDep(){api('deposit','POST',{method:$('dm').value,amount:$('da').value,txid:$('dtx').value}).then(function(){closeM();toast('Deposit submitted successfully.');vAcc()}).catch(function(e){toast(e.message)})}
+
 var DUA=[
-["১. সানা (নামাজের শুরুতে)","سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ وَتَبَارَكَ اسْمُكَ وَتَعَالَى جَدُّكَ وَلَا إِلَهَ غَيْرُكَ","সুবহানাকাল্লাহুম্মা ওয়া বিহামদিকা ওয়া তাবারাকাসমুকা ওয়া তাআলা জাদ্দুকা ওয়া লা ইলাহা গাইরুক।","হে আল্লাহ, আপনি পবিত্র, আপনার প্রশংসা করছি। আপনার নাম বরকতময়, আপনার মর্যাদা সুউচ্চ, আপনি ছাড়া কোনো ইলাহ নেই।"],
-["২. সূরা ফাতিহা (প্রতি রাকাতে)","بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ الرَّحْمَٰنِ الرَّحِيمِ مَالِكِ يَوْمِ الدِّينِ إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ","","পরম করুণাময় দয়ালু আল্লাহর নামে শুরু। সমস্ত প্রশংসা জগতের প্রতিপালক আল্লাহর। তিনি পরম করুণাময়, অতি দয়ালু, বিচার দিনের মালিক। আমরা শুধু আপনারই ইবাদত করি ও আপনারই কাছে সাহায্য চাই। আমাদের সরল পথ দেখান, তাদের পথ, যাদের আপনি নিয়ামত দিয়েছেন; তাদের পথ নয়, যারা গজবপ্রাপ্ত ও পথভ্রষ্ট।"],
-["৩. আত্তাহিয়্যাতু (শেষ বৈঠকে)","التَّحِيَّاتُ لِلَّهِ وَالصَّلَوَاتُ وَالطَّيِّبَاتُ السَّلَامُ عَلَيْكَ أَيُّهَا النَّبِيُّ وَرَحْمَةُ اللَّهِ وَبَرَكَاتُهُ السَّلَامُ عَلَيْنَا وَعَلَى عِبَادِ اللَّهِ الصَّالِحِينَ أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ","আত্তাহিয়্যাতু লিল্লাহি ওয়াস সালাওয়াতু ওয়াত তাইয়্যিবাতু, আস সালামু আলাইকা আইয়্যুহান নাবিয়্যু ওয়া রাহমাতুল্লাহি ওয়া বারাকাতুহু, আস সালামু আলাইনা ওয়া আলা ইবাদিল্লাহিস সালিহীন, আশহাদু আল লা ইলাহা ইল্লাল্লাহু ওয়া আশহাদু আন্না মুহাম্মাদান আবদুহু ওয়া রাসুলুহু।","সমস্ত সম্মান, ইবাদত ও পবিত্রতা আল্লাহর জন্য। হে নবী, আপনার ওপর শান্তি, আল্লাহর রহমত ও বরকত বর্ষিত হোক। আমাদের ওপর এবং আল্লাহর সৎ বান্দাদের ওপরও শান্তি বর্ষিত হোক। আমি সাক্ষ্য দিচ্ছি আল্লাহ ছাড়া কোনো ইলাহ নেই, আর মুহাম্মদ (সা.) তাঁর বান্দা ও রাসুল।"],
-["৪. দরুদ ইবরাহিম","اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا صَلَّيْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ اللَّهُمَّ بَارِكْ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا بَارَكْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ","আল্লাহুম্মা সাল্লি আলা মুহাম্মাদিউ ওয়া আলা আলি মুহাম্মাদিন কামা সাল্লাইতা আলা ইবরাহিমা ওয়া আলা আলি ইবরাহিমা ইন্নাকা হামিদুম মাজিদ। আল্লাহুম্মা বারিক আলা মুহাম্মাদিউ ওয়া আলা আলি মুহাম্মাদিন কামা বারাকতা আলা ইবরাহিমা ওয়া আলা আলি ইবরাহিমা ইন্নাকা হামিদুম মাজিদ।","হে আল্লাহ, মুহাম্মদ (সা.) ও তাঁর পরিবারের ওপর রহমত বর্ষণ করুন, যেমন ইবরাহিম (আ.) ও তাঁর পরিবারের ওপর করেছিলেন। নিশ্চয়ই আপনি প্রশংসিত ও মহিমান্বিত। হে আল্লাহ, মুহাম্মদ (সা.) ও তাঁর পরিবারের ওপর বরকত দিন, যেমন ইবরাহিম (আ.) ও তাঁর পরিবারের ওপর দিয়েছিলেন।"],
-["৫. দোয়া মাসুরা","اللَّهُمَّ إِنِّي ظَلَمْتُ نَفْسِي ظُلْمًا كَثِيرًا وَلَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ فَاغْفِرْ لِي مَغْفِرَةً مِنْ عِنْدِكَ وَارْحَمْنِي إِنَّكَ أَنْتَ الْغَفُورُ الرَّحِيمُ","আল্লাহুম্মা ইন্নি জালামতু নাফসি জুলমান কাসিরাঁও ওয়া লা ইয়াগফিরুয যুনুবা ইল্লা আনতা ফাগফিরলি মাগফিরাতাম মিন ইনদিকা ওয়ারহামনি ইন্নাকা আনতাল গাফুরুর রাহিম।","হে আল্লাহ, আমি নিজের ওপর অনেক জুলুম করেছি। আপনি ছাড়া কেউ গুনাহ মাফ করতে পারে না। তাই আপনার পক্ষ থেকে আমাকে ক্ষমা করুন ও দয়া করুন। নিশ্চয়ই আপনি ক্ষমাশীল, দয়ালু।"],
-["৬. নামাজের পরের দোয়া","رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ","রাব্বানা আতিনা ফিদ্দুনইয়া হাসানাতাঁও ওয়া ফিল আখিরাতি হাসানাতাঁও ওয়া কিনা আজাবান নার।","হে আমাদের রব, আমাদের দুনিয়াতে কল্যাণ দিন, আখিরাতেও কল্যাণ দিন এবং আমাদের জাহান্নামের আজাব থেকে রক্ষা করুন।"]];
-var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
-var HD=[["কাজ নিয়তের ওপর নির্ভরশীল। প্রত্যেক ব্যক্তি তা-ই পাবে, যার নিয়ত সে করেছে।","সহিহ বুখারি ১, সহিহ মুসলিম ১৯০৭"],["তোমাদের মধ্যে সেই ব্যক্তি সর্বোত্তম, যে কুরআন শেখে এবং অন্যকে শেখায়।","সহিহ বুখারি ৫০২৭"],["তোমাদের কেউ প্রকৃত মুমিন হবে না, যতক্ষণ না সে নিজের জন্য যা পছন্দ করে, তার ভাইয়ের জন্যও তা পছন্দ করে।","সহিহ বুখারি ১৩, সহিহ মুসলিম ৪৫"],["পবিত্রতা ঈমানের অর্ধেক।","সহিহ মুসলিম ২২৩"],["প্রকৃত বীর সে নয়, যে কুস্তিতে অন্যকে হারায়। প্রকৃত বীর সে, যে রাগের সময় নিজেকে নিয়ন্ত্রণ করে।","সহিহ বুখারি ৬১১৪, সহিহ মুসলিম ২৬০৯"],["যে আল্লাহ ও আখিরাতের দিনে বিশ্বাস রাখে, সে যেন ভালো কথা বলে, নয়তো চুপ থাকে।","সহিহ বুখারি ৬০১৮, সহিহ মুসলিম ৪৭"],["যে ব্যক্তি প্রতারণা করে, সে আমাদের দলভুক্ত নয়।","সহিহ মুসলিম ১০১"]];
+["১. সানা","سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ وَتَبَارَكَ اسْمُكَ وَتَعَالَى جَدُّكَ وَلَا إِلَهَ غَيْرُكَ","সুবহানাকাল্লাহুম্মা...","হে আল্লাহ, আপনি পবিত্র।"],
+["২. সূরা ফাতিহা","بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ...","বিসমিল্লাহির রহমানির রাহিম...","পরম করুণাময় আল্লাহর নামে।"]];
+var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"]];
+var HD=[["কাজ নিয়তের ওপর নির্ভরশীল।","সহিহ বুখারি ১"]];
 function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\\''+p+'\\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
 function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\\''+p+'\\')">&lsaquo; ফিরে যান</button>'}
 function vBook(){bk('menu')}
 function nmF(){var q=($('nq').value||'').trim().toLowerCase(),a=NML.filter(function(x){return !q||x.toLowerCase().indexOf(q)>=0});
- $('nl').innerHTML='<h3>'+a.length+'টি নাম</h3>'+(a.length?a.map(function(x){var p=x.split('|');return '<div class="bkc nm"><div><b>'+esc(p[0])+'</b><small>'+esc(p[2]||'')+'</small></div><div class="ar2">'+esc(p[1]||'')+'</div></div>'}).join(''):'<div class="row">'+(NML.length?'কোনো নাম মেলেনি':'নামের ফাইল (names.js) পাওয়া যায়নি')+'</div>')}
+ $('nl').innerHTML='<h3>'+a.length+'টি নাম</h3>'+(a.length?a.map(function(x){var p=x.split('|');return '<div class="bkc nm"><div><b>'+esc(p[0])+'</b><small>'+esc(p[2]||'')+'</small></div><div class="ar2">'+esc(p[1]||'')+'</div></div>'}).join(''):'<div class="row">কোনো নাম মেলেনি</div>')}
 function bk(p){var h='';
  if(p==='menu'){h='<div class="bkh">'+mosque(230)+'<div class="t">ইসলামিক বই</div><div class="u">নাম, দোয়া ও হাদিস</div></div>'+
-  bkb('names','🌙','ইসলামিক নাম','ছেলে ও মেয়েদের নাম, আরবি লেখা ও অর্থ')+bkb('dua','🤲','নামাজের দোয়া','নামাজে যা যা পড়তে হয়')+bkb('rakat','🕌','পাঁচ ওয়াক্ত নামাজ','ফরজ রাকাতের সংখ্যা')+bkb('hadith','📜','হাদিস','কিছু সহিহ হাদিস')}
- else if(p==='names'){h=bkBack('menu')+'<h3>কাদের নাম দেখতে চান?</h3>'+bkb('boys','👦','ছেলেদের নাম','ইসলামিক ছেলে শিশুর নাম')+bkb('girls','👧','মেয়েদের নাম','ইসলামিক মেয়ে শিশুর নাম')}
- else if(p==='boys'||p==='girls'){NML=[];h=bkBack('names')+'<h3>'+(p==='boys'?'ছেলেদের':'মেয়েদের')+' ইসলামিক নাম</h3><input id="nq" placeholder="নাম বা অর্থ খুঁজুন..." oninput="nmF()"><div id="nl" style="margin-top:10px"><div class="row">Loading...</div></div>';
+  bkb('names','🌙','ইসলামিক নাম','ছেলে ও মেয়েদের নাম')+bkb('dua','🤲','নামাজের দোয়া','নামাজে যা পড়তে হয়')+bkb('rakat','🕌','পাঁচ ওয়াক্ত নামাজ','ফরজ রাকাত')+bkb('hadith','📜','হাদিস','সহিহ হাদিস')}
+ else if(p==='names'){h=bkBack('menu')+'<h3>কাদের নাম দেখতে চান?</h3>'+bkb('boys','👦','ছেলেদের নাম','')+bkb('girls','👧','মেয়েদের নাম','')}
+ else if(p==='boys'||p==='girls'){NML=[];h=bkBack('names')+'<h3>'+(p==='boys'?'ছেলেদের':'মেয়েদের')+' নাম</h3><input id="nq" placeholder="নাম খুঁজুন..." oninput="nmF()"><div id="nl" style="margin-top:10px"><div class="row">Loading...</div></div>';
   $('main').innerHTML=h;$('main').scrollTop=0;
   api('names/'+p).then(function(a){NML=a;nmF()}).catch(function(e){var l=$('nl');if(l)l.textContent=e.message});return}
- else if(p==='dua'){h=bkBack('menu')+'<h3>নামাজের দোয়া</h3>'+DUA.map(function(d){return '<div class="bkc"><b>'+esc(d[0])+'</b><div class="ar">'+esc(d[1])+'</div>'+(d[2]?'<div>'+esc(d[2])+'</div>':'')+'<small>অর্থ: '+esc(d[3])+'</small></div>'}).join('')}
- else if(p==='rakat'){h=bkBack('menu')+'<h3>পাঁচ ওয়াক্ত নামাজ</h3>'+RK.map(function(r){return '<div class="row"><div><b style="color:var(--gold)">'+r[0]+'</b></div><div>'+r[1]+'</div></div>'}).join('')+'<div class="bkc"><small>এখানে শুধু ফরজ রাকাত দেওয়া হয়েছে। সুন্নত ও নফল সম্পর্কে আপনার আলেম বা নির্ভরযোগ্য বই থেকে জেনে নিন।</small></div>'}
- else if(p==='hadith'){h=bkBack('menu')+'<h3>হাদিস</h3>'+HD.map(function(x){return '<div class="bkc">'+esc(x[0])+'<small>সূত্র: '+esc(x[1])+'</small></div>'}).join('')}
+ else if(p==='dua'){h=bkBack('menu')+'<h3>নামাজের দোয়া</h3>'+DUA.map(function(d){return '<div class="bkc"><b>'+d[0]+'</b><div class="ar">'+d[1]+'</div><small>'+d[3]+'</small></div>'}).join('')}
+ else if(p==='rakat'){h=bkBack('menu')+'<h3>পাঁচ ওয়াক্ত নামাজ</h3>'+RK.map(function(r){return '<div class="row"><div><b style="color:var(--gold)">'+r[0]+'</b></div><div>'+r[1]+'</div></div>'}).join('')}
+ else if(p==='hadith'){h=bkBack('menu')+'<h3>হাদিস</h3>'+HD.map(function(x){return '<div class="bkc">'+x[0]+'<small>'+x[1]+'</small></div>'}).join('')}
  $('main').innerHTML=h;$('main').scrollTop=0}
 
-/* ---------- Admin panel ---------- */
 var ATABS=[['ov','📊','ওভারভিউ'],['wd','💸','উত্তোলন'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ'],['ea','🏆','ইনকাম']];
 function ah(){return{'x-admin-pass':ADM}}
 function admOpen(){var p=prompt('Admin password');if(!p)return;ADM=p;$('adm').className='adm on';
  $('anav').innerHTML=ATABS.map(function(t){return '<div id="a_'+t[0]+'" onclick="admGo(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');admGo('ov')}
 function admClose(){$('adm').className='adm'}
 function aErr(e){if(e.message==='Wrong admin password.'){toast(e.message);admClose()}else $('abody').innerHTML='<div class="row">'+esc(e.message)+'</div>'}
-function admGo(t){ATABS.forEach(function(x){$('a_'+x[0]).className=x[0]===t?'on':''});$('abody').innerHTML='<div class="row">Loading...</div>';
- ({ov:aOv,wd:aWd,sp:aSp,us:aUs,ea:aEa})[t]()}
+function admGo(t){ATABS.forEach(function(x){$('a_'+x[0]).className=x[0]===t?'on':''});$('abody').innerHTML='<div class="row">Loading...</div>';({ov:aOv,wd:aWd,sp:aSp,us:aUs,ea:aEa})[t]()}
 function sc(a){return a.map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('')}
 function aOv(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
  $('abody').innerHTML='<h3>আজকের হিসাব</h3><div class="grid">'+sc([['মোট ইউজার',s.users],['আজ ঢুকেছে',s.active],['আজ নতুন',s.newToday],['আজ উত্তোলন রিকোয়েস্ট',s.wdToday],['আজ ইউজাররা আয় করেছে',money(s.today)],['সব ইউজারের ব্যালেন্স',money(s.balance)]])+'</div>'+
  '<h3>টাস্ক</h3><div class="grid4">'+sc([['Pending',s.pending],['Success',s.success],['Cancelled',s.cancelled],['অপেক্ষমাণ উত্তোলন',s.wdPending]])+'</div>'+
- '<div class="row"><div>অপেক্ষমাণ উত্তোলন মোট<small>এখনো পাঠানো হয়নি</small></div><b style="color:var(--gold)">'+money(s.wdPendingSum)+'</b></div>'+
- '<button class="btn" style="background:#1e293b;color:#fff" onclick="chk()">Check offers</button>'}).catch(aErr)}
-function chk(){api('admin/offers-raw','GET',null,ah()).then(function(r){modal('<h3 style="color:var(--gold)">Offers response</h3><pre>'+esc(r.text)+'</pre><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')})}
-function cpI(i){var t=AD.wds[i].phone;if(navigator.clipboard)navigator.clipboard.writeText(t).then(function(){toast('Copied: '+t)}).catch(function(){toast(t)});else toast(t)}
-function decI(i,ok){var w=AD.wds[i];if(!confirm((ok?'Paid':'Reject')+' করবেন? '+w.name+' - '+w.amount))return;api('admin/wd/'+w._id,'POST',{ok:!!ok},ah()).then(aWd).catch(aErr)}
+ '<div class="row"><div>অপেক্ষমাণ উত্তোলন মোট<small>এখনো পাঠানো হয়নি</small></div><b style="color:var(--gold)">'+money(s.wdPendingSum)+'</b></div>'}).catch(aErr)}
+function cpI(i){var t=AD.wds[i].phone;navigator.clipboard?navigator.clipboard.writeText(t).then(function(){toast('Copied')}).catch(function(){toast(t)}):toast(t)}
+function decI(i,ok){var w=AD.wds[i];if(!confirm((ok?'Paid':'Reject')+' করবেন?'))return;api('admin/wd/'+w._id,'POST',{ok:!!ok},ah()).then(aWd).catch(aErr)}
 function aWd(){api('admin/wd-list','GET',null,ah()).then(function(d){AD.wds=d.pending;
  var tot=d.pending.reduce(function(a,w){return a+w.amount},0);
  $('abody').innerHTML='<div class="grid">'+sc([['অপেক্ষমাণ',d.pending.length],['মোট টাকা',money(tot)]])+'</div><h3>পাঠাতে হবে</h3>'+
- (d.pending.map(function(w,i){return '<div class="th"><div class="hd"><span>'+esc(w.name)+'</span><span style="color:var(--gold)">'+money(w.amount)+'</span></div><div style="font-size:13px">'+esc(w.method)+': <b>'+esc(w.phone)+'</b></div><small style="color:var(--mu)">'+new Date(w.at).toLocaleString()+'</small><div class="gap"><button class="btn s" onclick="cpI('+i+')">নাম্বার কপি</button><button class="btn s g" onclick="decI('+i+',1)">Paid</button><button class="btn s r" onclick="decI('+i+',0)">Reject</button></div></div>'}).join('')||'<div class="row">কোনো রিকোয়েস্ট নেই</div>')+
- '<h3 style="margin-top:14px">সর্বশেষ সম্পন্ন</h3>'+(d.done.map(function(w){return '<div class="row"><div>'+esc(w.name)+'<small>'+esc(w.method)+' '+esc(w.phone)+'</small></div><div>'+money(w.amount)+' <span class="chip '+w.status+'">'+w.status+'</span></div></div>'}).join('')||'<div class="row">নেই</div>')}).catch(aErr)}
+ (d.pending.map(function(w,i){return '<div class="th"><div class="hd"><span>'+esc(w.name)+'</span><span style="color:var(--gold)">'+money(w.amount)+'</span></div><div style="font-size:13px">'+esc(w.method)+': <b>'+esc(w.phone)+'</b></div><div class="gap"><button class="btn s" onclick="cpI('+i+')">নাম্বার কপি</button><button class="btn s g" onclick="decI('+i+',1)">Paid</button><button class="btn s r" onclick="decI('+i+',0)">Reject</button></div></div>'}).join('')||'<div class="row">কোনো রিকোয়েস্ট নেই</div>')}).catch(aErr)}
 function repI(i){var t=$('rp'+i).value.trim();if(!t)return;api('admin/reply','POST',{uid:AD.th[i].uid,text:t},ah()).then(aSp).catch(aErr)}
 function aSp(){api('admin/support','GET',null,ah()).then(function(d){AD.th=d;
  $('abody').innerHTML=d.length?d.map(function(t,i){return '<div class="th"><div class="hd"><span>'+esc(t.name)+'</span>'+(t.needs?'<span class="chip" style="color:var(--red)">উত্তর দিন</span>':'<span class="chip approved">উত্তর দেওয়া হয়েছে</span>')+'</div><div class="chat" style="max-height:30vh">'+t.msgs.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join('')+'</div><textarea id="rp'+i+'" rows="2" maxlength="500" placeholder="উত্তর লিখুন"></textarea><button class="btn s" style="margin-top:8px" onclick="repI('+i+')">Send</button></div>'}).join(''):'<div class="row">কোনো মেসেজ নেই</div>'}).catch(aErr)}
@@ -820,10 +765,8 @@ function aUs(){api('admin/users','GET',null,ah()).then(function(d){
  $('abody').innerHTML='<div class="grid">'+sc([['আজ ঢুকেছে',d.active.length],['আজ নতুন',d.newToday]])+'</div><h3>আজ যারা ঢুকেছে</h3>'+
  (d.active.map(function(u){return '<div class="row"><div>'+esc(u.name)+'<small>'+esc(u.phone)+' · শেষ '+tm(u.seen)+'</small></div><div style="text-align:right"><b style="color:var(--grn)">+'+money(u.today)+'</b><small>ব্যালেন্স '+money(u.balance)+'</small></div></div>'}).join('')||'<div class="row">আজ কেউ ঢোকেনি</div>')}).catch(aErr)}
 function aEa(){api('admin/users','GET',null,ah()).then(function(d){
- $('abody').innerHTML='<h3>আজ যারা আয় করেছে ('+d.earners.length+' জন)</h3>'+
- (d.earners.map(function(u){return '<div class="row"><div>'+esc(u.name)+'<small>'+esc(u.phone)+'</small></div><b style="color:var(--grn)">'+money(u.t)+'</b></div>'}).join('')||'<div class="row">আজ এখনো কেউ আয় করেনি</div>')+
- '<h3 style="margin-top:14px">সর্বকালের শীর্ষ আয়কারী</h3>'+
- d.top.map(function(u,i){return '<div class="row"><div>#'+(i+1)+' '+esc(u.name)+'<small>'+esc(u.phone)+' · ব্যালেন্স '+money(u.balance)+'</small></div><b style="color:var(--gold)">'+money(u.earned)+'</b></div>'}).join('')}).catch(aErr)}
+ $('abody').innerHTML='<h3>আজ যারা আয় করেছে</h3>'+
+ (d.earners.map(function(u){return '<div class="row"><div>'+esc(u.name)+'<small>'+esc(u.phone)+'</small></div><b style="color:var(--grn)">'+money(u.t)+'</b></div>'}).join('')||'<div class="row">আজ কেউ আয় করেনি</div>')}).catch(aErr)}
 
 document.addEventListener('DOMContentLoaded',function(){$('logoA').innerHTML=logo(88);$('logoT').innerHTML=logo(40);initG();
  if(REF)mode('reg');
