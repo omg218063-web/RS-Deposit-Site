@@ -5,44 +5,58 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ❤️ নিচের ৬টা জিনিস কোডে কিছু লিখতে হবে না। Render → Environment এ এই নামগুলো দিয়ে বসান:
+// ❤️ নিচের জিনিসগুলো কোডে কিছু লিখতে হবে না। Render → Environment এ এই নামগুলো দিয়ে বসান:
 // ❤️ SECRET = যেকোনো লম্বা গোপন লেখা (ইউজারের লগইন সুরক্ষিত রাখে)
 const SECRET = process.env.SECRET || crypto.randomBytes(32).toString('hex');
 // ❤️ ADMIN_PASSWORD = আপনার নিজের এডমিন পাসওয়ার্ড (Render Environment এ দিন, এখানে লিখবেন না)
 const ADMIN_PASS = process.env.ADMIN_PASSWORD || '';
 // ❤️ GOOGLE_CLIENT_ID = Google Cloud Console থেকে পাওয়া Client ID (Render Environment এ দিন)
 const GID = process.env.GOOGLE_CLIENT_ID || '';
-// ❤️ OFFERWALL_KEY = অফারওয়ালের Public key (Render Environment এ দিন)
+// ❤️ OFFERWALL_KEY = offerwall.gg এর Public key (Render Environment এ দিন)
 const OW_KEY = process.env.OFFERWALL_KEY || '';
-// ❤️ OFFERWALL_SECRET = অফারওয়ালের নতুন Secret key (Render Environment এ দিন, কাউকে দেখাবেন না)
+// ❤️ OFFERWALL_SECRET = offerwall.gg এর Secret key (Render Environment এ দিন, কাউকে দেখাবেন না)
 const OW_SECRET = process.env.OFFERWALL_SECRET || '';
-// ❤️ BDT_PER_USD = ১ ডলারের কত টাকা ধরবেন। কিছু না দিলে ১২০ ধরা হবে (Render Environment এ দিতে পারেন)
+// ❤️ BDT_PER_USD = ১ ডলারের কত টাকা ধরবেন (offerwall.gg এর জন্য)। কিছু না দিলে ১২০ ধরা হবে।
 const RATE = Number(process.env.BDT_PER_USD) || 120;
 
+// ❤️ TimeWall এর জন্য (Render Environment এ দিন):
+// ❤️ TIMEWALL_SECRET = TimeWall → Placements → আপনার placement → Postback Setup → Your Secret Key (REVEAL চেপে কপি করুন)
+const TW_SECRET = process.env.TIMEWALL_SECRET || '';
+// ❤️ TIMEWALL_RATE = TimeWall এ আপনি যে Currency Conversion Rate দিয়েছেন সেটাই (এখন ৬৫)। ইউজার ১ ডলারের কাজে এত টাকা পাবে।
+const TW_RATE = Number(process.env.TIMEWALL_RATE) || 65;
+// ❤️ TIMEWALL_URL = ইউজারকে TimeWall এর পেজে পাঠানোর লিংক। যেখানে ইউজার আইডি বসবে সেখানে {uid} লিখুন। (অ্যাপ্রুভাল পেলে TimeWall থেকে লিংকের নিয়ম জেনে বসান। না বসালে TimeWall কার্ড দেখাবে না)
+const TW_URL = process.env.TIMEWALL_URL || '';
+// ❤️ TW_IP_CHECK = true করলে শুধু TimeWall এর তিনটা সার্ভার আইপি থেকে postback নেবে। এখন false, কারণ hash দিয়েই যাচাই হয়।
+const TW_IP_CHECK = false;
+const TW_IPS = ['18.156.132.55', '51.81.120.73', '142.111.248.18'];
+
+// ❤️ footer এর তথ্য (এখানেই বদলাতে পারবেন)
+const CO = { n: 'RS Growth Matrix', e: 'omg218063@gmail.com', p: '01764024069', y: 2026 };
+
 // ❤️ নিচের সংখ্যাগুলো আপনি এখানেই বদলাতে পারবেন:
-// ❤️ REF_BONUS = রেফার বোনাস (টাকা), DAILY = Login Bonus (এখন ২ টাকা), CHECKIN = Check-in Bonus (এখন ৪ টাকা)
+// ❤️ REF_BONUS = রেফার বোনাস (টাকা), DAILY = Login Bonus, CHECKIN = Check-in Bonus
 // ❤️ MIN_WD / MAX_WD = উইথড্রের সর্বনিম্ন ও সর্বোচ্চ টাকা, SLOTS = প্রতিদিন কয়টা টাস্ক দেখাবে
 const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
 // ❤️ PENDING_HOURS = কত ঘণ্টা পেন্ডিং থাকলে টাস্ক তালিকা থেকে সরে যাবে (এখন ৪৮ ঘণ্টা)
 const PENDING_HOURS = 48;
-// ❤️ LATE_CREDIT = true হলে ৪৮ ঘণ্টা পরেও অফারওয়াল টাকা পাঠালে ইউজারকে দেওয়া হবে। না দিতে চাইলে false করুন।
+// ❤️ LATE_CREDIT = true হলে ৪৮ ঘণ্টা পরেও offerwall.gg টাকা পাঠালে ইউজারকে দেওয়া হবে। না দিতে চাইলে false করুন।
 const LATE_CREDIT = true;
-// ❤️ SPIN = লাকি ড্রয়ের সত্যিকারের পুরস্কার। প্রতিটা [টাকা, সম্ভাবনার ভাগ]। এখন: ১ টাকা ৪০%, ২ টাকা ৩০%, ৩ টাকা ২০%, ৫ টাকা ১০%।
+// ❤️ SPIN = লাকি ড্রয়ের সত্যিকারের পুরস্কার। প্রতিটা [টাকা, সম্ভাবনার ভাগ]।
 const SPIN = [[1, 40], [2, 30], [3, 20], [5, 10]];
-// ❤️ MAX_USD = এর চেয়ে বড় (ডলারে) অফার ইউজারকে দেখানো হবে না। টাস্ক কম এলে এটা বাড়ান (যেমন 20)।
+// ❤️ MAX_USD = এর চেয়ে বড় (ডলারে) offerwall.gg অফার ইউজারকে দেখানো হবে না।
 const MAX_USD = 5;
-// ❤️ COUNTRY_FILTER = true হলে শুধু TARGETS দেশের (বাংলাদেশ BD, ভারত IN, পাকিস্তান PK, নেপাল NP) অথবা সব দেশের জন্য খোলা অফার আসবে।
+// ❤️ COUNTRY_FILTER = true হলে শুধু TARGETS দেশের (BD, IN, PK, NP) অথবা সব দেশের জন্য খোলা অফার আসবে।
 const COUNTRY_FILTER = true;
 const TARGETS = ['BD', 'IN', 'PK', 'NP'];
-// ❤️ এই ধরনের অফার কোড নিজেই লুকিয়ে ফেলবে (অফারওয়ালের Blocked categories এর পাশাপাশি)
+// ❤️ এই ধরনের অফার কোড নিজেই লুকিয়ে ফেলবে
 const BLOCK_CATS = ['signup', 'signups', 'deposit', 'deposits', 'creditcard', 'creditcards', 'oneclick', 'multireward', 'freetrial', 'freetrials', 'shopping', 'extension', 'extensions'];
 app.use(express.json({ limit: '100kb' }));
 
-// ❤️ names.js = ইসলামিক নামের তালিকা (আলাদা ফাইল)। না থাকলে নামের পেজ খালি দেখাবে, বাকি সাইট ঠিক চলবে।
+// ❤️ names.js = ইসলামিক নামের তালিকা (আলাদা ফাইল)।
 let NAMES = { boys: [], girls: [] };
 try { NAMES = require('./names.js'); } catch (e) { console.error('names.js not found:', e.message); }
 
-// ❤️ MONGO_URI = আপনার ডাটাবেসের লিংক। এটা আগে থেকেই Render Environment এ আছে, আবার দিতে হবে না।
+// ❤️ MONGO_URI = আপনার ডাটাবেসের লিংক। এটা আগে থেকেই Render Environment এ আছে।
 if (!process.env.MONGO_URI) console.error('MONGO_URI is not set: accounts cannot be saved.');
 else mongoose.connect(process.env.MONGO_URI).then(async () => {
   console.log('MongoDB connected');
@@ -77,8 +91,10 @@ const today = () => new Date().toISOString().slice(0, 10);
 // "আজ" মানে বাংলাদেশ সময় (UTC+6) অনুযায়ী রাত ১২টা থেকে।
 const dayStart = () => { const o = 6 * 36e5, n = Date.now() + o; return new Date(n - (n % 864e5) - o); };
 const credit = (id, n) => User.updateOne({ _id: id }, { $inc: { balance: n, earned: n } });
-const me = u => ({ name: u.name, phone: u.phone || '', email: u.email || '', av: u.avatar || '', balance: u.balance, earned: u.earned, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS });
-// ❤️ ইউজারের ভাগ: ১ ডলারের বেশি হলে ০.৫ (৫০%), ১ ডলার বা কম হলে ০.৭ (৭০%)।
+// footer এর পার্টনার তালিকা: যেটা সত্যিই চালু শুধু সেটাই দেখায়
+const partners = () => [OW_KEY && OW_SECRET ? 'offerwall.gg' : '', TW_SECRET && TW_URL ? 'TimeWall.io (Australian Clearing Pty Ltd)' : ''].filter(Boolean);
+const me = u => ({ name: u.name, phone: u.phone || '', email: u.email || '', av: u.avatar || '', balance: u.balance, earned: u.earned, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS, ct: CO, pt: partners() });
+// ❤️ offerwall.gg এ ইউজারের ভাগ: ১ ডলারের বেশি হলে ০.৫ (৫০%), ১ ডলার বা কম হলে ০.৭ (৭০%)।
 const bdtFor = usd => Math.round(usd * RATE * (usd > 1 ? 0.5 : 0.7) * 100) / 100;
 // ❤️ ৪৮ ঘণ্টার বেশি পেন্ডিং থাকা টাস্ক "expired" হয়ে তালিকা থেকে সরে যায়।
 const expire = uid => Click.updateMany(Object.assign({ status: 'pending', at: { $lt: new Date(Date.now() - PENDING_HOURS * 36e5) } }, uid ? { uid } : {}), { status: 'expired' });
@@ -152,7 +168,7 @@ app.post('/api/avatar', auth, h(async (q, s) => {
 // ইসলামিক নামের তালিকা
 app.get('/api/names/:t', auth, (q, s) => s.json(q.params.t === 'girls' ? NAMES.girls : NAMES.boys));
 
-// ---------- Offerwall ----------
+// ---------- Offerwall.gg ----------
 const pick = (o, ks) => { for (const k of ks) if (o[k] != null && o[k] !== '') return o[k]; };
 const arrOf = v => Array.isArray(v) ? v : [];
 
@@ -201,7 +217,7 @@ app.get('/api/offers', auth, h(async (q, s) => {
   await expire(q.user.id);
   const now = Date.now(), day = 864e5;
   const clicks = await Click.find({ uid: q.user.id });
-  const used = clicks.filter(c => c.status === 'pending' || (c.status === 'success' && c.doneAt > now - day));
+  const used = clicks.filter(c => c.status === 'pending' || (c.status === 'success' && c.doneAt > now - day && !String(c.offerId).startsWith('tw:')));
   const blocked = new Set(clicks.filter(c => c.status === 'success' || c.status === 'pending').map(c => c.offerId));
   const offers = await fetchOffers(q.user.id, ctxOf(q));
   const free = offers.filter(o => !blocked.has(o.id)).slice(0, Math.max(0, SLOTS - used.length));
@@ -214,7 +230,7 @@ app.post('/api/offers/:id/start', auth, h(async (q, s) => {
   await expire(q.user.id);
   const clicks = await Click.find({ uid: q.user.id });
   const now = Date.now();
-  const used = clicks.filter(c => c.status === 'pending' || (c.status === 'success' && c.doneAt > now - 864e5));
+  const used = clicks.filter(c => c.status === 'pending' || (c.status === 'success' && c.doneAt > now - 864e5 && !String(c.offerId).startsWith('tw:')));
   if (clicks.some(c => c.offerId === q.params.id && (c.status === 'success'))) return bad(s, 'You already completed this task.');
   const o = (await fetchOffers(q.user.id, ctxOf(q))).find(x => x.id === q.params.id);
   if (!o) return bad(s, 'This task is no longer available.', 404);
@@ -226,7 +242,7 @@ app.post('/api/offers/:id/start', auth, h(async (q, s) => {
   s.json({ url: o.clickUrl });
 }));
 
-// ❤️ এই অংশে কিছু বদলাতে হবে না। অফারওয়াল টাস্ক শেষ হলে নিজে এই ঠিকানায় খবর পাঠায় (Postback)।
+// ❤️ এই অংশে কিছু বদলাতে হবে না। offerwall.gg টাস্ক শেষ হলে নিজে এই ঠিকানায় খবর পাঠায় (Postback)।
 app.get('/api/offerwall', h(async (q, s) => {
   const { user, tx, amount, status, offerId, offer, test, sig } = q.query;
   if (!OW_SECRET || !user || !tx || amount == null || !sig) return bad(s, 'bad request', 400);
@@ -252,6 +268,41 @@ app.get('/api/offerwall', h(async (q, s) => {
   }
   s.send('ok');
 }));
+
+// ---------- TimeWall ----------
+// ❤️ TimeWall এ Postback URL এ এই ঠিকানা দেওয়া আছে: /api/callback/timewall
+// ❤️ hash = sha256(userID + revenue + SecretKey)। revenue যেভাবে এসেছে ঠিক সেভাবেই হিসাব হয়।
+app.get('/api/callback/timewall', h(async (q, s) => {
+  const uid = String(q.query.userID || q.query.userid || ''), tx = String(q.query.txid || '');
+  const rev = String(q.query.revenue == null ? '' : q.query.revenue), hs = String(q.query.hash || '').toLowerCase();
+  if (!TW_SECRET || !uid || !tx || rev === '' || !hs) return bad(s, 'bad request', 400);
+  if (TW_IP_CHECK) {
+    const ip = String(q.headers['x-forwarded-for'] || q.ip || '').split(',')[0].trim();
+    if (!TW_IPS.includes(ip)) { console.error('TimeWall blocked IP:', ip); return bad(s, 'forbidden', 403); }
+  }
+  const exp = crypto.createHash('sha256').update(uid + rev + TW_SECRET).digest('hex');
+  if (!same(hs, exp)) { console.error('TimeWall invalid hash for tx', tx); return bad(s, 'invalid hash', 403); }
+  const usd = +rev;
+  if (!isFinite(usd) || !mongoose.isValidObjectId(uid)) return s.send('ok');
+  const type = String(q.query.type || '');
+  const neg = usd < 0 || /charge|revers|refund/i.test(type);
+  const bdt = Math.round(Math.abs(usd) * TW_RATE * 1e4) / 1e4;
+  try { await Conv.create({ key: 'tw:' + tx + ':' + (neg ? 'rev' : 'cr'), uid, tx, bdt: neg ? -bdt : bdt, status: neg ? 'reversed' : 'credited' }); }
+  catch (e) { if (e.code === 11000) return s.send('ok'); throw e; }
+  if (!(await User.exists({ _id: uid }))) return s.send('ok');
+  const title = String(q.query.offername || 'TimeWall task').slice(0, 80);
+  if (neg) {
+    await User.updateOne({ _id: uid }, { $inc: { balance: -bdt, earned: -bdt } });
+    await Click.updateOne({ uid, offerId: 'tw:' + tx }, { status: 'cancelled' });
+  } else {
+    await credit(uid, bdt);
+    await Click.create({ uid, offerId: 'tw:' + tx, title, bdt, status: 'success', doneAt: Date.now() });
+  }
+  s.send('ok');
+}));
+
+// TimeWall এর পেজের লিংক (TIMEWALL_URL বসানো থাকলে)
+app.get('/api/timewall', auth, (q, s) => s.json({ url: TW_URL ? TW_URL.replace(/\{uid\}/g, encodeURIComponent(q.user.id)) : '' }));
 
 // ---------- Rewards, ranking, withdraw, support ----------
 app.post('/api/daily', auth, h(async (q, s) => {
@@ -359,12 +410,13 @@ app.post('/api/admin/reply', admin, h(async (q, s) => {
   s.json({ ok: true });
 }));
 app.get('/api/admin/offers-raw', admin, h(async (q, s) => {
-  if (!OW_KEY || !OW_SECRET) return s.json({ text: 'OFFERWALL_KEY or OFFERWALL_SECRET is not set in Environment.' });
+  const tw = '\n\nTimeWall: secret ' + (TW_SECRET ? 'set' : 'NOT set') + ', link ' + (TW_URL ? 'set' : 'NOT set') + ', rate ' + TW_RATE;
+  if (!OW_KEY || !OW_SECRET) return s.json({ text: 'OFFERWALL_KEY or OFFERWALL_SECRET is not set in Environment.' + tw });
   const dbg = {};
   await fetchOffers('admin-test', ctxOf(q), dbg);
   const cs = Object.entries(dbg.cn || {}).sort((a, b) => b[1] - a[1]).slice(0, 10).map(x => x[0] + ':' + x[1]).join(', ');
   const tg = TARGETS.map(c => c + ':' + ((dbg.cn || {})[c] || 0)).join(', ');
-  s.json({ text: 'Offers from offerwall: ' + dbg.total + '\nTop countries: ' + cs + '\nYour countries (' + tg + ') + ALL:' + ((dbg.cn || {}).ALL || 0) + '\n\nAfter price limit ($' + MAX_USD + '): ' + dbg.price + '\nAfter category block: ' + dbg.cat + '\nAfter country filter: ' + dbg.country + '\nShown to user (after device filter): ' + dbg.device }); 
+  s.json({ text: 'Offers from offerwall.gg: ' + dbg.total + '\nTop countries: ' + cs + '\nYour countries (' + tg + ') + ALL:' + ((dbg.cn || {}).ALL || 0) + '\n\nAfter price limit ($' + MAX_USD + '): ' + dbg.price + '\nAfter category block: ' + dbg.cat + '\nAfter country filter: ' + dbg.country + '\nShown to user (after device filter): ' + dbg.device + tw });
 }));
 
 const PAGE = `<!DOCTYPE html>
@@ -397,12 +449,27 @@ nav{display:flex;gap:4px;padding:7px 5px 9px;background:#0b1224;box-shadow:0 10p
 nav div{flex:1;text-align:center;font-size:10px;color:var(--mu);padding:7px 0;cursor:pointer;border-radius:13px;background:linear-gradient(180deg,#18244a,#0e1730);box-shadow:0 4px 9px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.07);transition:transform .2s}
 nav div i{display:block;font-style:normal;font-size:16px;position:relative;width:26px;height:26px;line-height:26px;margin:0 auto}
 nav .on{color:var(--gold);transform:translateY(-1px);background:linear-gradient(180deg,#2a2208,#13100a);box-shadow:0 0 0 1px var(--gold),0 6px 14px rgba(251,191,36,.28),inset 0 1px 0 rgba(255,255,255,.1)}
+nav #n_home.on{color:#fde68a;background:linear-gradient(180deg,#3a2c05,#15110a)}
+nav #n_home.on i{animation:fl 2.4s ease-in-out infinite}
+nav #n_tasks.on{color:#7dd3fc;background:linear-gradient(180deg,#0a2a44,#0b1224);box-shadow:0 0 0 1px #38bdf8,0 6px 14px rgba(56,189,248,.3)}
+nav #n_tasks.on i::before{content:"";position:absolute;inset:-4px;border:2px dashed #fbbf24;border-radius:50%;animation:rot 3s linear infinite}
+nav #n_tasks.on i::after{content:"";position:absolute;inset:-8px;border:2px solid transparent;border-top-color:#38bdf8;border-bottom-color:#22c55e;border-radius:50%;animation:rot 1.8s linear infinite reverse}
+nav #n_rank.on{color:#f0abfc;background:linear-gradient(180deg,#3b0a4a,#150b1e);box-shadow:0 0 0 1px #d946ef,0 6px 14px rgba(217,70,239,.3)}
+nav #n_rank.on i{animation:bnc 1.1s ease-in-out infinite}
+nav #n_ref.on{color:#86efac;background:linear-gradient(180deg,#0b3a1e,#0a1710);box-shadow:0 0 0 1px #22c55e,0 6px 14px rgba(34,197,94,.3)}
+nav #n_ref.on i::before{content:"";position:absolute;inset:-3px;border:2px solid #22c55e;border-radius:50%;animation:pls 1.5s ease-out infinite}
+nav #n_help.on{color:#93c5fd;background:linear-gradient(180deg,#0c2350,#0a0f20);box-shadow:0 0 0 1px #3b82f6,0 6px 14px rgba(59,130,246,.3)}
+nav #n_help.on i{animation:wob 1.6s ease-in-out infinite}
+nav #n_acc.on{color:#fdba74;background:linear-gradient(180deg,#4a1d08,#170b06);box-shadow:0 0 0 1px #f97316,0 6px 14px rgba(249,115,22,.3)}
+nav #n_acc.on i{animation:swg 2.4s ease-in-out infinite}
 nav #n_book{color:var(--gold);font-weight:700}
 nav #n_book i{animation:glow 2.2s ease-in-out infinite}
 @keyframes glow{50%{transform:scale(1.18);filter:drop-shadow(0 0 7px #fbbf24)}}
-nav #n_tasks.on i::before{content:"";position:absolute;inset:-4px;border:2px dashed #fbbf24;border-radius:50%;animation:rot 3s linear infinite}
-nav #n_tasks.on i::after{content:"";position:absolute;inset:-8px;border:2px solid transparent;border-top-color:#38bdf8;border-bottom-color:#22c55e;border-radius:50%;animation:rot 1.8s linear infinite reverse}
 @keyframes rot{to{transform:rotate(360deg)}}
+@keyframes bnc{50%{transform:translateY(-5px) scale(1.15)}}
+@keyframes pls{0%{transform:scale(.8);opacity:1}100%{transform:scale(1.7);opacity:0}}
+@keyframes wob{25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
+@keyframes swg{50%{transform:rotate(14deg) translateY(-2px)}}
 main{flex:1;overflow-y:auto;padding:14px}
 .row{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;box-shadow:0 4px 10px rgba(0,0,0,.35)}
 .row small{display:block;color:var(--mu);font-size:11px;margin-top:2px}
@@ -490,6 +557,20 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .rg .r1{inset:0;border-top-color:#fbbf24;border-bottom-color:#fbbf24;animation:rot 3.2s linear infinite}
 .rg .r2{inset:9px;border-left-color:#38bdf8;border-right-color:#38bdf8;animation:rot 2.2s linear infinite reverse}
 .rg .r3{inset:18px;border-top-color:#22c55e;border-right-color:#22c55e;animation:rot 1.4s linear infinite}
+.hbn{display:flex;align-items:center;gap:14px;border-radius:20px;padding:14px;margin-bottom:12px;box-shadow:0 8px 20px rgba(0,0,0,.45);border:1px solid}
+.hbn .e{font-size:38px;flex-shrink:0;display:block}
+.hbn b{font-size:16px;color:#fff}.hbn small{display:block;color:#cbd5e1;font-size:11.5px;margin-top:3px;line-height:1.5}
+.hb-rank{background:linear-gradient(135deg,#3b0a4a,#0b1224);border-color:rgba(217,70,239,.45)}.hb-rank .e{animation:bnc 1.4s ease-in-out infinite}
+.hb-ref{background:linear-gradient(135deg,#0b3a1e,#0b1224);border-color:rgba(34,197,94,.45)}.hb-ref .e{animation:fl 3s ease-in-out infinite}
+.hb-help{background:linear-gradient(135deg,#0c2350,#0b1224);border-color:rgba(59,130,246,.45)}.hb-help .e{animation:wob 1.8s ease-in-out infinite}
+.hb-acc{background:linear-gradient(135deg,#4a1d08,#0b1224);border-color:rgba(249,115,22,.45)}.hb-acc .e{animation:swg 3s ease-in-out infinite}
+.ft{margin-top:6px;border-radius:20px;padding:16px;background:linear-gradient(180deg,#101a33,#0a1020);border:1px solid rgba(251,191,36,.35);box-shadow:0 8px 20px rgba(0,0,0,.45)}
+.ftl{display:flex;align-items:center;gap:12px;margin-bottom:12px}.ftl b{font-size:15px;color:var(--gold)}.ftl small{display:block;font-size:11px;color:var(--mu)}
+.fr{display:flex;align-items:center;gap:10px;font-size:12.5px;color:#cbd5e1;padding:7px 0;border-top:1px solid #1e293b}
+.fr a{color:#7dd3fc;text-decoration:none}
+.fh{font-size:11px;color:var(--mu);margin-top:10px}
+.fp{font-size:12.5px;color:#e2e8f0;line-height:1.7;margin-top:3px}
+.fc{font-size:10.5px;color:#64748b;text-align:center;margin-top:12px;border-top:1px solid #1e293b;padding-top:10px}
 </style></head><body>
 <div class="app">
 <div id="auth">
@@ -520,7 +601,7 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 <div class="adm" id="adm"><div class="ah"><b>Admin Panel</b><button class="btn s" onclick="admClose()">Close</button></div><div id="abody"></div><div id="anav"></div></div>
 <div class="modal" id="modal"><div id="mBody"></div></div>
 <script>
-var GID='__GID__',T=localStorage.getItem('t'),ME=null,ADM='',TAB='home',TIMER=null,AD={},HSI=0,LC=0,ROT=0,SPUN=false,NML=[];
+var GID='__GID__',T=localStorage.getItem('t'),ME=null,ADM='',TAB='home',TIMER=null,AD={},HSI=0,LC=0,ROT=0,SPUN=false,NML=[],TWU='';
 var SEG=[1,2,3,5,1,2,3,1];
 var REF=new URLSearchParams(location.search).get('ref')||localStorage.getItem('ref')||'';
 if(REF)localStorage.setItem('ref',REF);
@@ -539,6 +620,7 @@ function mosque(w){var g='mg'+(LC++);return '<svg width="'+w+'" viewBox="0 0 200
  '<path d="M91 108V96a9 9 0 0 1 18 0v12z" fill="url(#'+g+')"/>'+
  '<path d="M66 96V90a5 5 0 0 1 10 0v6z" fill="#fbbf24" opacity=".8"/><path d="M124 96V90a5 5 0 0 1 10 0v6z" fill="#fbbf24" opacity=".8"/>'+
  '<rect y="108" width="200" height="12" fill="#052e1a"/></g></svg>'}
+function hb(c,e,t,s){return '<div class="hbn hb-'+c+'"><span class="e">'+e+'</span><div><b>'+t+'</b><small>'+s+'</small></div></div>'}
 function api(p,m,b,hd){hd=hd||{};hd['Content-Type']='application/json';if(T)hd.Authorization='Bearer '+T;
  return fetch('/api/'+p,{method:m||'GET',headers:hd,body:b?JSON.stringify(b):undefined}).then(function(r){return r.json().then(function(d){if(r.status===401&&T){out();throw new Error(d.error)}if(!r.ok)throw new Error(d.error||'Error');return d})})}
 function out(){localStorage.removeItem('t');T=null;ME=null;admClose();$('auth').style.display='block'}
@@ -573,6 +655,13 @@ var HS=[
  ['s2','📋 টাস্ক ও আয়','সহজ টাস্ক, নিয়মিত আয়','Tasks ট্যাবে গিয়ে পছন্দের টাস্কে চাপুন, বিস্তারিত পড়ুন এবং Start দিন। যাচাই শেষে সফল হলে টাকা ব্যালেন্সে যোগ হবে। পেন্ডিং দেখালে ধৈর্য ধরুন।','📱','💰','🎯'],
  ['s3','💸 উত্তোলন','সহজে টাকা তুলুন','Account থেকে Withdraw চেপে bKash বা Nagad নাম্বার দিন। উত্তোলন ৩০০ থেকে ৫০০০ টাকা পর্যন্ত করা যায়। রিকোয়েস্ট যাচাই করে আমরা নিজে টাকা পাঠাই।','💸','🏦','✅']];
 function hsGo(i){HSI=i;var s=document.querySelectorAll('.sl'),d=document.querySelectorAll('.dots i');for(var k=0;k<s.length;k++){s[k].className='sl '+HS[k][0]+(k===i?' on':'');d[k].className=k===i?'on':''}}
+function foot(){var c=ME.ct||{},p=ME.pt||[];
+ return '<div class="ft"><div class="ftl">'+logo(46)+'<div><b>'+esc(c.n)+'</b><small>টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম</small></div></div>'+
+ '<div class="fr"><span>📧</span><a href="mailto:'+esc(c.e)+'">'+esc(c.e)+'</a></div>'+
+ '<div class="fr"><span>📞</span><a href="tel:'+esc(c.p)+'">'+esc(c.p)+'</a></div>'+
+ '<div class="fr"><span>💳</span>পেমেন্ট: bKash ও Nagad</div>'+
+ (p.length?'<div class="fh">আমাদের পার্টনার</div><div class="fp">'+p.map(esc).join('<br>')+'</div>':'')+
+ '<div class="fc">© '+esc(c.y)+' '+esc(c.n)+'. সর্বস্বত্ব সংরক্ষিত।</div></div>'}
 function vHome(){var ok=Date.now()-ME.lastDaily>=864e5,sp=Date.now()-(ME.lastSpin||0)>=864e5;HSI=0;
  var sl=HS.map(function(x,i){return '<div class="sl '+x[0]+(i===0?' on':'')+'"><span class="tag">'+x[1]+'</span><h4>'+x[2]+'</h4><p>'+x[3]+'</p><span class="em">'+x[4]+'</span><span class="e2">'+x[5]+'</span><span class="e3">'+x[6]+'</span></div>'}).join('');
  var dt=HS.map(function(x,i){return '<i class="'+(i===0?'on':'')+'" onclick="hsGo('+i+')"></i>'}).join('');
@@ -582,7 +671,7 @@ function vHome(){var ok=Date.now()-ME.lastDaily>=864e5,sp=Date.now()-(ME.lastSpi
  '<div class="bo" style="margin-bottom:14px"><div class="bi lk"><span class="ic">🎡</span><div style="flex:1"><b style="margin-top:0">Lucky Draw</b><small>প্রতি ২৪ ঘণ্টায় একবার ঘোরান, ১ থেকে ৫ টাকা জিতুন</small></div><button class="btn s'+(sp?'':' dn')+'" style="'+(sp?'':'background:#1e293b;color:#94a3b8')+'" onclick="spinOpen()">'+(sp?'Spin':'Done ✅')+'</button></div></div>'+
  '<h3>আজকের বোনাস</h3><div class="bn">'+
  '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT · প্রতি ২৪ ঘণ্টায় একবার</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
- '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT · প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>';
+ '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT · প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
  TIMER=setInterval(function(){if(!document.querySelector('.hs')){clearInterval(TIMER);return}hsGo((HSI+1)%HS.length)},6000)}
 function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added to your balance.')}).catch(function(e){toast(e.message)})}
 
@@ -600,12 +689,14 @@ function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style
 function closeSpin(){closeM();if(TAB==='home')vHome()}
 
 /* ---------- Tasks ---------- */
-function vTasks(){$('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>📋</div><div><b>Live Tasks</b><small>টাস্কে চাপুন, বিস্তারিত পড়ুন, তারপর Start দিন।</small></div></div><div class="grid4" id="st"></div><div class="mq u"><span>⏳ আপনার টাস্ক পেন্ডিং থাকা মানে যাচাই চলছে, চিন্তার কোনো কারণ নেই। টাস্ক কমপ্লিট হতে কিছুটা সময় লাগে। যাচাই শেষে সফল হলে টাকা আপনার ব্যালেন্সে যোগ হবে। ৪৮ ঘণ্টার মধ্যে যাচাই না হলে টাস্কটি তালিকা থেকে সরে যায়। ধৈর্য ধরুন। 🤍</span></div><div id="tl">Loading...</div>';
+function openTW(){if(TWU){var w=window.open(TWU,'_blank');if(!w)location.href=TWU}}
+function vTasks(){$('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>📋</div><div><b>Live Tasks</b><small>টাস্কে চাপুন, বিস্তারিত পড়ুন, তারপর Start দিন।</small></div></div><div id="tw"></div><div class="grid4" id="st"></div><div class="mq u"><span>⏳ আপনার টাস্ক পেন্ডিং থাকা মানে যাচাই চলছে, চিন্তার কোনো কারণ নেই। টাস্ক কমপ্লিট হতে কিছুটা সময় লাগে। যাচাই শেষে সফল হলে টাকা আপনার ব্যালেন্সে যোগ হবে। ৪৮ ঘণ্টার মধ্যে যাচাই না হলে টাস্কটি তালিকা থেকে সরে যায়। ধৈর্য ধরুন। 🤍</span></div><div id="tl">Loading...</div>';
+ api('timewall').then(function(d){TWU=d.url;var e=$('tw');if(e&&d.url)e.innerHTML='<div class="row" style="border-color:rgba(34,197,94,.5)"><div style="display:flex;gap:10px;align-items:center"><span style="font-size:30px">⏱️</span><div>TimeWall Tasks<small>সার্ভে, টাস্ক ও গেম। কাজ শেষ হলে কিছুক্ষণ পর টাকা ব্যালেন্সে যোগ হয়।</small></div></div><button class="btn s g" onclick="openTW()">Open</button></div>'}).catch(function(){});
  function load(){api('offers').then(function(d){var s=d.stats;if(!$('st'))return;
  $('st').innerHTML=[['Pending',s.pending],['Success',s.success],['Cancelled',s.cancelled],['Total',s.total]].map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('');
  window.OF=d.list;
  $('tl').innerHTML=d.list.length?d.list.map(function(t,i){var op=t.status==='open',b=op?'<button class="btn s">Details</button>':'<span class="chip '+(t.status==='success'?'approved':t.status)+'">'+t.status+'</span>';
- return '<div class="row"'+(op?' style="cursor:pointer" onclick="showT('+i+')"':'')+'><div style="display:flex;gap:10px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="38" height="38" style="border-radius:10px" alt="">':'')+'<div>'+esc(t.title)+'<small>Reward: '+money(t.bdt)+' BDT</small></div></div>'+b+'</div>'}).join(''):'<div class="row">এই মুহূর্তে বাংলাদেশ, ভারত, পাকিস্তান ও নেপালের জন্য কোনো নতুন টাস্ক নেই। কিছুক্ষণ পর আবার দেখুন।</div>'}).catch(function(e){if($('tl'))$('tl').textContent=e.message})}
+ return '<div class="row"'+(op?' style="cursor:pointer" onclick="showT('+i+')"':'')+'><div style="display:flex;gap:10px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="38" height="38" style="border-radius:10px" alt="">':'')+'<div>'+esc(t.title)+'<small>Reward: '+money(t.bdt)+' BDT</small></div></div>'+b+'</div>'}).join(''):'<div class="row">এই মুহূর্তে বাংলাদেশ, ভারত, পাকিস্তান ও নেপালের জন্য এখানে কোনো নতুন টাস্ক নেই। কিছুক্ষণ পর আবার দেখুন।</div>'}).catch(function(e){if($('tl'))$('tl').textContent=e.message})}
  load();TIMER=setInterval(load,30000)}
 function showT(i){var t=OF[i],cn=t.cnt||[],dv=t.dev||[],tc=(ME&&ME.tc)||[],okC=!cn.length||cn.some(function(c){return tc.indexOf(c)>=0});
  modal('<div style="display:flex;gap:12px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="54" height="54" style="border-radius:14px" alt="">':'')+'<div><b style="font-size:15px">'+esc(t.title)+'</b><div style="color:var(--grn);font-weight:800;margin-top:3px">Reward: '+money(t.bdt)+' BDT</div></div></div>'+
@@ -618,24 +709,24 @@ function showT(i){var t=OF[i],cn=t.cnt||[],dv=t.dev||[],tc=(ME&&ME.tc)||[],okC=!
 function startO(i){api('offers/'+encodeURIComponent(OF[i].id)+'/start','POST').then(function(r){var w=window.open(r.url,'_blank');if(!w)location.href=r.url;vTasks()}).catch(function(e){toast(e.message)})}
 function modal(h){$('mBody').innerHTML=h;$('modal').style.display='flex'}
 function closeM(){$('modal').style.display='none'}
-function vRank(){$('main').innerHTML='<h3>Top earners</h3><div id="rk">Loading...</div>';
+function vRank(){$('main').innerHTML=hb('rank','🏆','Top Earners','সবচেয়ে বেশি আয় করা ইউজারদের তালিকা। কাজ করুন, তালিকায় উঠুন!')+'<div id="rk">Loading...</div>';
  function load(){api('leaderboard').then(function(a){if(!a.length){$('rk').innerHTML='<div class="row">No earners yet. Complete a task to take the first place.</div>';return}
  var p=[a[1],a[0],a[2]],cl=['','p1',''],rk=['#2','#1','#3'];
  $('rk').innerHTML='<div class="pod">'+p.map(function(u,i){return u?'<div class="'+cl[i]+'">'+(i===1?'👑':'')+'<br>'+esc(u.name)+'<b>'+money(u.earned)+'</b><small>'+rk[i]+'</small></div>':'<div></div>'}).join('')+'</div>'+
  a.slice(3).map(function(u,i){return '<div class="row"><div>#'+(i+4)+' '+esc(u.name)+'</div><b style="color:var(--grn)">'+money(u.earned)+'</b></div>'}).join('')}).catch(function(){})}
  load();TIMER=setInterval(load,20000)}
 function vRef(){var link=location.origin+'/?ref='+ME.refCode,e=encodeURIComponent(link),tx=encodeURIComponent('Join RS Growth Matrix and earn by completing tasks: ');window.RL=link;
- $('main').innerHTML='<div class="card" style="text-align:center">'+logo(64)+'<div class="brand" style="font-size:18px">Invite and earn</div><div class="sub">You get '+10+' BDT for every friend who signs up with your link.</div>'+
+ $('main').innerHTML=hb('ref','👥','Invite & Earn','বন্ধুদের ইনভাইট করুন, প্রতি সাইনআপে বোনাস পান।')+'<div class="card" style="text-align:center">'+logo(64)+'<div class="brand" style="font-size:18px">Invite and earn</div><div class="sub">You get '+10+' BDT for every friend who signs up with your link.</div>'+
  '<input readonly id="rl" value="'+esc(link)+'"><button class="btn" onclick="copyL()">Copy link</button>'+
  '<div class="share"><a target="_blank" rel="noopener" href="https://wa.me/?text='+tx+e+'">WhatsApp</a><a target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u='+e+'">Facebook</a><a href="fb-messenger://share?link='+e+'">Messenger</a><button onclick="copyL(1)">Imo</button><a target="_blank" rel="noopener" href="https://t.me/share/url?url='+e+'&text='+tx+'">Telegram</a><button onclick="nat()">More apps</button></div></div>'+
  '<div class="grid" style="margin-top:12px"><div class="stat"><b>'+ME.refCount+'</b><small>Friends joined</small></div><div class="stat"><b>'+money(ME.refEarn)+'</b><small>Referral earnings</small></div></div>'}
 function copyL(imo){(navigator.clipboard?navigator.clipboard.writeText(RL):Promise.reject()).then(function(){toast(imo?'Link copied. Open Imo and paste it in a chat.':'Link copied.')}).catch(function(){$('rl').select();toast('Press copy on the selected link.')})}
 function nat(){if(navigator.share)navigator.share({title:'RS Growth Matrix',url:RL});else copyL()}
-function vHelp(){$('main').innerHTML='<h3>Support</h3><div class="chat" id="ch"></div><textarea id="st" rows="2" maxlength="500" placeholder="Describe your problem"></textarea><button class="btn" onclick="sendS()">Send</button>';
+function vHelp(){$('main').innerHTML=hb('help','💬','Support','কোনো সমস্যা হলে এখানে লিখুন, আমাদের টিম উত্তর দেবে।')+'<div class="chat" id="ch"></div><textarea id="st" rows="2" maxlength="500" placeholder="Describe your problem"></textarea><button class="btn" onclick="sendS()">Send</button>';
  function load(){api('support').then(function(a){var c=$('ch');if(!c)return;c.innerHTML=a.length?a.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join(''):'<div class="m support">Hello! Write your message and our team will reply here.</div>';c.scrollTop=c.scrollHeight}).catch(function(){})}
  load();TIMER=setInterval(load,10000)}
 function sendS(){api('support','POST',{text:$('st').value}).then(function(){$('st').value='';vHelp()}).catch(function(e){toast(e.message)})}
-function vAcc(){$('main').innerHTML='<div class="row"><div>'+esc(ME.name)+'<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
+function vAcc(){$('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স, আয় ও উত্তোলনের হিসাব।')+'<div class="row"><div>'+esc(ME.name)+'<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
  '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
  '<button class="btn r" style="margin-top:0" onclick="wdForm()">Withdraw</button><h3 style="margin-top:16px">Withdraw history</h3><div id="wh">Loading...</div>'+
  '<button class="btn" style="background:#1e293b;color:#fff" onclick="admOpen()">Admin panel</button>';
