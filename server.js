@@ -57,6 +57,7 @@ const Click = mongoose.model('Click', new mongoose.Schema({ uid: String, offerId
 const Conv = mongoose.model('Conv', new mongoose.Schema({ key: { type: String, unique: true }, uid: String, tx: String, bdt: Number, status: String, at: { type: Date, default: Date.now } }));
 const Wd = mongoose.model('Wd', new mongoose.Schema({ uid: String, name: String, amount: Number, method: String, phone: String, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
 const Deposit = mongoose.model('Deposit', new mongoose.Schema({ uid: String, name: String, amount: Number, method: String, txid: String, lastDigits: String, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
+const PkgOrder = mongoose.model('PkgOrder', new mongoose.Schema({ uid: String, name: String, packageName: String, amount: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
 const Msg = mongoose.model('Msg', new mongoose.Schema({ uid: String, name: String, from: String, text: String, at: { type: Date, default: Date.now } }));
 
 const h = fn => (q, s) => fn(q, s).catch(e => {
@@ -338,6 +339,14 @@ app.post('/api/deposit', auth, h(async (q, s) => {
 
 app.get('/api/deposits', auth, h(async (q, s) => s.json(await Deposit.find({ uid: q.user.id }).sort({ at: -1 }).limit(30))));
 
+app.post('/api/package-order', auth, h(async (q, s) => {
+  const { packageName, amount } = q.body || {};
+  const a = Math.floor(+amount);
+  if (!packageName || !a) return bad(s, 'Invalid package details.');
+  await PkgOrder.create({ uid: q.user.id, name: q.user.name, packageName, amount: a });
+  s.json({ ok: true });
+}));
+
 app.get('/api/support', auth, h(async (q, s) => s.json(await Msg.find({ uid: q.user.id }).sort({ at: 1 }).limit(100))));
 app.post('/api/support', auth, h(async (q, s) => {
   const text = String((q.body || {}).text || '').trim().slice(0, 500);
@@ -357,7 +366,8 @@ app.get('/api/admin/data', admin, h(async (q, s) => {
       pending: await Click.countDocuments({ status: 'pending' }), success: await Click.countDocuments({ status: 'success' }), cancelled: await Click.countDocuments({ status: { $in: ['cancelled', 'expired'] } }),
       today: await sum(Conv, { at: { $gte: start } }, 'bdt'), balance: await sum(User, {}, 'balance'),
       wdPending: await Wd.countDocuments({ status: 'pending' }), wdPendingSum: await sum(Wd, { status: 'pending' }, 'amount'),
-      wdToday: await Wd.countDocuments({ at: { $gte: start } })
+      wdToday: await Wd.countDocuments({ at: { $gte: start } }),
+      pendingPkg: await PkgOrder.countDocuments({ status: 'pending' })
     }
   });
 }));
@@ -371,6 +381,12 @@ app.get('/api/admin/wd-list', admin, h(async (q, s) => {
 app.get('/api/admin/dep-list', admin, h(async (q, s) => {
   const pending = await Deposit.find({ status: 'pending' }).sort({ at: 1 }).limit(100);
   const done = await Deposit.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20);
+  s.json({ pending, done });
+}));
+
+app.get('/api/admin/pkg-list', admin, h(async (q, s) => {
+  const pending = await PkgOrder.find({ status: 'pending' }).sort({ at: 1 }).limit(100);
+  const done = await PkgOrder.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20);
   s.json({ pending, done });
 }));
 
@@ -409,6 +425,11 @@ app.post('/api/admin/wd/:id', admin, h(async (q, s) => {
 app.post('/api/admin/dep/:id', admin, h(async (q, s) => {
   const x = await Deposit.findOneAndUpdate({ _id: q.params.id, status: 'pending' }, { status: q.body.ok ? 'approved' : 'rejected' });
   if (x && q.body.ok) await User.updateOne({ _id: x.uid }, { $inc: { balance: x.amount, earned: x.amount } });
+  s.json({ ok: true });
+}));
+
+app.post('/api/admin/pkg/:id', admin, h(async (q, s) => {
+  await PkgOrder.findOneAndUpdate({ _id: q.params.id, status: 'pending' }, { status: q.body.ok ? 'approved' : 'rejected' });
   s.json({ ok: true });
 }));
 
@@ -669,7 +690,7 @@ function hsGo(i){HSI=i;var s=document.querySelectorAll('.sl'),d=document.querySe
 function ico(c,p){return '<svg width="46" height="46" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="'+c+'"/>'+p+'</svg>'}
 function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
  var fb=ico('#1877f2','<path d="M13.2 19v-6.2h2.1l.4-2.6h-2.5V8.6c0-.8.3-1.3 1.4-1.3h1.2V5.1c-.2 0-1-.1-1.9-.1-1.9 0-3.2 1.2-3.2 3.3v1.9H8.6v2.6h2.1V19z" fill="#fff"/>');
- var tg=ico('#29a9eb','<path d="M18.6 6.2L5.4 11.3c-.9.4-.9.9-.2 1.1l3.3 1 1.3 4c.2.5.1.7.7.7.4 0 .6-.2.8-.4l1.6-1.6 3.3 2.4c.6.3 1 .2 1.2-.6l2-9.5c.2-.9-.3-1.3-.8-1z" fill="#fff"/>');
+ var tg=ico('#29a9eb','<path d="M18.6 6.2L5.4 11.3c-.9.4-.9.9-.2 1.1l3.3 1 1.3 4c.2.5.1.7.7.7.4 0 .6-.2.8-.4l1.6-1.6 3.3 2.4c.6.3 1 .2 1.2-.6l2-9.5c.2-.9-.3-1.3-.8-1 z" fill="#fff"/>');
  var wa=ico('#25d366','<path d="M12 5.2a6.8 6.8 0 0 0-5.8 10.3L5.2 18.8l3.4-.9A6.8 6.8 0 1 0 12 5.2z" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M9.6 9.3c.2 2 2 3.8 4 4.1l.9-.9-1.3-.9-.6.5c-.7-.3-1.4-1-1.7-1.7l.5-.6-.9-1.3z" fill="#fff"/>');
  return '<div class="ft"><div class="ftl">'+logo(46)+'<div><b>'+esc(c.n)+'</b><small>টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম</small></div></div>'+
  '<div class="fd">'+esc(c.d||'')+'</div>'+
@@ -730,14 +751,23 @@ function startO(i){api('offers/'+encodeURIComponent(OF[i].id)+'/start','POST').t
 function modal(h){$('mBody').innerHTML=h;$('modal').style.display='flex'}
 function closeM(){$('modal').style.display='none'}
 
-function vPkg(){var pkgs=[
- {p:200,c:240,d:'Basic RS Coin Package'},{p:500,c:620,d:'Bronze RS Coin Package'},
- {p:800,c:1020,d:'Silver RS Coin Package'},{p:1200,c:1560,d:'Gold RS Coin Package'},
- {p:1500,c:2000,d:'Platinum RS Coin Package'},{p:2000,c:2750,d:'Diamond RS Coin Package'},
- {p:2500,c:3550,d:'Master RS Coin Package'},{p:3000,c:4350,d:'Elite RS Coin Package'}
-];
-$('main').innerHTML=hb('ref','📦','RS Coin Packages','৳২০০ থেকে ৳৩০০০ টাকার মধ্যে পছন্দমতো প্যাকেজ কিনুন ও কয়েন কালেক্ট করুন।') +
-pkgs.map(function(x){return '<div class="card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center"><div><b style="color:var(--gold);font-size:15px">'+x.d+'</b><div style="font-size:12px;color:var(--mu);margin-top:2px">মূল্য: <b>'+x.p+' BDT</b></div><div style="font-size:13px;color:var(--grn);margin-top:4px">রিওয়ার্ড: <b>'+x.c+' RS Coins</b></div></div><button class="btn s g" onclick="go(\\'acc\\');depForm('+x.p+')">Buy Now</button></div></div>'}).join('');
+function vPkg(){
+  var pkgs=[
+    {p:200,c:240,d:'Basic RS Coin Package'},{p:500,c:620,d:'Bronze RS Coin Package'},
+    {p:800,c:1020,d:'Silver RS Coin Package'},{p:1200,c:1560,d:'Gold RS Coin Package'}
+  ];
+  var gridHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+  pkgs.forEach(function(x){
+    gridHtml += '<div class="card" style="margin-bottom:0;text-align:center;padding:12px;"><b style="color:var(--gold);font-size:13px;display:block;min-height:36px;">'+x.d+'</b><div style="font-size:11px;color:var(--mu);margin-top:4px">মূল্য: <b>'+x.p+' BDT</b></div><div style="font-size:12px;color:var(--grn);margin-top:2px">রিওয়ার্ড: <b>'+x.c+' RS</b></div><button class="btn s g" style="width:100%;margin-top:8px;" onclick="buyPkg(\''+x.d+'\','+x.p+')">Buy Now</button></div>';
+  });
+  gridHtml += '</div>';
+  $('main').innerHTML=hb('ref','📦','RS Coin Packages','পছন্দমতো প্যাকেজ সিলেক্ট করুন ও কয়েন কালেক্ট করুন।') + gridHtml;
+}
+
+function buyPkg(name, price){
+  api('package-order','POST',{packageName:name,amount:price}).then(function(){
+    toast('প্যাকেজ অর্ডার সফল হয়েছে! এডমিন প্যানেলে পাঠানো হয়েছে।');
+  }).catch(function(e){toast(e.message);});
 }
 
 function vRank(){$('main').innerHTML=hb('rank','🏆','Top Earners','সবচেয়ে বেশি আয় করা ইউজারদের তালিকা। কাজ করুন, তালিকায় উঠুন!')+'<div id="rk">Loading...</div>';
@@ -785,8 +815,83 @@ function vAcc(){clearInterval(window.REF_TIMER); $('main').innerHTML=hb('acc','�
 function wdForm(){modal('<h3 style="color:var(--gold)">Withdraw (300 - 5000 BDT)</h3><label>Method</label><select id="wm"><option>bKash</option><option>Nagad</option></select><label>Amount</label><input id="wa" type="number" inputmode="numeric"><label>Your bKash/Nagad number</label><input id="wp" maxlength="11" inputmode="numeric" value="'+esc(ME.phone)+'"><button class="btn r" onclick="doWd()">Send request</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
 function doWd(){api('withdraw','POST',{method:$('wm').value,amount:$('wa').value,phone:$('wp').value}).then(function(m){ME=m;head();closeM();toast('Withdraw request sent.');vAcc()}).catch(function(e){toast(e.message)})}
 
-function depForm(presetAmount){modal('<h3 style="color:var(--gold)">Deposit (300 - 5000 BDT)</h3><label>Method</label><select id="dm"><option>bKash</option><option>Nagad</option></select><label>Amount (Min 300, Max 5000)</label><input id="da" type="number" inputmode="numeric" value="'+(presetAmount||'')+'"><div style="display:flex;gap:5px;margin-top:6px"><button class="btn s" style="background:#1e293b;color:#fff;flex:1" onclick="$(\\'da\\').value=100">100</button><button class="btn s" style="background:#1e293b;color:#fff;flex:1" onclick="$(\\'da\\').value=300">300</button><button class="btn s" style="background:#1e293b;color:#fff;flex:1" onclick="$(\\'da\\').value=500">500</button><button class="btn s" style="background:#1e293b;color:#fff;flex:1" onclick="$(\\'da\\').value=1000">1000</button><button class="btn s" style="background:#1e293b;color:#fff;flex:1" onclick="$(\\'da\\').value=2000">2000</button></div><label>Transaction ID (TrxID)</label><input id="dtx" placeholder="Enter full TrxID"><label>Last 3 Digits of Sender Number</label><input id="dlast" maxlength="3" inputmode="numeric" placeholder="e.g. 123"><button class="btn g" onclick="doDep()">Submit Deposit</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
-function doDep(){api('deposit','POST',{method:$('dm').value,amount:$('da').value,txid:$('dtx').value,lastDigits:$('dlast').value}).then(function(){closeM();toast('Deposit request submitted successfully.');vAcc()}).catch(function(e){toast(e.message)})}
+function depForm(presetAmount){
+  modal('<h3 style="color:var(--gold)">Deposit (300 - 5000 BDT)</h3>' +
+        '<label>Method</label><select id="dm"><option>bKash</option><option>Nagad</option></select>' +
+        '<label>Amount (Min 300, Max 5000)</label><input id="da" type="number" inputmode="numeric" value="'+(presetAmount||'')+'">' +
+        '<div style="display:flex;gap:5px;margin-top:6px"><button class="btn s" style="background:#1e293b;color:#fff;flex:1" onclick="$(\\'da\\').value=300">300</button><button class="btn s" style="background:#1e293b;color:#fff;flex:1" onclick="$(\\'da\\').value=500">500</button><button class="btn s" style="background:#1e293b;color:#fff;flex:1" onclick="$(\\'da\\').value=1000">1000</button><button class="btn s" style="background:#1e293b;color:#fff;flex:1" onclick="$(\\'da\\').value=2000">2000</button></div>' +
+        '<label>Transaction ID (TrxID)</label><input id="dtx" placeholder="Enter full TrxID">' +
+        '<label>Last 3 Digits of Sender Number</label><input id="dlast" maxlength="3" inputmode="numeric" placeholder="e.g. 123">' +
+        '<button class="btn g" onclick="previewDepositModal()">Submit Deposit</button>' +
+        '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>');
+}
+
+function previewDepositModal(){
+  var amt = $('da').value;
+  var mth = $('dm').value;
+  var txi = $('dtx').value;
+  var las = $('dlast').value;
+  if(!amt || amt < 300 || amt > 5000){ toast('সঠিক অ্যামাউন্ট দিন (৩০০ - ৫০০০)'); return; }
+  if(!txi){ toast('ট্রানজেকশন আইডি দিন'); return; }
+
+  var agentNum = '01764024069';
+  
+  modal('<h3 style="color:var(--gold);text-align:center;">ডিপোজিট কনফার্মেশন</h3>' +
+        '<div style="background:#131d38;padding:12px;border-radius:12px;margin:10px 0;font-size:13px;line-height:1.6;">' +
+        '<b>এজেন্ট নাম্বার (' + mth + '):</b> <span id="agNumText" style="color:var(--gold);">' + agentNum + '</span> ' +
+        '<button class="btn s" style="padding:2px 6px;font-size:10px;margin-left:6px;" onclick="navigator.clipboard.writeText(\''+agentNum+'\');toast(\'নাম্বার কপি হয়েছে\')">কপি</button><br>' +
+        '<b>টাকার পরিমাণ:</b> ' + amt + ' BDT<br>' +
+        '<b>ট্রানজেকশন আইডি:</b> ' + txi + '<br>' +
+        '<b>সিরিয়াল নাম্বার:</b> #' + Math.floor(100000 + Math.random() * 900000) + '<br>' +
+        '<b>বর্তমান ব্যালেন্স:</b> ' + ME.balance + ' BDT<br>' +
+        '<div id="depTimer" style="color:var(--red);margin-top:6px;font-weight:700;">সময় বাকি: ৫:০০ মিনিট</div>' +
+        '</div>' +
+        '<div style="text-align:center;margin:15px 0;">' +
+        '<p style="font-size:11px;color:var(--mu);margin-bottom:8px;">নিচের গোল বাটনটিতে চাপ দিয়ে ধরে রাখুন</p>' +
+        '<div id="holdBtn" style="width:70px;height:70px;background:linear-gradient(135deg,var(--gold),#b45309);border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;color:#000;font-weight:700;font-size:12px;cursor:pointer;user-select:none;box-shadow:0 0 15px rgba(251,191,36,0.5);" ontouchstart="startHold()" onmousedown="startHold()" ontouchend="endHold()" onmouseup="endHold()">Hold</div>' +
+        '</div>' +
+        '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Cancel</button>');
+
+  // Timer simulation
+  var sec = 300;
+  window.depTimerInt = setInterval(function(){
+    sec--;
+    var m = Math.floor(sec/60), s = sec%60;
+    var el = $('depTimer');
+    if(el) el.textContent = 'সময় বাকি: ' + m + ':' + (s<10?'0':'') + s + ' মিনিট';
+    if(sec<=0) clearInterval(window.depTimerInt);
+  }, 1000);
+}
+
+var holdTimer = null;
+function startHold(){
+  var el = $('holdBtn');
+  if(el) el.style.transform = 'scale(0.92)';
+  holdTimer = setTimeout(function(){
+    clearInterval(window.depTimerInt);
+    doDepFinal();
+  }, 1500); // Hold for 1.5s
+}
+function endHold(){
+  var el = $('holdBtn');
+  if(el) el.style.transform = 'scale(1)';
+  if(holdTimer) clearTimeout(holdTimer);
+}
+
+function doDepFinal(){
+  var amt = $('da').value;
+  var mth = $('dm').value;
+  var txi = $('dtx').value;
+  var las = $('dlast').value;
+  api('deposit','POST',{method:mth,amount:amt,txid:txi,lastDigits:las}).then(function(){
+    modal('<div style="text-align:center;padding:20px;">' +
+          '<div style="font-size:45px;color:var(--grn);margin-bottom:10px;">🎉 সফল!</div>' +
+          '<h3 style="color:var(--gold);">উৎসবের আমেজে ডিপোজিট সফল হয়েছে!</h3>' +
+          '<p style="font-size:12px;color:var(--mu);margin:10px 0;">আপনার ডিপোজিট রিকোয়েস্ট সফলভাবে জমা হয়েছে।</p>' +
+          '<button class="btn g" onclick="closeM();vAcc()">ঠিক আছে</button>' +
+          '</div>');
+  }).catch(function(e){toast(e.message)});
+}
 
 var DUA=[
 ["১. সানা (নামাজের শুরুতে)","سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ وَتَبَارَكَ اسْمُكَ وَتَعَالَى جَدُّكَ وَلَا إِلَهَ غَيْرُكَ","সুবহানাকাল্লাহুম্মা ওয়া বিহামদিকা ওয়া তাবারাকাসমুকা ওয়া তাআলা জাদ্দুকা ওয়া লা ইলাহা গাইরুক।","হে আল্লাহ, আপনি পবিত্র, আপনার প্রশংসা করছি। আপনার নাম বরকতময়, আপনার মর্যাদা সুউচ্চ, আপনি ছাড়া কোনো ইলাহ নেই।"],
@@ -814,18 +919,18 @@ function bk(p){var h='';
  else if(p==='hadith'){h=bkBack('menu')+'<h3>হাদিস</h3>'+HD.map(function(x){return '<div class="bkc">'+esc(x[0])+'<small>সূত্র: '+esc(x[1])+'</small></div>'}).join('')}
  $('main').innerHTML=h;$('main').scrollTop=0}
 
-var ATABS=[['ov','📊','ওভারভিউ'],['wd','💸','উত্তোলন'],['dep','💳','ডিপোজিট'],['bn','🎁','বোনাস'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ'],['ea','🏆','ইনকাম']];
+var ATABS=[['ov','📊','ওভারভিউ'],['wd','💸','উত্তোলন'],['dep','💳','ডিপোজিট'],['pkg','📦','প্যাকেজ'],['bn','🎁','বোনাস'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ'],['ea','🏆','ইনকাম']];
 function ah(){return{'x-admin-pass':ADM}}
 function admOpen(){var p=prompt('Admin password');if(!p)return;ADM=p;$('adm').className='adm on';
  $('anav').innerHTML=ATABS.map(function(t){return '<div id="a_'+t[0]+'" onclick="admGo(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');admGo('ov')}
 function admClose(){$('adm').className='adm'}
 function aErr(e){if(e.message==='Wrong admin password.'){toast(e.message);admClose()}else $('abody').innerHTML='<div class="row">'+esc(e.message)+'</div>'}
 function admGo(t){ATABS.forEach(function(x){$('a_'+x[0]).className=x[0]===t?'on':''});$('abody').innerHTML='<div class="row">Loading...</div>';
- ({ov:aOv,wd:aWd,dep:aDep,bn:aBn,sp:aSp,us:aUs,ea:aEa})[t]()}
+ ({ov:aOv,wd:aWd,dep:aDep,pkg:aPkg,bn:aBn,sp:aSp,us:aUs,ea:aEa})[t]()}
 function sc(a){return a.map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('')}
 function aOv(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
  $('abody').innerHTML='<h3>আজকের হিসাব</h3><div class="grid">'+sc([['মোট ইউজার',s.users],['আজ ঢুকেছে',s.active],['আজ নতুন',s.newToday],['আজ উত্তোলন রিকোয়েস্ট',s.wdToday],['আজ ইউজাররা আয় করেছে',money(s.today)],['সব ইউজারের ব্যালেন্স',money(s.balance)]])+'</div>'+
- '<h3>টাস্ক</h3><div class="grid4">'+sc([['Pending',s.pending],['Success',s.success],['Cancelled',s.cancelled],['অপেক্ষমাণ উত্তোলন',s.wdPending]])+'</div>'+
+ '<h3>টাস্ক ও প্যাকেজ</h3><div class="grid4">'+sc([['Pending',s.pending],['Success',s.success],['পেন্ডিং প্যাকেজ',s.pendingPkg],['অপেক্ষমাণ উত্তোলন',s.wdPending]])+'</div>'+
  '<div class="row"><div>অপেক্ষমাণ উত্তোলন মোট<small>এখনো পাঠানো হয়নি</small></div><b style="color:var(--gold)">'+money(s.wdPendingSum)+'</b></div>'+
  '<button class="btn" style="background:#1e293b;color:#fff" onclick="chk()">Check offers</button>'}).catch(aErr)}
 function chk(){api('admin/offers-raw','GET',null,ah()).then(function(r){modal('<h3 style="color:var(--gold)">Offers response</h3><pre>'+esc(r.text)+'</pre><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')})}
@@ -842,6 +947,23 @@ function aDep(){api('admin/dep-list','GET',null,ah()).then(function(d){AD.deps=d
  $('abody').innerHTML='<h3>অপেক্ষমাণ ডিপোজিট</h3>'+
  (d.pending.map(function(dep,i){return '<div class="th"><div class="hd"><span>'+esc(dep.name)+'</span><span style="color:var(--gold)">'+money(dep.amount)+'</span></div><div style="font-size:13px">'+esc(dep.method)+': <b>'+esc(dep.txid)+'</b> (শেষ ৩: '+esc(dep.lastDigits)+')</div><div class="gap"><button class="btn s" onclick="cpDep('+i+')">TrxID কপি</button><button class="btn s g" onclick="decDep('+i+',1)">Approve</button><button class="btn s r" onclick="decDep('+i+',0)">Reject</button></div></div>'}).join('')||'<div class="row">কোনো ডিপোজিট রিকোয়েস্ট নেই</div>')+
  '<h3 style="margin-top:14px">সর্বশেষ ডিপোজিট হিস্টরি</h3>'+(d.done.map(function(dep){return '<div class="row"><div>'+esc(dep.name)+'<small>'+esc(dep.method)+' Trx: '+esc(dep.txid)+'</small></div><div>'+money(dep.amount)+' <span class="chip '+dep.status+'">'+dep.status+'</span></div></div>'}).join('')||'<div class="row">নেই</div>')}).catch(aErr)}
+
+function aPkg(){
+  api('admin/pkg-list','GET',null,ah()).then(function(d){
+    var pending = d.pending || [];
+    $('abody').innerHTML='<h3>পেন্ডিং প্যাকেজ রিকোয়েস্ট</h3>' +
+    (pending.map(function(p, i){
+      return '<div class="th"><div class="hd"><span>'+esc(p.name)+'</span><span style="color:var(--gold)">'+money(p.amount)+' BDT</span></div>' +
+             '<div style="font-size:13px">প্যাকেজ: <b>'+esc(p.packageName)+'</b></div>' +
+             '<small style="color:var(--mu)">'+new Date(p.at).toLocaleString()+'</small>' +
+             '<div class="gap"><button class="btn s g" onclick="decPkg(\''+p._id+'\',true)">Approve</button><button class="btn s r" onclick="decPkg(\''+p._id+'\',false)">Reject</button></div></div>';
+    }).join('') || '<div class="row">আজ কোনো পেন্ডিং প্যাকেজ নেই</div>');
+  }).catch(aErr);
+}
+function decPkg(id, ok){
+  api('admin/pkg/'+id,'POST',{ok:ok},ah()).then(function(){ aPkg(); }).catch(aErr);
+}
+
 function aBn(){
  $('abody').innerHTML='<h3>ইউজারকে বোনাস দিন</h3><label>User Phone Number</label><input id="bp" placeholder="01XXXXXXXXX"><label>Bonus Amount (BDT)</label><input id="ba" type="number" placeholder="100"><button class="btn g" onclick="sendBonus()">Send Bonus</button>';
 }
