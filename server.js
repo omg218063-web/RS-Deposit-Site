@@ -934,7 +934,7 @@ function aOv(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
  '<button class="btn" style="background:#1e293b;color:#fff" onclick="chk()">Check offers</button>'}).catch(aErr)}
 function chk(){api('admin/offers-raw','GET',null,ah()).then(function(r){modal('<h3 style="color:var(--gold)">Offers response</h3><pre>'+esc(r.text)+'</pre><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')})}
 function cpI(i){var t=AD.wds[i].phone;if(navigator.clipboard)navigator.clipboard.writeText(t).then(function(){toast('Copied: '+t)}).catch(function(){toast(t)});else toast(t)}
-function decI(i,ok){var w=AD.wds[i];if(!confirm((ok?'Paid':'Reject')+' করবেন? '+w.name+' - '+w.amount))return;api('admin/wd/'+w._id,'POST',{ok:!!ok},ah()).then(aWd).catch(aErr)}
+function decI(i,ok){var w=AD.wds[i];if(!confirm((ok?'Paid':'Reject')+' করবেনবো? '+w.name+' - '+w.amount))return;api('admin/wd/'+w._id,'POST',{ok:!!ok},ah()).then(aWd).catch(aErr)}
 function aWd(){api('admin/wd-list','GET',null,ah()).then(function(d){AD.wds=d.pending;
  var tot=d.pending.reduce(function(a,w){return a+w.amount},0);
  $('abody').innerHTML='<div class="grid">'+sc([['অপেক্ষমাণ',d.pending.length],['মোট টাকা',money(tot)]])+'</div><h3>পাঠাতে হবে</h3>'+
@@ -979,9 +979,22 @@ function aEa(){api('admin/users','GET',null,ah()).then(function(d){
  '<h3 style="margin-top:14px">সর্বকালের শীর্ষ আয়কারী</h3>'+
  d.top.map(function(u,i){return '<div class="row"><div>#'+(i+1)+' '+esc(u.name)+'<small>'+esc(u.phone)+' · ব্যালেন্স '+money(u.balance)+'</small></div><b style="color:var(--gold)">'+money(u.earned)+'</b></div>'}).join('')}).catch(aErr)}
 
-document.addEventListener('DOMContentLoaded',function(){$('logoA').innerHTML=logo(88);$('logoT').innerHTML=logo(40);initG();
- if(REF)mode('reg');
- if(T)api('me').then(enter).catch(function(){$('auth').style.display='block'});else $('auth').style.display='block'});
+document.addEventListener('DOMContentLoaded',function(){
+  $('logoA').innerHTML=logo(88);
+  $('logoT').innerHTML=logo(40);
+  initG();
+  if(REF) mode('reg');
+  if(T) {
+    api('me').then(enter).catch(function(){
+      localStorage.removeItem('t');
+      T=null;
+      ME=null;
+      $('auth').style.display='block';
+    });
+  } else {
+    $('auth').style.display='block';
+  }
+});
 </script></body></html>`;
 
 app.get('/', (req, res) => res.send(PAGE.replace('__GID__', GID.replace(/[^\w.\-]/g, '')).replace(/__AGE__/g, String(MIN_AGE | 0))));
