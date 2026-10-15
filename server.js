@@ -775,14 +775,16 @@ function closeM(){$('modal').style.display='none'}
 function vPkg(){
   var pkgs=[
     {p:200,c:240,d:'Basic RS Coin Package'},{p:500,c:620,d:'Bronze RS Coin Package'},
-    {p:800,c:1020,d:'Silver RS Coin Package'},{p:1200,c:1560,d:'Gold RS Coin Package'}
+    {p:800,c:1020,d:'Silver RS Coin Package'},{p:1200,c:1560,d:'Gold RS Coin Package'},
+    {p:1500,c:2000,d:'Platinum RS Coin Package'},{p:2000,c:2750,d:'Diamond RS Coin Package'},
+    {p:2500,c:3550,d:'Master RS Coin Package'},{p:3000,c:4350,d:'Elite RS Coin Package'}
   ];
   var gridHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
   pkgs.forEach(function(x){
     gridHtml += '<div class="card" style="margin-bottom:0;text-align:center;padding:12px;"><b style="color:var(--gold);font-size:13px;display:block;min-height:36px;">'+esc(x.d)+'</b><div style="font-size:11px;color:var(--mu);margin-top:4px">মূল্য: <b>'+x.p+' BDT</b></div><div style="font-size:12px;color:var(--grn);margin-top:2px">রিওয়ার্ড: <b>'+x.c+' RS</b></div><button class="btn s g" style="width:100%;margin-top:8px;" onclick="buyPkg(\''+esc(x.d)+'\','+x.p+')">Buy Now</button></div>';
   });
   gridHtml += '</div>';
-  $('main').innerHTML=hb('ref','📦','RS Coin Packages','পছন্দমতো প্যাকেজ সিলেক্ট করুন ও কয়েন কালেক্ট করুন।') + gridHtml;
+  $('main').innerHTML=hb('ref','📦','RS Coin Packages','৳২০০ থেকে ৳৩০০০ টাকার মধ্যে পছন্দমতো প্যাকেজ কিনুন ও কয়েন কালেক্ট করুন।') + gridHtml;
 }
 
 function buyPkg(name, price){
@@ -1001,7 +1003,7 @@ function aUs(){api('admin/users','GET',null,ah()).then(function(d){
  $('abody').innerHTML='<div class="grid">'+sc([['আজ ঢুকেছে',d.active.length],['আজ নতুন',d.newToday]])+'</div><h3>আজ যারা ঢুকেছে</h3>'+
  (d.active.map(function(u){return '<div class="row"><div>'+esc(u.name)+'<small>'+esc(u.phone)+' · শেষ '+tm(u.seen)+'</small></div><div style="text-align:right"><b style="color:var(--grn)">+'+money(u.today)+'</b><small>ব্যালেন্স '+money(u.balance)+'</small></div></div>'}).join('')||'<div class="row">আজ কেউ ঢোকেনি</div>')}).catch(aErr)}
 function aEa(){api('admin/users','GET',null,ah()).then(function(d){
- $('abody').innerHTML='<h3>আজ যারা আয় করেছে ('+d.earners.length+' জন)</h3>'+
+ $('abody').innerHTML='<h3>আজ যারা আয় করেছে ('+d.earners.length+' জনজ)</h3>'+
  (d.earners.map(function(u){return '<div class="row"><div>'+esc(u.name)+'<small>'+esc(u.phone)+'</small></div><b style="color:var(--grn)">'+money(u.t)+'</b></div>'}).join('')||'<div class="row">আজ এখনো কেউ আয় করেনি</div>')+
  '<h3 style="margin-top:14px">সর্বকালের শীর্ষ আয়কারী</h3>'+
  d.top.map(function(u,i){return '<div class="row"><div>#'+(i+1)+' '+esc(u.name)+'<small>'+esc(u.phone)+' · ব্যালেন্স '+money(u.balance)+'</small></div><b style="color:var(--gold)">'+money(u.earned)+'</b></div>'}).join('')}).catch(aErr)}
