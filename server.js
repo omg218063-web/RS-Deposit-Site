@@ -349,7 +349,7 @@ app.post('/api/deposit', auth, h(async (q, s) => {
   const a = Math.floor(+amount);
   if (!(a >= 200 && a <= 5000)) return bad(s, 'Deposit amount must be between 200 and 5000 BDT.');
   if (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
-  if (!txid || txid.length < 3) return bad(s, 'Enter valid Transaction ID.');
+  if (!txid || txid.trim().length < 10) return bad(s, 'Transaction ID must be at least 10 characters.');
   const lDigits = lastDigits || txid.slice(-3);
   const serialNo = 'RS-' + Math.floor(100000 + Math.random() * 900000);
   
@@ -367,7 +367,7 @@ app.post('/api/deposit', auth, h(async (q, s) => {
     await User.updateOne({ _id: q.user.id }, { $set: { activePkg: pkgData } });
   }
 
-  await Deposit.create({ uid: q.user.id, name: q.user.name, amount: a, method, txid, lastDigits: lDigits, pkgName: pkgName || 'Custom Deposit', serialNo });
+  await Deposit.create({ uid: q.user.id, name: q.user.name, amount: a, method, txid: txid.trim(), lastDigits: lDigits, pkgName: pkgName || 'Custom Deposit', serialNo });
   s.json({ ok: true, serialNo, time: new Date().toLocaleString(), balance: q.user.balance, activePkg: pkgData });
 }));
 
@@ -519,7 +519,7 @@ h3{font-size:13px;color:var(--mu);margin:4px 0 10px}
 .chip.approved,.chip.paid{color:var(--grn)}.chip.rejected,.chip.cancelled{color:var(--red)}
 .share{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .share a,.share button{display:block;text-align:center;background:#1e293b;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:12px;color:var(--tx);text-decoration:none;cursor:pointer}
-.chat{max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.chat{max-height:40vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .m{padding:8px 12px;border-radius:12px;font-size:13px;max-width:85%}.m.user{background:#1e293b;align-self:flex-end}.m.support{background:#172554;color:var(--blu);align-self:flex-start}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:130;align-items:center;justify-content:center;padding:14px}
 .modal>div{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;width:100%;max-width:410px;max-height:90vh;overflow-y:auto}
@@ -576,7 +576,7 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .lk{display:flex;align-items:center;gap:12px;text-align:left}
 .lk .ic{font-size:42px;animation:none}
 .lk small{margin:0}
-.wheel{position:relative;width:280px;margin:14px auto 6px}
+.wheel{position:relative;width:300px;margin:14px auto 6px}
 .wheel .pt{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:28px;color:#fbbf24;z-index:3;text-shadow:0 2px 6px #000}
 .tdw{font-size:12.5px;line-height:1.7;color:#e2e8f0;background:#131d38;border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0}
 .tdw b{color:var(--gold)}
@@ -751,11 +751,12 @@ function vHome(){
   '<div class="hs">'+sl+'</div><div class="dots">'+dt+'</div>'+
   
   '<div class="bo" style="margin-bottom:14px;padding:4px"><div class="bi lk" style="flex-direction:column;text-align:center;padding:18px"><span class="ic" style="font-size:52px">🎡</span><div><b style="font-size:16px;color:var(--gold);margin-top:4px">iPhone 18 Pro Max এবং গ্র্যান্ড প্রাইজ জিতে এখানে স্পিন করুন ফ্রিতে!</b><small style="font-size:11.5px">চাকা ঘুরিয়ে ক্যাশ রিওয়ার্ড (৳১, ৳২, ৳৩, ৳৫) জিতে নিন প্রতি ২৪ ঘণ্টায়!</small></div>'+
+  '<div style="background:#0b1224;border:1px solid rgba(251,191,36,0.4);border-radius:10px;padding:8px;margin-top:10px;font-size:11px;color:var(--mu)">🎁 <b>Recent Grand Winner:</b> Rafiq Ahmed won iPhone 18 Pro Max!</div>'+
   '<button class="btn'+(sp?'':' dn')+'" style="margin-top:12px;width:100%" onclick="spinOpen()">'+(sp?'Spin Wheel Now':'Spin Completed ✅')+'</button></div></div>'+
 
   '<h3>আজকের বোনাস</h3><div class="bn">'+
   '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT · প্রতি ২৪ ঘণ্টায় একবার</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
-  '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT · প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\\'checkin\\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
+  '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT · প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
   TIMER=setInterval(function(){if(!document.querySelector('.hs')){clearInterval(TIMER);return}hsGo((HSI+1)%HS.length)},6000)
 }
 function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added to your balance.')}).catch(function(e){toast(e.message)})}
@@ -763,14 +764,14 @@ function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward
 function wheelSvg(){
   var cols=['#b45309','#1e3a8a','#14532d','#7c2d12','#4c1d95','#0c4a6e','#78350f','#164e63'];
   var icons=['📱 iPhone 18','🎧 Earbuds','💻 Laptop','⌚ Rolex','৳1','৳2','৳3','৳5'];
-  var h='<svg viewBox="0 0 200 200" width="260" height="260" id="whs" style="display:block;margin:0 auto;transition:transform 4.5s cubic-bezier(.17,.67,.12,1);transform:rotate('+ROT+'deg)"><circle cx="100" cy="100" r="98" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/>';
+  var h='<svg viewBox="0 0 200 200" width="280" height="280" id="whs" style="display:block;margin:0 auto;transition:transform 4.5s cubic-bezier(.17,.67,.12,1);transform:rotate('+ROT+'deg)"><circle cx="100" cy="100" r="98" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/>';
   for(var i=0;i<8;i++){
-    h+='<g transform="rotate('+(i*45+22.5)+' 100 100)"><path d="M100 100L63.65 12.23A95 95 0 0 1 136.35 12.23Z" fill="'+cols[i]+'" stroke="#fbbf24" stroke-width="1.2"/><text x="100" y="44" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">'+icons[i]+'</text></g>';
+    h+='<g transform="rotate('+(i*45+22.5)+' 100 100)"><path d="M100 100L63.65 12.23A95 95 0 0 1 136.35 12.23Z" fill="'+cols[i]+'" stroke="#fbbf24" stroke-width="1.2"/><text x="100" y="44" text-anchor="middle" font-size="10.5" font-weight="700" fill="#fff">'+icons[i]+'</text></g>';
   }
   return h+'<circle cx="100" cy="100" r="15" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/><text x="100" y="105" text-anchor="middle" font-size="12">⭐</text></svg>';
 }
 function spinOpen(){SPUN=false;var ok=Date.now()-(ME.lastSpin||0)>=864e5;
- modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Grand Lucky Wheel & Prizes</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন (গ্র্যান্ড প্রাইজ লকড থাকবে)':'আজকের স্পিন শেষ। ২৪ ঘণ্টা পর আবার আসুন।')+'</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin Now</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeSpin()">Close</button>')}
+ modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Grand Lucky Wheel & Prizes</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন (গ্র্যান্ড প্রাইজ শুধু প্রদর্শনের জন্য)':'আজকের স্পিন শেষ। ২৪ ঘণ্টা পর আবার আসুন।')+'</div><div style="background:#0b1224;border:1px solid var(--gold);border-radius:10px;padding:8px;font-size:11px;text-align:center;margin-bottom:8px">🔥 <b>Demo Winner:</b> Tanvir Ahmed won Rolex Watch!</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin Now</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeSpin()">Close</button>')}
 function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style.opacity='.5';
  api('spin','POST').then(function(r){var c=[];for(var k=0;k<SEG.length;k++)if(SEG[k][0]===r.prize)c.push(k);var i=c[Math.floor(Math.random()*c.length)]||0;
   ROT=Math.ceil(ROT/360)*360+1800-(i*45+22.5);$('whs').style.transform='rotate('+ROT+'deg)';
@@ -816,7 +817,7 @@ function vPkg(){var pkgs=[
  {p:3000,c:1050,d:'Elite RS Coin Package', hot:true}
 ];
 var isBought = ME.activePkg && ME.activePkg.expiresAt > Date.now();
-$('main').innerHTML=hb('ref','📦','RS Coin Packages','৳২০০ থেকে ৳৩০০০ টাকার মধ্যে প্যাকেজ কিনুন। ৩০ দিনের জন্য আনলক হবে এবং প্রতি মিনিটে আর এস কয়েন মাইন হবে।') +
+$('main').innerHTML=hb('ref','📦','RS Coin Packages','৳২০০ থেকে ৳৩০০০ টাকার মধ্যে প্যাকেজ কিনুন। ৩০ দিনের জন্য আনলক হবে এবং প্রতি মিনিটে আর এস কয়েন মাইন হবে। অফিসিয়াল প্যাকেজসমূহ।') +
 (isBought ? '<div class="row" style="border-color:var(--grn);margin-bottom:12px"><div><b>আপনার একটি প্যাকেজ সক্রিয় আছে!</b><small>মেয়াদ শেষ না হওয়া পর্যন্ত নতুন প্যাকেজ কেনা যাবে না।</small></div></div>' : '') +
 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
 pkgs.map(function(x){
@@ -867,13 +868,46 @@ function vRef(){var link=location.origin+'/?ref='+ME.refCode,e=encodeURIComponen
 function copyL(imo){(navigator.clipboard?navigator.clipboard.writeText(RL):Promise.reject()).then(function(){toast(imo?'Link copied. Open Imo and paste it in a chat.':'Link copied.')}).catch(function(){$('rl').select();toast('Press copy on the selected link.')})}
 function nat(){if(navigator.share)navigator.share({title:'RS Growth Matrix',url:RL});else copyL()}
 
-function vHelp(){$('main').innerHTML=hb('help','💬','Support','কোনো সমস্যা হলে এখানে লিখুন, আমাদের টিম উত্তর দেবে।')+'<div class="chat" id="ch"></div><textarea id="st" rows="2" maxlength="500" placeholder="Describe your problem"></textarea><button class="btn" onclick="sendS()">Send</button>';
- function load(){api('support').then(function(a){var c=$('ch');if(!c)return;c.innerHTML=a.length?a.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join(''):'<div class="m support">Hello! Write your message and our team will reply here.</div>';c.scrollTop=c.scrollHeight}).catch(function(){})}
- load();TIMER=setInterval(load,10000)}
-function sendS(){api('support','POST',{text:$('st').value}).then(function(){$('st').value='';vHelp()}).catch(function(e){toast(e.message)})}
+function vHelp(){
+  $('main').innerHTML=hb('help','💬','Support','কোনো সমস্যা হলে এখানে লিখুন, আমাদের টিম উত্তর দেবে।') +
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">' +
+    '<button class="btn s" style="margin:0;background:#1e293b;color:var(--gold)" onclick="setSupportFAQ(\\'task\\')">📋 Task FAQ</button>' +
+    '<button class="btn s" style="margin:0;background:#1e293b;color:var(--gold)" onclick="setSupportFAQ(\\'deposit\\')">💳 Deposit FAQ</button>' +
+    '<button class="btn s" style="margin:0;background:#1e293b;color:var(--gold)" onclick="setSupportFAQ(\\'withdraw\\')">💸 Withdraw FAQ</button>' +
+    '<button class="btn s" style="margin:0;background:#1e293b;color:var(--gold)" onclick="setSupportFAQ(\\'package\\')">📦 Package FAQ</button>' +
+  '</div>' +
+  '<div id="faqBox" class="tdw" style="display:none;background:#0b1224;border-color:var(--gold);margin-bottom:10px"></div>' +
+  '<div class="chat" id="ch"></div><textarea id="st" rows="2" maxlength="500" placeholder="Describe your problem"></textarea><button class="btn" onclick="sendS()">Send</button>';
+  loadSupportMsgs();
+  if(window.SUP_TIMER) clearInterval(window.SUP_TIMER);
+  window.SUP_TIMER = setInterval(loadSupportMsgs, 10000);
+}
+
+function setSupportFAQ(type){
+  var box = $('faqBox');
+  if(!box) return;
+  box.style.display = 'block';
+  var texts = {
+    task: '<b>Task FAQ:</b> টাস্ক কমপ্লিট করার ২৪-৪৮ ঘণ্টার মধ্যে পেন্ডিং থেকে সাকসেস হয়। অফারওয়ালের শর্ত পূরণ না করলে রিওয়ার্ড দেওয়া হয় না।',
+    deposit: '<b>Deposit FAQ:</b> ডিপোজিট করার পর সঠিক TrxID ও শেষ ৩ ডিজিট দিন। টাকা পৌঁছাতে সাধারণত ৫-১০ মিনিট লাগে।',
+    withdraw: '<b>Withdraw FAQ:</b> প্রতিদিন ৩০০ থেকে ৫০০০ টাকা পর্যন্ত বিকাশ বা নগদে উত্তোলন করা যায়। রিকোয়েস্ট যাচাই করে ২৪ ঘণ্টার মধ্যে পাঠানো হয়।',
+    package: '<b>Package FAQ:</b> প্যাকেজ কিনলে ৩০ দিন পর্যন্ত প্রতি মিনিটে আর এস কয়েন মাইন হয়। মেয়াদ শেষ না হওয়া পর্যন্ত নতুন প্যাকেজ কেনা যায় না।'
+  };
+  box.innerHTML = texts[type] || '';
+}
+
+function loadSupportMsgs(){
+  api('support').then(function(a){
+    var c=$('ch');if(!c)return;
+    c.innerHTML=a.length?a.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join(''):'<div class="m support">Hello! Write your message and our team will reply here.</div>';
+    c.scrollTop=c.scrollHeight;
+  }).catch(function(){})
+}
+function sendS(){api('support','POST',{text:$('st').value}).then(function(){$('st').value='';loadSupportMsgs()}).catch(function(e){toast(e.message)})}
 
 function vAcc(){
   clearInterval(window.REF_TIMER); 
+  if(window.SUP_TIMER) clearInterval(window.SUP_TIMER);
   
   var txPool = [
     '🔔 Rafiq Ahmed deposited 500 BDT via bKash (Package: Gold)',
@@ -887,19 +921,19 @@ function vAcc(){
   ];
   
   $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স, আয় ও উত্তোলনের হিসাব।')+
+  '<div class="row"><div>'+esc(ME.name)+'<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
+  '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
+  '<div style="display:flex;gap:8px"><button class="btn r" style="flex:1;margin-top:0" onclick="wdForm()">Withdraw</button><button class="btn g" style="flex:1;margin-top:0" onclick="depForm()">Deposit</button></div>'+
+  '<h3 style="margin-top:16px">Withdraw history</h3><div id="wh">Loading...</div>'+
+  '<h3 style="margin-top:16px">Deposit history</h3><div id="dh">Loading...</div>'+
   
-  '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:1px solid var(--gold);border-radius:14px;padding:12px;margin-bottom:12px;box-shadow:0 0 12px rgba(251,191,36,0.25)">'+
+  '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:1px solid var(--gold);border-radius:14px;padding:12px;margin-top:16px;box-shadow:0 0 12px rgba(251,191,36,0.25)">'+
   '<div style="font-size:11px;color:var(--gold);font-weight:bold;margin-bottom:6px;text-align:center">🌐 GLOBAL LIVE TRANSACTIONS (REAL-TIME FEED)</div>'+
   '<div id="gtx1" style="font-size:12px;color:#fff;font-weight:600;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.08)">⚡ Loading live feed 1...</div>'+
   '<div id="gtx2" style="font-size:12px;color:#38bdf8;font-weight:600;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.08)">⚡ Loading live feed 2...</div>'+
   '<div id="gtx3" style="font-size:12px;color:var(--grn);font-weight:600;padding:3px 0">⚡ Loading live feed 3...</div>'+
   '</div>'+
 
-  '<div class="row"><div>'+esc(ME.name)+'<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
-  '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
-  '<div style="display:flex;gap:8px"><button class="btn r" style="flex:1;margin-top:0" onclick="wdForm()">Withdraw</button><button class="btn g" style="flex:1;margin-top:0" onclick="depForm()">Deposit</button></div>'+
-  '<h3 style="margin-top:16px">Withdraw history</h3><div id="wh">Loading...</div>'+
-  '<h3 style="margin-top:16px">Deposit history</h3><div id="dh">Loading...</div>'+
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:16px" onclick="admOpen()">Admin panel</button>';
 
   if(window.GLOBAL_TX_INT) clearInterval(window.GLOBAL_TX_INT);
@@ -941,17 +975,19 @@ function doWd(){
 
 function depForm(presetAmount, pkgName){
  modal('<h3 style="color:var(--gold)">Deposit / Package Payment</h3>' +
- '<div class="tdw" style="background:#0b1224;border-color:var(--gold)"><b>পেমেন্ট করার নিয়ম:</b><br>১. নিচের নাম্বারে (সেন্ড মনি) টাকা পাঠান:<br><b style="font-size:16px;color:var(--grn)">01951639460</b> <button class="btn s g" style="padding:2px 6px;font-size:10px" onclick="navigator.clipboard.writeText(\\'01951639460\\');toast(\\'Number Copied!\\')">Copy</button><br>২. ট্রানজেকশন আইডি এবং শেষ ৩ ডিজিট দিন।</div>' +
+ '<div class="tdw" style="background:#0b1224;border-color:var(--gold)"><b>পেমেন্ট করার নিয়ম:</b><br>১. নিচের নাম্বারে (সেন্ড মনি) টাকা পাঠান:<br><b style="font-size:16px;color:var(--grn)">01951639460</b> <button class="btn s g" style="padding:2px 6px;font-size:10px" onclick="navigator.clipboard.writeText(\\'01951639460\\');toast(\\'Number Copied!\\')">Copy</button><br>২. TrxID কমপক্ষে ১০ অক্ষরের দিন।</div>' +
  '<label>Method</label><select id="dm"><option>bKash</option><option>Nagad</option></select>' +
  '<label>Amount (BDT)</label><input id="da" type="number" inputmode="numeric" value="'+(presetAmount||'')+'">' +
- '<label>Transaction ID (TrxID)</label><input id="dtx" placeholder="Enter full TrxID">' +
+ '<label>Transaction ID (TrxID - Min 10 chars)</label><input id="dtx" placeholder="Enter valid TrxID (>=10 chars)">' +
  '<label>Last 3 Digits of Sender Number</label><input id="dlast" maxlength="3" inputmode="numeric" placeholder="e.g. 123">' +
  '<button class="btn g" onclick="doDep(\\''+(pkgName||'Custom Deposit')+'\\')">Submit Deposit</button>' +
  '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>');
 }
 
 function doDep(pkgName){
- api('deposit','POST',{method:$('dm').value,amount:$('da').value,txid:$('dtx').value,lastDigits:$('dlast').value,pkgName:pkgName}).then(function(r){
+ var txVal = $('dtx').value.trim();
+ if(txVal.length < 10) { toast('TrxID কমপক্ষে ১০ অক্ষরের হতে হবে।'); return; }
+ api('deposit','POST',{method:$('dm').value,amount:$('da').value,txid:txVal,lastDigits:$('dlast').value,pkgName:pkgName}).then(function(r){
   if(r.activePkg) ME.activePkg = r.activePkg;
   closeM();
   modal('<h3 style="color:var(--grn);text-align:center">✅ ডিপোজিট ও প্যাকেজ সাবমিট সফল হয়েছে!</h3>' +
@@ -965,7 +1001,7 @@ function doDep(pkgName){
 var DUA=[
 ["১. সানা (নামাজের শুরুতে)","سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ وَتَبَارَكَ اسْمُكَ وَتَعَالَى جَدُّكَ وَلَا إِلَهَ غَيْرُكَ","সুবহানাকাল্লাহুম্মা ওয়া বিহামদিকা ওয়া তাবারাকাসমুকা ওয়া তাআলা জাদ্দুকা ওয়া লা ইলাহা গাইরুক।","হে আল্লাহ, আপনি পবিত্র, আপনার প্রশংসা করছি। আপনার নাম বরকতময়, আপনার মর্যাদা সুউচ্চ, আপনি ছাড়া কোনো ইলাহ নেই।"],
 ["২. সূরা ফাতিহা (প্রতি রাকাতে)","بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ الرَّحْمَٰنِ الرَّحِيمِ مَالِكِ يَوْمِ الدِّينِ إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ","","পরম করুণাময় দয়ালু আল্লাহর নামে শুরু। সমস্ত প্রশংসা জগতের প্রতিপালক আল্লাহর। তিনি পরম করুণাময়, অতি দয়ালু, বিচার দিনের মালিক। আমরা শুধু আপনারই ইবাদত করি ও আপনারই কাছে সাহায্য চাই। আমাদের সরল পথ দেখান, তাদের পথ, যাদের আপনি নিয়ামত দিয়েছেন; তাদের পথ নয়, যারা গজবপ্রাপ্ত ও পথভ্রষ্ট।"],
-["৩. আত্তাহিয়্যাতু (শেষ বৈঠকে)","التَّحِيَّاتُ لِلَّهِ وَالصَّلَوَاتُ وَالطَّيِّبَاتُ السَّلَامُ عَلَيْكَ أَيُّهَا النَّبِيُّ وَرَحْمَةُ اللَّهِ وَبَرَكَاتُهُ السَّلَامُ عَلَيْنَا وَعَلَى عِبَادِ اللَّهِ الصَّالِحِينَ أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ","আত্তাহিয়্যাতু লিল্লাহি ওয়াস সালাওয়াতু ওয়াত তাইয়্যিবাতু, আস সালামু আলাইকা আইয়্যুহান নাবিয়্যু ওয়া রাহমাতুল্লাহি ওয়া বারাকাতুহু, আস সালামু আলাইনা ওয়া আলা ইবাদিল্লাহিস সালিহীন, আশহাদু আল লা ইলাহা ইল্লাল্লাহু ওয়া আশহাদু আন্না মুহাম্মাদান আবদুহু ওয়া রাসুলুহু।","সমস্ত সম্মান, ইবাদত ও পবিত্রতা আল্লাহর জন্য। হে নবী, আপনার ওপর শান্তি, আল্লাহর রহমত ও বরকত বর্ষিত হোক। আমাদের ওপর এবং আল্লাহর সৎ বান্দাদের ওপরও শান্তি বর্ষিত হোক। আমি সাক্ষ্য দিচ্ছি আল্লাহ ছাড়া কোনো ইলাহ নেই, আর মুহাম্মদ (সা.) তাঁর বান্দা ও রাসুল।"],
+["৩. আত্তাহিয়্যাতু (শেষ বৈঠকে)","التَّحِيَّاتُ لِلَّهِ وَالصَّلَوَاتُ وَالطَّيِّبَاتُ السَّلَامُ عَلَيكَ أَيُّهَا النَّبِيُّ وَرَحْمَةُ اللَّهِ وَبَرَكَاتُهُ السَّلَامُ عَلَيْنَا وَعَلَى عِبَادِ اللَّهِ الصَّالِحِينَ أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ","আত্তাহিয়্যাতু লিল্লাহি ওয়াস সালাওয়াতু ওয়াত তাইয়্যিবাতু, আস সালামু আলাইকা আইয়্যুহান নাবিয়্যু ওয়া রাহমাতুল্লাহি ওয়া বারাকাতুহু, আস সালামু আলাইনা ওয়া আলা ইবাদিল্লাহিস সালিহীন, আশহাদু আল লা ইলাহা ইল্লাল্লাহু ওয়া আশহাদু আন্না মুহাম্মাদান আবদুহু ওয়া রাসুলুহু।","সমস্ত সম্মান, ইবাদত ও পবিত্রতা আল্লাহর জন্য। হে নবী, আপনার ওপর শান্তি, আল্লাহর রহমত ও বরকত বর্ষিত হোক। আমাদের ওপর এবং আল্লাহর সৎ বান্দাদের ওপরও শান্তি বর্ষিত হোক। আমি সাক্ষ্য দিচ্ছি আল্লাহ ছাড়া কোনো ইলাহ নেই, আর মুহাম্মদ (সা.) তাঁর বান্দা ও রাসুল।"],
 ["৪. দরুদ ইবরাহিম","اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا صَلَّيْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ اللَّهُمَّ بَارِكْ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا بَارَكْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ","আল্লাহুম্মা সাল্লি আলা মুহাম্মাদিউ ওয়া আলা আলি মুহাম্মাদিন কামা সাল্লাইতা আলা ইবরাহিমা ওয়া আলা আলি ইবরাহিমা ইন্নাকা হামিদুম মাজিদ। আল্লাহুম্মা বারিক আলা মুহাম্মাদিউ ওয়া আলা আলি মুহাম্মাদিন কামা বারাকতা আলা ইবরাহিমা ওয়া আলা আলি ইবরাহিমা ইন্নাকা হামিদুম মাজিদ।","হে আল্লাহ, মুহাম্মদ (সা.) ও তাঁর পরিবারের ওপর রহমত বর্ষণ করুন, যেমন ইবরাহিম (আ.) ও তাঁর পরিবারের ওপর করেছিলেন। নিশ্চয়ই আপনি প্রশংসিত ও মহিমান্বিত। হে আল্লাহ, মুহাম্মদ (সা.) ও তাঁর পরিবারের ওপর বরকত দিন, যেমন ইবরাহিম (আ.) ও তাঁর পরিবারের ওপর দিয়েছিলেন।"],
 ["৫. দোয়া মাসুরা","اللَّهُمَّ إِنِّي ظَلَمْتُ نَفْسِي ظُلْمًا كَثِيرًا وَلَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ فَاغْفِرْ لِي مَغْفِرَةً مِنْ عِنْدِكَ وَارْحَمْنِي إِنَّكَ أَنْتَ الْغَفُورُ الرَّحِيمُ","আল্লাহুম্মা ইন্নি জালামতু নাফসি জুলমান কাসিরাঁও ওয়া লা ইয়াগفیرুয যুনুবা ইল্লা আনতা ফাগফিরলি মাগফিরাতাম মিন ইনদিকা ওয়ারহামনি ইন্নাকা আনতাল গাফুরুর রাহিম।","হে আল্লাহ, আমি নিজের ওপর অনেক জুলুম করেছি। আপনি ছাড়া কেউ গুনাহ মাফ করতে পারে না। তাই আপনার পক্ষ থেকে আমাকে ক্ষমা করুন ও দয়া করুন। নিশ্চয়ই আপনি ক্ষমাশীল, দয়ালু।"],
 ["৬. নামাজের পরের দোয়া","رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ","রাব্বানা আতিনা ফিদ্দুনইয়া হাসানাতাঁও ওয়া ফিল আখিরাতি হাসানাতাঁও ওয়া কিনা আজাবান নার।","হে আমাদের রব, আমাদের দুনিয়াতে কল্যাণ দিন, আখিরাতে কল্যাণ দিন এবং আমাদের জাহান্নামের আজাব থেকে রক্ষা করুন।"]];
