@@ -762,19 +762,20 @@ function vHome(){
 function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added to your balance.')}).catch(function(e){toast(e.message)})}
 
 function wheelSvg(){
-  var cols=['#b45309','#1e3a8a','#14532d','#7c2d12','#4c1d95','#0c4a6e','#78350f','#164e63'];
-  var icons=['📱 iPhone 18','🎧 Earbuds','💻 Laptop','⌚ Rolex','৳1','৳2','৳3','৳5'];
+  var cols=['#b45309','#1e3a8a','#14532d','#7c2d12','#4c1d95','#0c4a6e','#78350f','#164e63','#065f46','#1e1b4b','#831843','#701a75','#3b0764','#1e293b','#334155','#475569','#0f172a','#134e4a','#042f2e','#451a03','#78350f','#b45309','#92400e','#b91c1c','#6b21a8'];
+  var icons=['📱 iPhone 18','💻 Laptop','⌚ Rolex','🎧 Bluetooth','৳1','৳2','৳3','৳5','৳1','৳2','৳1','৳2','৳1','৳2','৳1','৳2','৳1','৳2','৳1','৳2','৳1','৳2','৳1','৳2','৳1'];
   var h='<svg viewBox="0 0 200 200" width="280" height="280" id="whs" style="display:block;margin:0 auto;transition:transform 4.5s cubic-bezier(.17,.67,.12,1);transform:rotate('+ROT+'deg)"><circle cx="100" cy="100" r="98" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/>';
-  for(var i=0;i<8;i++){
-    h+='<g transform="rotate('+(i*45+22.5)+' 100 100)"><path d="M100 100L63.65 12.23A95 95 0 0 1 136.35 12.23Z" fill="'+cols[i]+'" stroke="#fbbf24" stroke-width="1.2"/><text x="100" y="44" text-anchor="middle" font-size="10.5" font-weight="700" fill="#fff">'+icons[i]+'</text></g>';
+  for(var i=0;i<25;i++){
+    var deg = i * (360/25);
+    h+='<g transform="rotate('+deg+' 100 100)"><path d="M100 100L93 10A95 95 0 0 1 107 10Z" fill="'+cols[i]+'" stroke="#fbbf24" stroke-width="0.8"/><text x="100" y="30" text-anchor="middle" font-size="6" font-weight="700" fill="#fff">'+icons[i%icons.length]+'</text></g>';
   }
-  return h+'<circle cx="100" cy="100" r="15" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/><text x="100" y="105" text-anchor="middle" font-size="12">⭐</text></svg>';
+  return h+'<circle cx="100" cy="100" r="15" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/><text x="100" y="104" text-anchor="middle" font-size="10">⭐</text></svg>';
 }
 function spinOpen(){SPUN=false;var ok=Date.now()-(ME.lastSpin||0)>=864e5;
- modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Grand Lucky Wheel & Prizes</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন (গ্র্যান্ড প্রাইজ শুধু প্রদর্শনের জন্য)':'আজকের স্পিন শেষ। ২৪ ঘণ্টা পর আবার আসুন।')+'</div><div style="background:#0b1224;border:1px solid var(--gold);border-radius:10px;padding:8px;font-size:11px;text-align:center;margin-bottom:8px">🔥 <b>Demo Winner:</b> Tanvir Ahmed won Rolex Watch!</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin Now</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeSpin()">Close</button>')}
+ modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Grand Lucky Wheel (25 Channels)</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন (গ্র্যান্ড প্রাইজ শুধু প্রদর্শনের জন্য)':'আজকের স্পিন শেষ। ২৪ ঘণ্টা পর আবার আসুন।')+'</div><div style="background:#0b1224;border:1px solid var(--gold);border-radius:10px;padding:8px;font-size:11px;text-align:center;margin-bottom:8px">🔥 <b>Demo Grand Prizes:</b> Official iPhone 18, Laptop, Rolex, Bluetooth</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin Now</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeSpin()">Close</button>')}
 function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style.opacity='.5';
  api('spin','POST').then(function(r){var c=[];for(var k=0;k<SEG.length;k++)if(SEG[k][0]===r.prize)c.push(k);var i=c[Math.floor(Math.random()*c.length)]||0;
-  ROT=Math.ceil(ROT/360)*360+1800-(i*45+22.5);$('whs').style.transform='rotate('+ROT+'deg)';
+  ROT=Math.ceil(ROT/360)*360+1800-(i*(360/25));$('whs').style.transform='rotate('+ROT+'deg)';
   setTimeout(function(){ME=r.me;head();var m=$('spmsg');if(m)m.innerHTML='🎉 অভিনন্দন! আপনি জিতেছেন <b style="color:#fbbf24">'+r.prize+' টাকা</b>'},4700)})
  .catch(function(e){SPUN=false;toast(e.message);closeSpin()})}
 function closeSpin(){closeM();if(TAB==='home')vHome()}
@@ -818,7 +819,7 @@ function vPkg(){var pkgs=[
 ];
 var isBought = ME.activePkg && ME.activePkg.expiresAt > Date.now();
 $('main').innerHTML=hb('ref','📦','RS Coin Packages','৳২০০ থেকে ৳৩০০০ টাকার মধ্যে প্যাকেজ কিনুন। ৩০ দিনের জন্য আনলক হবে এবং প্রতি মিনিটে আর এস কয়েন মাইন হবে। অফিসিয়াল প্যাকেজসমূহ।') +
-(isBought ? '<div class="row" style="border-color:var(--grn);margin-bottom:12px"><div><b>আপনার একটি প্যাকেজ সক্রিয় আছে!</b><small>মেয়াদ শেষ না হওয়া পর্যন্ত নতুন প্যাকেজ কেনা যাবে না।</small></div></div>' : '') +
+(isBought ? '<div class="row" style="border-color:var(--grn);margin-bottom:12px"><div><b>আপনার একটি প্যাকেজ সক্রিয় আছে!</b><small>এই প্যাকেজটি আনলক রয়েছে। নতুন প্যাকেজ কিনতে চাইলে আগেরটি শেষ হতে পারে বা অন্য প্যাকেজ বেছে নিন।</small></div></div>' : '') +
 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
 pkgs.map(function(x){
   return '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:2px solid '+(x.hot?'var(--red)':'rgba(251,191,36,0.4)')+';border-radius:16px;padding:12px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.4);position:relative">' +
@@ -827,7 +828,7 @@ pkgs.map(function(x){
   '<b style="color:var(--gold);font-size:13px;display:block;margin-bottom:4px">'+x.d+'</b>' +
   '<div style="font-size:11px;color:var(--mu)">মূল্য: <b>'+x.p+' BDT</b></div>' +
   '<div style="font-size:12px;color:var(--grn);margin:4px 0 8px">মিনিটে: <b>'+formatNum(x.c)+' RS Coins</b></div>' +
-  (isBought ? '<button class="btn s" style="width:100%;background:#334155;color:#94a3b8;cursor:not-allowed" disabled>Already Bought</button>' : '<button class="btn s g" style="width:100%" onclick="go(\\'acc\\');depForm('+x.p+',\\''+x.d+'\\')">Buy Package</button>') +
+  '<button class="btn s g" style="width:100%" onclick="go(\\'acc\\');depForm('+x.p+',\\''+x.d+'\\')">Buy Package</button>' +
   '</div>';
 }).join('') +
 '</div>';
@@ -924,6 +925,7 @@ function vAcc(){
   '<div class="row"><div>'+esc(ME.name)+'<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
   '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
   '<div style="display:flex;gap:8px"><button class="btn r" style="flex:1;margin-top:0" onclick="wdForm()">Withdraw</button><button class="btn g" style="flex:1;margin-top:0" onclick="depForm()">Deposit</button></div>'+
+  '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn s" style="flex:1;background:#1e293b;color:var(--gold)" onclick="showPendingModal(\\'wd\\')">⏳ Withdraw Pending</button><button class="btn s" style="flex:1;background:#1e293b;color:var(--gold)" onclick="showPendingModal(\\'dep\\')">⏳ Deposit Pending</button></div>'+
   '<h3 style="margin-top:16px">Withdraw history</h3><div id="wh">Loading...</div>'+
   '<h3 style="margin-top:16px">Deposit history</h3><div id="dh">Loading...</div>'+
   
@@ -947,6 +949,24 @@ function vAcc(){
 
   api('withdrawals').then(function(a){$('wh').innerHTML=a.length?a.map(function(w){return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' <span class="chip '+w.status+'">'+w.status+'</span></div></div>'}).join(''):'<div class="row">No withdrawals yet.</div>'});
   api('deposits').then(function(a){$('dh').innerHTML=a.length?a.map(function(d){return '<div class="row"><div>'+esc(d.method)+' (Trx: ...'+esc(d.lastDigits)+')<small>'+new Date(d.at).toLocaleDateString()+'</small></div><div>'+money(d.amount)+' <span class="chip '+d.status+'">'+d.status+'</span></div></div>'}).join(''):'<div class="row">No deposits yet.</div>'})
+}
+
+function showPendingModal(type){
+  if(type === 'wd'){
+    api('withdrawals').then(function(a){
+      var pending = a.filter(function(w){return w.status === 'pending'});
+      modal('<h3 style="color:var(--gold)">⏳ Pending Withdrawals</h3>' +
+      (pending.length ? pending.map(function(w){return '<div class="row"><div>'+esc(w.method)+' ('+esc(w.phone)+')<small>'+new Date(w.at).toLocaleString()+'</small></div><div>'+money(w.amount)+' <span class="chip pending">pending</span></div></div>'}).join('') : '<div class="row">কোনো পেন্ডিং উত্তোলন নেই।</div>') +
+      '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>');
+    });
+  } else {
+    api('deposits').then(function(a){
+      var pending = a.filter(function(d){return d.status === 'pending'});
+      modal('<h3 style="color:var(--gold)">⏳ Pending Deposits</h3>' +
+      (pending.length ? pending.map(function(d){return '<div class="row"><div>'+esc(d.method)+' (Trx: '+esc(d.txid)+')<small>'+new Date(d.at).toLocaleString()+'</small></div><div>'+money(d.amount)+' <span class="chip pending">pending</span></div></div>'}).join('') : '<div class="row">কোনো পেন্ডিং ডিপোজিট নেই।</div>') +
+      '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>');
+    });
+  }
 }
 
 function wdForm(){modal('<h3 style="color:var(--gold)">Withdraw (300 - 5000 BDT)</h3><label>Method</label><select id="wm"><option>bKash</option><option>Nagad</option></select><label>Amount</label><input id="wa" type="number" inputmode="numeric"><label>Your bKash/Nagad number (Default: 01951639460)</label><input id="wp" maxlength="11" inputmode="numeric" value="01951639460"><button class="btn r" onclick="doWd()">Send request</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
