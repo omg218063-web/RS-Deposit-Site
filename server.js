@@ -48,6 +48,8 @@ const User = mongoose.model('User', new mongoose.Schema({
   name: String, nameKey: { type: String, unique: true, sparse: true }, phone: String,
   email: { type: String, unique: true, sparse: true }, hash: String, salt: String,
   balance: { type: Number, default: 0 }, earned: { type: Number, default: 0 },
+  rsCoins: { type: Number, default: 0 },
+  activePkg: { type: Object, default: null },
   refCode: { type: String, unique: true }, refBy: String,
   refEarn: { type: Number, default: 0 }, refCount: { type: Number, default: 0 },
   avatar: { type: String, default: '' },
@@ -73,7 +75,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const dayStart = () => { const o = 6 * 36e5, n = Date.now() + o; return new Date(n - (n % 864e5) - o); };
 const credit = (id, n) => User.updateOne({ _id: id }, { $inc: { balance: n, earned: n } });
 const partners = () => [OW_KEY && OW_SECRET ? 'offerwall.gg' : '', TW_SECRET && TW_URL ? 'TimeWall.io (Australian Clearing Pty Ltd)' : ''].filter(Boolean);
-const me = u => ({ name: u.name, phone: u.phone || '', email: u.email || '', av: u.avatar || '', balance: u.balance, earned: u.earned, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS, ct: CO, pt: partners() });
+const me = u => ({ name: u.name, phone: u.phone || '', email: u.email || '', av: u.avatar || '', balance: u.balance, earned: u.earned, rsCoins: u.rsCoins || 0, activePkg: u.activePkg || null, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS, ct: CO, pt: partners() });
 const bdtFor = usd => Math.round(usd * RATE * (usd > 1 ? 0.5 : 0.7) * 100) / 100;
 const expire = uid => Click.updateMany(Object.assign({ status: 'pending', at: { $lt: new Date(Date.now() - PENDING_HOURS * 36e5) } }, uid ? { uid } : {}), { status: 'expired' });
 
@@ -133,7 +135,22 @@ app.post('/api/google', h(async (q, s) => {
   s.json({ token: sign(u.id), me: me(u) });
 }));
 
-app.get('/api/me', auth, (q, s) => s.json(me(q.user)));
+app.get('/api/me', auth, h(async (q, s) => {
+  // Check active package mining (RS Coins per minute)
+  let u = q.user;
+  if (u.activePkg && u.activePkg.expiresAt > Date.now()) {
+    const now = Date.now();
+    const lastClaim = u.activePkg.lastClaim || u.activePkg.startedAt;
+    const diffMinutes = Math.floor((now - lastClaim) / 60000);
+    if (diffMinutes > 0) {
+      const coinsToAdd = diffMinutes * (u.activePkg.coinsPerMin || 1);
+      u.rsCoins = (u.rsCoins || 0) + coinsToAdd;
+      u.activePkg.lastClaim = lastClaim + (diffMinutes * 60000);
+      await u.save();
+    }
+  }
+  s.json(me(u));
+}));
 
 app.post('/api/avatar', auth, h(async (q, s) => {
   const img = String((q.body || {}).img || '');
@@ -333,8 +350,24 @@ app.post('/api/deposit', auth, h(async (q, s) => {
   if (!txid || txid.length < 3) return bad(s, 'Enter valid Transaction ID.');
   const lDigits = lastDigits || txid.slice(-3);
   const serialNo = 'RS-' + Math.floor(100000 + Math.random() * 900000);
+  
+  // If package selected, activate activePkg for 30 days
+  let pkgData = null;
+  if (pkgName && pkgName !== 'Custom Deposit') {
+    const coinsPerMin = Math.max(1, Math.round(a / 200 * 50));
+    pkgData = {
+      name: pkgName,
+      amount: a,
+      coinsPerMin: coinsPerMin,
+      startedAt: Date.now(),
+      lastClaim: Date.now(),
+      expiresAt: Date.now() + (30 * 86400000) // 30 days
+    };
+    await User.updateOne({ _id: q.user.id }, { $set: { activePkg: pkgData } });
+  }
+
   await Deposit.create({ uid: q.user.id, name: q.user.name, amount: a, method, txid, lastDigits: lDigits, pkgName: pkgName || 'Custom Deposit', serialNo });
-  s.json({ ok: true, serialNo, time: new Date().toLocaleString(), balance: q.user.balance });
+  s.json({ ok: true, serialNo, time: new Date().toLocaleString(), balance: q.user.balance, activePkg: pkgData });
 }));
 
 app.get('/api/deposits', auth, h(async (q, s) => s.json(await Deposit.find({ uid: q.user.id }).sort({ at: -1 }).limit(30))));
@@ -542,7 +575,7 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .lk{display:flex;align-items:center;gap:12px;text-align:left}
 .lk .ic{font-size:42px;animation:none}
 .lk small{margin:0}
-.wheel{position:relative;width:250px;margin:14px auto 6px}
+.wheel{position:relative;width:280px;margin:14px auto 6px}
 .wheel .pt{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:28px;color:#fbbf24;z-index:3;text-shadow:0 2px 6px #000}
 .tdw{font-size:12.5px;line-height:1.7;color:#e2e8f0;background:#131d38;border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0}
 .tdw b{color:var(--gold)}
@@ -649,8 +682,19 @@ function initG(){if(!GID){$('gWrap').style.display='none';return}
  google.accounts.id.initialize({client_id:GID,callback:gCb});google.accounts.id.renderButton($('gBtn'),{theme:'filled_black',size:'large',text:'continue_with',width:280})}
 
 var TABS=[['home','🏠','Home'],['tasks','📋','Tasks'],['pkg','📦','Package'],['rank','🏆','Ranking'],['ref','👥','Refer'],['help','💬','Support'],['acc','👤','Account'],['book','🕌','Islam']];
-function enter(m){ME=m;$('auth').style.display='none';$('nav').innerHTML=TABS.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');head();go('home')}
-function head(){$('hName').textContent=ME.name;$('hBal').textContent=money(ME.balance);$('avT').innerHTML=ME.av?'<img src="'+esc(ME.av)+'" alt="">':'📷'}
+function enter(m){ME=m;$('auth').style.display='none';$('nav').innerHTML=TABS.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');head();go('home');startGlobalSync()}
+function head(){
+  $('hName').textContent=ME.name;
+  $('hBal').textContent=money(ME.balance);
+  $('avT').innerHTML=ME.av?'<img src="'+esc(ME.av)+'" alt="">':'📷';
+}
+function startGlobalSync(){
+  if(window.SYNC_INT) clearInterval(window.SYNC_INT);
+  window.SYNC_INT = setInterval(function(){
+    if(!T) return;
+    api('me').then(function(m){ ME=m; head(); }).catch(function(){});
+  }, 10000);
+}
 function go(t){TAB=t;clearInterval(TIMER);TABS.forEach(function(x){$('n_'+x[0]).className=x[0]===t?'on':''});({home:vHome,tasks:vTasks,pkg:vPkg,rank:vRank,ref:vRef,help:vHelp,acc:vAcc,book:vBook})[t]()}
 function toast(m){alert(m)}
 
@@ -671,7 +715,7 @@ function hsGo(i){HSI=i;var s=document.querySelectorAll('.sl'),d=document.querySe
 function ico(c,p){return '<svg width="46" height="46" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="'+c+'"/>'+p+'</svg>'}
 function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
  var fb=ico('#1877f2','<path d="M13.2 19v-6.2h2.1l.4-2.6h-2.5V8.6c0-.8.3-1.3 1.4-1.3h1.2V5.1c-.2 0-1-.1-1.9-.1-1.9 0-3.2 1.2-3.2 3.3v1.9H8.6v2.6h2.1V19z" fill="#fff"/>');
- var tg=ico('#29a9eb','<path d="M18.6 6.2L5.4 11.3c-.9.4-.9.9-.2 1.1l3.3 1 1.3 4c.2.5.1.7.7.7.4 0 .6-.2.8-.4l1.6-1.6 3.3 2.4c.6.3 1 .2 1.2-.6l2-9.5c.2-.9-.3-1.3-.8-1z" fill="#fff"/>');
+ var tg=ico('#29a9eb','<path d="M18.6 6.2L5.4 11.3c-.9.4-.9.9-.2 1.1l3.3 1 1.3 4c.2.5.1.7.7.7.4 0 .6-.2.8-.4l1.6-1.6 3.3 2.4c.6.3 1 .2 1.2-.6l2-9.5c.2-.9-.3-1.3-.8-1 z" fill="#fff"/>');
  var wa=ico('#25d366','<path d="M12 5.2a6.8 6.8 0 0 0-5.8 10.3L5.2 18.8l3.4-.9A6.8 6.8 0 1 0 12 5.2z" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M9.6 9.3c.2 2 2 3.8 4 4.1l.9-.9-1.3-.9-.6.5c-.7-.3-1.4-1-1.7-1.7l.5-.6-.9-1.3z" fill="#fff"/>');
  return '<div class="ft"><div class="ftl">'+logo(46)+'<div><b>'+esc(c.n)+'</b><small>টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম</small></div></div>'+
  '<div class="fd">'+esc(c.d||'')+'</div>'+
@@ -686,24 +730,49 @@ function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
  '<div class="fr"><span>✈️</span><a href="https://t.me/'+esc(c.tg)+'" target="_blank" rel="noopener">@'+esc(c.tg)+'</a></div>'+
  '<div class="fc">© '+esc(c.y)+' '+esc(c.n)+'. সর্বস্বত্ব সংরক্ষিত।</div></div>'}
 
-function vHome(){var ok=Date.now()-ME.lastDaily>=864e5,sp=Date.now()-(ME.lastSpin||0)>=864e5;HSI=0;
- var sl=HS.map(function(x,i){return '<div class="sl '+x[0]+(i===0?' on':'')+'"><span class="tag">'+x[1]+'</span><h4>'+x[2]+'</h4><p>'+x[3]+'</p><span class="em">'+x[4]+'</span><span class="e2">'+x[5]+'</span><span class="e3">'+x[6]+'</span></div>'}).join('');
- var dt=HS.map(function(x,i){return '<i class="'+(i===0?'on':'')+'" onclick="hsGo('+i+')"></i>'}).join('');
- $('main').innerHTML='<div class="mq"><span>🌙 RS Growth Matrix-এ স্বাগতম! আপনার নামাজের কথা মনে আছে তো? 🤲 নামাজ পড়ুন, তারপর কাজে মন দিন। ✨ আমাদের এই সাইটে আপনি নিশ্চিন্তে সহজ টাস্ক করে আয় করতে পারেন। 🤝 কোনো সমস্যা হলে Support-এ জানান। 💬</span></div>'+
- '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
- '<div class="hs">'+sl+'</div><div class="dots">'+dt+'</div>'+
- '<div class="bo" style="margin-bottom:14px"><div class="bi lk"><span class="ic">🎡</span><div style="flex:1"><b style="margin-top:0">Lucky Draw</b><small>প্রতি ২৪ ঘণ্টায় একবার ঘোরান, ১ থেকে ৫ টাকা জিতুন</small></div><button class="btn s'+(sp?'':' dn')+'" style="'+(sp?'':'background:#1e293b;color:#94a3b8')+'" onclick="spinOpen()">'+(sp?'Spin':'Done ✅')+'</button></div></div>'+
- '<h3>আজকের বোনাস</h3><div class="bn">'+
- '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT · প্রতি ২৪ ঘণ্টায় একবার</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
- '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT · প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
- TIMER=setInterval(function(){if(!document.querySelector('.hs')){clearInterval(TIMER);return}hsGo((HSI+1)%HS.length)},6000)}
+function vHome(){
+  var ok=Date.now()-ME.lastDaily>=864e5,sp=Date.now()-(ME.lastSpin||0)>=864e5;HSI=0;
+  var sl=HS.map(function(x,i){return '<div class="sl '+x[0]+(i===0?' on':'')+'"><span class="tag">'+x[1]+'</span><h4>'+x[2]+'</h4><p>'+x[3]+'</p><span class="em">'+x[4]+'</span><span class="e2">'+x[5]+'</span><span class="e3">'+x[6]+'</span></div>'}).join('');
+  var dt=HS.map(function(x,i){return '<i class="'+(i===0?'on':'')+'" onclick="hsGo('+i+')"></i>'}).join('');
+  
+  // RS Coins Mining / Collecting view under balance
+  var pkgBox = '';
+  if (ME.activePkg && ME.activePkg.expiresAt > Date.now()) {
+    var timeLeft = Math.max(0, Math.floor((ME.activePkg.expiresAt - Date.now()) / 1000));
+    var days = Math.floor(timeLeft / 86400);
+    var hrs = Math.floor((timeLeft % 86400) / 3600);
+    pkgBox = '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:1px solid var(--gold);border-radius:14px;padding:12px;margin-bottom:12px;text-align:center"><b style="color:var(--gold)">📦 Active Package: '+esc(ME.activePkg.name)+'</b><div style="font-size:12px;color:var(--grn);margin-top:4px">RS Coins Collected: <b>'+(ME.rsCoins||0)+' Coins</b></div><small style="color:var(--mu)">Package expires in: '+days+'d '+hrs+'h (Real-time Mining Active)</small></div>';
+  } else {
+    pkgBox = '<div style="background:#131d38;border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:12px;text-align:center;font-size:12px">RS Coins: <b style="color:var(--gold)">'+(ME.rsCoins||0)+'</b> <small style="color:var(--mu)">(Buy package to start minig coins)</small></div>';
+  }
+
+  $('main').innerHTML='<div class="mq"><span>🌙 RS Growth Matrix-এ স্বাগতম! আপনার নামাজের কথা মনে আছে তো? 🤲 নামাজ পড়ুন, তারপর কাজে মন দিন। ✨ আমাদের এই সাইটে আপনি নিশ্চিন্তে সহজ টাস্ক করে আয় করতে পারেন। 🤝 কোনো সমস্যা হলে Support-এ জানান। 💬</span></div>'+
+  '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
+  pkgBox +
+  '<div class="hs">'+sl+'</div><div class="dots">'+dt+'</div>'+
+  
+  // Enlarged Lucky Wheel & Grand Prizes section
+  '<div class="bo" style="margin-bottom:14px;padding:4px"><div class="bi lk" style="flex-direction:column;text-align:center;padding:18px"><span class="ic" style="font-size:52px">🎡</span><div><b style="font-size:16px;color:var(--gold);margin-top:4px">Grand Lucky Draw & Wheel</b><small style="font-size:11.5px">প্রতি ২৪ ঘণ্টায় একবার ঘোরান, ১ থেকে ৫ টাকা জিতুন এবং গ্র্যান্ড প্রাইজ জিতুন!</small></div>'+
+  '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%;margin-top:12px;text-align:left">'+
+    '<div style="background:#0b1224;border:1px solid var(--gold);border-radius:12px;padding:8px;font-size:11px"><b style="color:var(--gold)">📱 iPhone 18</b><small style="color:var(--red);display:block">🔒 Locked Grand Prize</small></div>'+
+    '<div style="background:#0b1224;border:1px solid var(--gold);border-radius:12px;padding:8px;font-size:11px"><b style="color:var(--gold)">🎧 Wireless Earbuds</b><small style="color:var(--red);display:block">🔒 Locked Grand Prize</small></div>'+
+    '<div style="background:#0b1224;border:1px solid var(--gold);border-radius:12px;padding:8px;font-size:11px"><b style="color:var(--gold)">⌚ Royals Watch</b><small style="color:var(--red);display:block">🔒 Locked Grand Prize</small></div>'+
+    '<div style="background:#0b1224;border:1px solid var(--gold);border-radius:12px;padding:8px;font-size:11px"><b style="color:var(--gold)">💻 Gaming Laptop</b><small style="color:var(--red);display:block">🔒 Locked Grand Prize</small></div>'+
+  '</div>'+
+  '<button class="btn'+(sp?'':' dn')+'" style="margin-top:12px;width:100%" onclick="spinOpen()">'+(sp?'Spin Wheel Now':'Spin Completed ✅')+'</button></div></div>'+
+
+  '<h3>আজকের বোনাস</h3><div class="bn">'+
+  '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT · প্রতি ২৪ ঘণ্টায় একবার</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
+  '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT · প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
+  TIMER=setInterval(function(){if(!document.querySelector('.hs')){clearInterval(TIMER);return}hsGo((HSI+1)%HS.length)},6000)
+}
 function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added to your balance.')}).catch(function(e){toast(e.message)})}
 
-function wheelSvg(){var cols=['#b45309','#1e3a8a','#14532d','#7c2d12','#4c1d95','#0c4a6e','#78350f','#164e63'],h='<svg viewBox="0 0 200 200" width="250" height="250" id="whs" style="display:block;transition:transform 4.5s cubic-bezier(.17,.67,.12,1);transform:rotate('+ROT+'deg)"><circle cx="100" cy="100" r="98" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/>';
+function wheelSvg(){var cols=['#b45309','#1e3a8a','#14532d','#7c2d12','#4c1d95','#0c4a6e','#78350f','#164e63'],h='<svg viewBox="0 0 200 200" width="260" height="260" id="whs" style="display:block;margin:0 auto;transition:transform 4.5s cubic-bezier(.17,.67,.12,1);transform:rotate('+ROT+'deg)"><circle cx="100" cy="100" r="98" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/>';
  for(var i=0;i<8;i++){h+='<g transform="rotate('+(i*45+22.5)+' 100 100)"><path d="M100 100L63.65 12.23A95 95 0 0 1 136.35 12.23Z" fill="'+cols[i]+'" stroke="#fbbf24" stroke-width="1.2"/><text x="100" y="44" text-anchor="middle" font-size="17" font-weight="800" fill="#fff">'+SEG[i%SEG.length][0]+'৳</text></g>'}
  return h+'<circle cx="100" cy="100" r="15" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/><text x="100" y="105" text-anchor="middle" font-size="12">⭐</text></svg>'}
 function spinOpen(){SPUN=false;var ok=Date.now()-(ME.lastSpin||0)>=864e5;
- modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Lucky Draw</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন':'আজকের স্পিন শেষ। ২৪ ঘণ্টা পর আবার আসুন।')+'</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeSpin()">Close</button>')}
+ modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Grand Lucky Wheel</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন':'আজকের স্পিন শেষ। ২৪ ঘণ্টা পর আবার আসুন।')+'</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin Now</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeSpin()">Close</button>')}
 function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style.opacity='.5';
  api('spin','POST').then(function(r){var c=[];for(var k=0;k<SEG.length;k++)if(SEG[k][0]===r.prize)c.push(k);var i=c[Math.floor(Math.random()*c.length)]||0;
   ROT=Math.ceil(ROT/360)*360+1800-(i*45+22.5);$('whs').style.transform='rotate('+ROT+'deg)';
@@ -733,14 +802,14 @@ function modal(h){$('mBody').innerHTML=h;$('modal').style.display='flex'}
 function closeM(){$('modal').style.display='none'}
 
 function vPkg(){var pkgs=[
- {p:200,c:240,d:'Basic RS Coin Package'},{p:500,c:620,d:'Bronze RS Coin Package'},
- {p:800,c:1020,d:'Silver RS Coin Package'},{p:1200,c:1560,d:'Gold RS Coin Package'},
- {p:1500,c:2000,d:'Platinum RS Coin Package'},{p:2000,c:2750,d:'Diamond RS Coin Package'},
- {p:2500,c:3550,d:'Master RS Coin Package'},{p:3000,c:4350,d:'Elite RS Coin Package'}
+ {p:200,c:50,d:'Basic RS Coin Package'},{p:500,c:130,d:'Bronze RS Coin Package'},
+ {p:800,c:220,d:'Silver RS Coin Package'},{p:1200,c:350,d:'Gold RS Coin Package'},
+ {p:1500,c:460,d:'Platinum RS Coin Package'},{p:2000,c:650,d:'Diamond RS Coin Package'},
+ {p:2500,c:850,d:'Master RS Coin Package'},{p:3000,c:1050,d:'Elite RS Coin Package'}
 ];
-$('main').innerHTML=hb('ref','📦','RS Coin Packages','৳২০০ থেকে ৳৩০০০ টাকার মধ্যে পছন্দমতো প্যাকেজ কিনুন ও কয়েন কালেক্ট করুন। চালান চারকোণা রিং ডিজাইনে।') +
+$('main').innerHTML=hb('ref','📦','RS Coin Packages','৳২০০ থেকে ৳৩০০০ টাকার মধ্যে প্যাকেজ কিনুন। ৩০ দিনের জন্য আনলক হবে এবং প্রতি মিনিটে আর এস কয়েন মাইন/কালেক্ট হবে।') +
 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
-pkgs.map(function(x){return '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:2px solid rgba(251,191,36,0.4);border-radius:16px;padding:12px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.4);position:relative"><div style="position:absolute;top:-8px;right:-8px;background:var(--gold);color:#000;font-size:9px;font-weight:bold;padding:2px 6px;border-radius:6px">HOT</div><b style="color:var(--gold);font-size:13px;display:block;margin-bottom:4px">'+x.d+'</b><div style="font-size:11px;color:var(--mu)">মূল্য: <b>'+x.p+' BDT</b></div><div style="font-size:12px;color:var(--grn);margin:4px 0 8px">রিওয়ার্ড: <b>'+x.c+' RS Coins</b></div><button class="btn s g" style="width:100%" onclick="go(\\'acc\\');depForm('+x.p+',\\''+x.d+'\\')">Buy Package</button></div>'}).join('') +
+pkgs.map(function(x){return '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:2px solid rgba(251,191,36,0.4);border-radius:16px;padding:12px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.4);position:relative"><div style="position:absolute;top:-8px;right:-8px;background:var(--gold);color:#000;font-size:9px;font-weight:bold;padding:2px 6px;border-radius:6px">30 DAYS</div><b style="color:var(--gold);font-size:13px;display:block;margin-bottom:4px">'+x.d+'</b><div style="font-size:11px;color:var(--mu)">মূল্য: <b>'+x.p+' BDT</b></div><div style="font-size:12px;color:var(--grn);margin:4px 0 8px">মিনিটে: <b>'+x.c+' RS Coins</b></div><button class="btn s g" style="width:100%" onclick="go(\\'acc\\');depForm('+x.p+',\\''+x.d+'\\')">Buy Package</button></div>'}).join('') +
 '</div>';
 }
 
@@ -787,7 +856,28 @@ function vAcc(){clearInterval(window.REF_TIMER); $('main').innerHTML=hb('acc','�
  api('deposits').then(function(a){$('dh').innerHTML=a.length?a.map(function(d){return '<div class="row"><div>'+esc(d.method)+' (Trx: ...'+esc(d.lastDigits)+')<small>'+new Date(d.at).toLocaleDateString()+'</small></div><div>'+money(d.amount)+' <span class="chip '+d.status+'">'+d.status+'</span></div></div>'}).join(''):'<div class="row">No deposits yet.</div>'})}
 
 function wdForm(){modal('<h3 style="color:var(--gold)">Withdraw (300 - 5000 BDT)</h3><label>Method</label><select id="wm"><option>bKash</option><option>Nagad</option></select><label>Amount</label><input id="wa" type="number" inputmode="numeric"><label>Your bKash/Nagad number (Default: 01951639460)</label><input id="wp" maxlength="11" inputmode="numeric" value="01951639460"><button class="btn r" onclick="doWd()">Send request</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
-function doWd(){api('withdraw','POST',{method:$('wm').value,amount:$('wa').value,phone:$('wp').value}).then(function(m){ME=m;head();closeM();toast('Withdraw request sent successfully.');vAcc()}).catch(function(e){toast(e.message)})}
+
+function startRealtimeTimer(elId, durationSeconds){
+  var timer = durationSeconds;
+  var interval = setInterval(function(){
+    var el = $(elId);
+    if(!el) { clearInterval(interval); return; }
+    var m = Math.floor(timer / 60);
+    var s = timer % 60;
+    el.textContent = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+    if(--timer < 0) { clearInterval(interval); el.textContent = '00:00 (Verifying...)'; }
+  }, 1000);
+}
+
+function doWd(){
+  api('withdraw','POST',{method:$('wm').value,amount:$('wa').value,phone:$('wp').value}).then(function(m){
+    ME=m; head();
+    modal('<h3 style="color:var(--grn);text-align:center">✅ উত্তোলনের রিকোয়েস্ট সফলভাবে জমা হয়েছে!</h3>' +
+    '<div class="tdw" style="text-align:center;line-height:1.8">আপনার রিকোয়েস্টটি যাচাই করা হচ্ছে। অনুগ্রহ করে অপেক্ষা করুন।<br><br>যাচাইকরণ টাইমার:<br><b id="wdTimer" style="font-size:20px;color:var(--gold)">03:00</b></div>' +
+    '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM();vAcc()">OK / Close</button>');
+    startRealtimeTimer('wdTimer', 180);
+  }).catch(function(e){toast(e.message)});
+}
 
 function depForm(presetAmount, pkgName){
  modal('<h3 style="color:var(--gold)">Deposit / Package Payment</h3>' +
@@ -799,14 +889,18 @@ function depForm(presetAmount, pkgName){
  '<button class="btn g" onclick="doDep(\\''+(pkgName||'Custom Deposit')+'\\')">Submit Deposit</button>' +
  '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>');
 }
+
 function doDep(pkgName){
  api('deposit','POST',{method:$('dm').value,amount:$('da').value,txid:$('dtx').value,lastDigits:$('dlast').value,pkgName:pkgName}).then(function(r){
+  if(r.activePkg) ME.activePkg = r.activePkg;
   closeM();
-  modal('<h3 style="color:var(--grn);text-align:center">✅ ডিপোজিট সাবমিট সফল হয়েছে!</h3>' +
-  '<div class="tdw" style="line-height:1.8"><b>প্যাকেজ/উদ্দেশ্য:</b> '+pkgName+'<br><b>ডিপোজিট পরিমাণ:</b> '+$('da').value+' BDT<br><b>আপনার অ্যাকাউন্ট ব্যালেন্স:</b> '+money(ME.balance)+' BDT<br><b>সিরিয়াল নাম্বার:</b> <span style="color:var(--gold)">'+r.serialNo+'</span><br><b>সময়:</b> '+r.time+'</div>' +
+  modal('<h3 style="color:var(--grn);text-align:center">✅ ডিপোজিট ও প্যাকেজ সাবমিট সফল হয়েছে!</h3>' +
+  '<div class="tdw" style="line-height:1.8"><b>প্যাকেজ/উদ্দেশ্য:</b> '+pkgName+'<br><b>ডিপোজিট পরিমাণ:</b> '+$('da').value+' BDT<br><b>সিরিয়াল নাম্বার:</b> <span style="color:var(--gold)">'+r.serialNo+'</span><br><br>যাচাইকরণ রিয়েল-টাইম টাইমার:<br><b id="depTimer" style="font-size:20px;color:var(--gold)">03:00</b></div>' +
   '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM();vAcc()">OK / Close</button>');
+  startRealtimeTimer('depTimer', 180);
   vAcc();
- }).catch(function(e){toast(e.message)})}
+ }).catch(function(e){toast(e.message)})
+}
 
 var DUA=[
 ["১. সানা (নামাজের শুরুতে)","سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ وَتَبَارَكَ اسْمُكَ وَتَعَالَى جَدُّكَ وَلَا إِلَهَ غَيْرُكَ","সুবহানাকাল্লাহুম্মা ওয়া বিহামদিকা ওয়া তাবারাকাসমুকা ওয়া তাআলা জাদ্দুকা ওয়া লা ইলাহা গাইরুক।","হে আল্লাহ, আপনি পবিত্র, আপনার প্রশংসা করছি। আপনার নাম বরকতময়, আপনার মর্যাদা সুউচ্চ, আপনি ছাড়া কোনো ইলাহ নেই।"],
@@ -880,7 +974,7 @@ function aUs(){api('admin/users','GET',null,ah()).then(function(d){
  $('abody').innerHTML='<div class="grid">'+sc([['আজ ঢুকেছে',d.active.length],['আজ নতুন',d.newToday]])+'</div><h3>আজ যারা ঢুকেছে</h3>'+
  (d.active.map(function(u){return '<div class="row"><div>'+esc(u.name)+'<small>'+esc(u.phone)+' · শেষ '+tm(u.seen)+'</small></div><div style="text-align:right"><b style="color:var(--grn)">+'+money(u.today)+'</b><small>ব্যালেন্স '+money(u.balance)+'</small></div></div>'}).join('')||'<div class="row">আজ কেউ ঢোকেনি</div>')}).catch(aErr)}
 function aEa(){api('admin/users','GET',null,ah()).then(function(d){
- $('abody').innerHTML='<h3>আজ যারা আয় করেছে ('+d.earners.length+' জন)</h3>'+
+ $('abody').innerHTML='<h3>আজ যারা আয় করেছে ('+d.earners.length+' জন নাম)</h3>'+
  (d.earners.map(function(u){return '<div class="row"><div>'+esc(u.name)+'<small>'+esc(u.phone)+'</small></div><b style="color:var(--grn)">'+money(u.t)+'</b></div>'}).join('')||'<div class="row">আজ এখনো কেউ আয় করেনি</div>')+
  '<h3 style="margin-top:14px">সর্বকালের শীর্ষ আয়কারী</h3>'+
  d.top.map(function(u,i){return '<div class="row"><div>#'+(i+1)+' '+esc(u.name)+'<small>'+esc(u.phone)+' · ব্যালেন্স '+money(u.balance)+'</small></div><b style="color:var(--gold)">'+money(u.earned)+'</b></div>'}).join('')}).catch(aErr)}
