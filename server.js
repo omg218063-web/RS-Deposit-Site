@@ -1,4 +1,4 @@
-const express = require('express');
+Const express = require('express');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 
@@ -312,7 +312,7 @@ app.post('/api/spin', auth, h(async (q, s) => {
 }));
 
 app.get('/api/leaderboard', auth, h(async (q, s) => {
-  const realTop = await User.find({ earned: { $gt: 0 } }).sort({ rsCoins: -1, earned: -1 }).limit(20).select('name earned rsCoins');
+  const realTop = await User.find({ earned: { $gt: 0 } }).sort({ rsCoins: -1, earned: -1 }).limit(20).select('name balance earned rsCoins');
   const demoNames = ['Tanvir Ahmed', 'Rakibul Islam', 'Sumaiya Akter', 'Farhan Hossain', 'Nusrat Jahan', 'Mehedi Hasan', 'Ayesha Siddika', 'Imran Khan', 'Sadia Afrin', 'Nazmul Huda'];
   let demoTop = [];
   let baseEarn = 45000;
@@ -320,11 +320,12 @@ app.get('/api/leaderboard', auth, h(async (q, s) => {
   for (let i = 0; i < 100; i++) {
     demoTop.push({
       name: i === 0 ? '👑 Al-Amin (Top 1)' : (i === 1 ? '⭐ Shanto Mahmud (Top 2)' : (demoNames[i % demoNames.length] + ' ' + (i + 1))),
+      balance: Math.max(500, baseEarn - (i * 300)),
       earned: Math.max(1000, baseEarn - (i * 400)),
       rsCoins: Math.max(500, baseCoins - (i * 1200))
     });
   }
-  let combined = realTop.map(u => ({ name: u.name, earned: u.earned, rsCoins: u.rsCoins || 0 })).concat(demoTop);
+  let combined = realTop.map(u => ({ name: u.name, balance: u.balance || 0, earned: u.earned, rsCoins: u.rsCoins || 0 })).concat(demoTop);
   combined.sort((a, b) => b.rsCoins - a.rsCoins || b.earned - a.earned);
   s.json(combined.slice(0, 100));
 }));
@@ -640,7 +641,7 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
     <div id="gWrap"><div class="or">or continue with</div><div id="gBtn" style="display:flex;justify-content:center"></div></div>
   </div>
 </div>
-<div class="top"><div class="l"><div id="logoT"></div><div class="av" id="avT" onclick="$('avf').click()">📷</div><div><b id="hName"></b><small style="display:block;color:var(--gold);font-size:11px">Member</small></div></div><div class="bal"><span id="hBal">0.00</span><small>Balance (BDT)</small></div></div>
+<div class="top"><div class="l"><div id="logoT"></div><div class="av" id="avT" onclick="$('avf').click()">📷</div><div><b id="hName"></b><small id="hRsCoins" style="display:block;color:var(--gold);font-size:11px">RS Coins: 0</small></div></div><div class="bal"><span id="hBal">0.00</span><small>Balance (BDT)</small></div></div>
 <input type="file" id="avf" accept="image/*" style="display:none" onchange="avUp(this)">
 <nav id="nav"></nav>
 <main id="main"></main>
@@ -686,6 +687,7 @@ function enter(m){ME=m;$('auth').style.display='none';$('nav').innerHTML=TABS.ma
 function head(){
   $('hName').textContent=ME.name;
   $('hBal').textContent=money(ME.balance);
+  $('hRsCoins').textContent='RS Coins: '+(ME.rsCoins||0);
   $('avT').innerHTML=ME.av?'<img src="'+esc(ME.av)+'" alt="">':'📷';
 }
 function startGlobalSync(){
@@ -740,9 +742,7 @@ function vHome(){
     var timeLeft = Math.max(0, Math.floor((ME.activePkg.expiresAt - Date.now()) / 1000));
     var days = Math.floor(timeLeft / 86400);
     var hrs = Math.floor((timeLeft % 86400) / 3600);
-    pkgBox = '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:1px solid var(--gold);border-radius:14px;padding:12px;margin-bottom:12px;text-align:center"><b style="color:var(--gold)">📦 Active Package: '+esc(ME.activePkg.name)+'</b><div style="font-size:12px;color:var(--grn);margin-top:4px">RS Coins Collected: <b>'+(ME.rsCoins||0)+' Coins</b></div><small style="color:var(--mu)">Package expires in: '+days+'d '+hrs+'h (Real-time Mining Active)</small></div>';
-  } else {
-    pkgBox = '<div style="background:#131d38;border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:12px;text-align:center;font-size:12px">RS Coins: <b style="color:var(--gold)">'+(ME.rsCoins||0)+'</b> <small style="color:var(--mu)">(Buy package to start mining coins)</small></div>';
+    pkgBox = '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:1px solid var(--gold);border-radius:14px;padding:12px;margin-bottom:12px;text-align:center"><b style="color:var(--gold)">📦 Active Package: '+esc(ME.activePkg.name)+'</b><div style="font-size:12px;color:var(--grn);margin-top:4px">RS Coins Collected: <b>'+(ME.rsCoins||0)+' Coins</b></div><small style="color:var(--mu)">Package expires in: '+days+'d '+hrs+'h (Active 30 Days Timer)</small></div>';
   }
 
   $('main').innerHTML='<div class="mq"><span>🌙 RS Growth Matrix-এ স্বাগতম! আপনার নামাজের কথা মনে আছে তো? 🤲 নামাজ পড়ুন, তারপর কাজে মন দিন। ✨ আমাদের এই সাইটে আপনি নিশ্চিন্তে সহজ টাস্ক করে আয় করতে পারেন। 🤝 কোনো সমস্যা হলে Support-এ জানান। 💬</span></div>'+
@@ -750,27 +750,27 @@ function vHome(){
   pkgBox +
   '<div class="hs">'+sl+'</div><div class="dots">'+dt+'</div>'+
   
-  '<div class="bo" style="margin-bottom:14px;padding:4px"><div class="bi lk" style="flex-direction:column;text-align:center;padding:18px"><span class="ic" style="font-size:52px">🎡</span><div><b style="font-size:16px;color:var(--gold);margin-top:4px">Grand Lucky Wheel & Spin</b><small style="font-size:11.5px">ঘুরান চাকা, জিতুন পুরস্কার! প্রতিদিন ১ থেকে ৫ টাকা ক্যাশ রিওয়ার্ড জিতুন।</small></div>'+
-  '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%;margin-top:12px;text-align:left">'+
-    '<div style="background:#0b1224;border:1px solid var(--gold);border-radius:12px;padding:8px;font-size:11px"><b style="color:var(--gold)">📱 iPhone 18</b><small style="color:var(--red);display:block">🔒 Grand Prize 1 (Locked)</small></div>'+
-    '<div style="background:#0b1224;border:1px solid var(--gold);border-radius:12px;padding:8px;font-size:11px"><b style="color:var(--gold)">🎧 Wireless Earbuds</b><small style="color:var(--red);display:block">🔒 Grand Prize 2 (Locked)</small></div>'+
-    '<div style="background:#0b1224;border:1px solid var(--gold);border-radius:12px;padding:8px;font-size:11px"><b style="color:var(--gold)">💻 Gaming Laptop</b><small style="color:var(--red);display:block">🔒 Grand Prize 3 (Locked)</small></div>'+
-    '<div style="background:#0b1224;border:1px solid var(--gold);border-radius:12px;padding:8px;font-size:11px"><b style="color:var(--gold)">⌚ Rolex Watch</b><small style="color:var(--red);display:block">🔒 Grand Prize 4 (Locked)</small></div>'+
-  '</div>'+
+  '<div class="bo" style="margin-bottom:14px;padding:4px"><div class="bi lk" style="flex-direction:column;text-align:center;padding:18px"><span class="ic" style="font-size:52px">🎡</span><div><b style="font-size:16px;color:var(--gold);margin-top:4px">iPhone 18 Pro Max এবং গ্র্যান্ড প্রাইজ জিতে এখানে স্পিন করুন ফ্রিতে!</b><small style="font-size:11.5px">চাকা ঘুরিয়ে ক্যাশ রিওয়ার্ড (৳১, ৳২, ৳৩, ৳৫) জিতে নিন প্রতি ২৪ ঘণ্টায়!</small></div>'+
   '<button class="btn'+(sp?'':' dn')+'" style="margin-top:12px;width:100%" onclick="spinOpen()">'+(sp?'Spin Wheel Now':'Spin Completed ✅')+'</button></div></div>'+
 
   '<h3>আজকের বোনাস</h3><div class="bn">'+
   '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT · প্রতি ২৪ ঘণ্টায় একবার</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
-  '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT · প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
+  '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT · প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\\'checkin\\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
   TIMER=setInterval(function(){if(!document.querySelector('.hs')){clearInterval(TIMER);return}hsGo((HSI+1)%HS.length)},6000)
 }
 function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added to your balance.')}).catch(function(e){toast(e.message)})}
 
-function wheelSvg(){var cols=['#b45309','#1e3a8a','#14532d','#7c2d12','#4c1d95','#0c4a6e','#78350f','#164e63'],h='<svg viewBox="0 0 200 200" width="260" height="260" id="whs" style="display:block;margin:0 auto;transition:transform 4.5s cubic-bezier(.17,.67,.12,1);transform:rotate('+ROT+'deg)"><circle cx="100" cy="100" r="98" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/>';
- for(var i=0;i<8;i++){h+='<g transform="rotate('+(i*45+22.5)+' 100 100)"><path d="M100 100L63.65 12.23A95 95 0 0 1 136.35 12.23Z" fill="'+cols[i]+'" stroke="#fbbf24" stroke-width="1.2"/><text x="100" y="44" text-anchor="middle" font-size="17" font-weight="800" fill="#fff">'+SEG[i%SEG.length][0]+'৳</text></g>'}
- return h+'<circle cx="100" cy="100" r="15" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/><text x="100" y="105" text-anchor="middle" font-size="12">⭐</text></svg>'}
+function wheelSvg(){
+  var cols=['#b45309','#1e3a8a','#14532d','#7c2d12','#4c1d95','#0c4a6e','#78350f','#164e63'];
+  var icons=['📱 iPhone 18','🎧 Earbuds','💻 Laptop','⌚ Rolex','৳1','৳2','৳3','৳5'];
+  var h='<svg viewBox="0 0 200 200" width="260" height="260" id="whs" style="display:block;margin:0 auto;transition:transform 4.5s cubic-bezier(.17,.67,.12,1);transform:rotate('+ROT+'deg)"><circle cx="100" cy="100" r="98" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/>';
+  for(var i=0;i<8;i++){
+    h+='<g transform="rotate('+(i*45+22.5)+' 100 100)"><path d="M100 100L63.65 12.23A95 95 0 0 1 136.35 12.23Z" fill="'+cols[i]+'" stroke="#fbbf24" stroke-width="1.2"/><text x="100" y="44" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">'+icons[i]+'</text></g>';
+  }
+  return h+'<circle cx="100" cy="100" r="15" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/><text x="100" y="105" text-anchor="middle" font-size="12">⭐</text></svg>';
+}
 function spinOpen(){SPUN=false;var ok=Date.now()-(ME.lastSpin||0)>=864e5;
- modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Grand Lucky Wheel</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন':'আজকের স্পিন শেষ। ২৪ ঘণ্টা পর আবার আসুন।')+'</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin Now</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeSpin()">Close</button>')}
+ modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Grand Lucky Wheel & Prizes</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন (গ্র্যান্ড প্রাইজ লকড থাকবে)':'আজকের স্পিন শেষ। ২৪ ঘণ্টা পর আবার আসুন।')+'</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin Now</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeSpin()">Close</button>')}
 function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style.opacity='.5';
  api('spin','POST').then(function(r){var c=[];for(var k=0;k<SEG.length;k++)if(SEG[k][0]===r.prize)c.push(k);var i=c[Math.floor(Math.random()*c.length)]||0;
   ROT=Math.ceil(ROT/360)*360+1800-(i*45+22.5);$('whs').style.transform='rotate('+ROT+'deg)';
@@ -815,7 +815,9 @@ function vPkg(){var pkgs=[
  {p:2500,c:850,d:'Master RS Coin Package', hot:true},
  {p:3000,c:1050,d:'Elite RS Coin Package', hot:true}
 ];
+var isBought = ME.activePkg && ME.activePkg.expiresAt > Date.now();
 $('main').innerHTML=hb('ref','📦','RS Coin Packages','৳২০০ থেকে ৳৩০০০ টাকার মধ্যে প্যাকেজ কিনুন। ৩০ দিনের জন্য আনলক হবে এবং প্রতি মিনিটে আর এস কয়েন মাইন হবে।') +
+(isBought ? '<div class="row" style="border-color:var(--grn);margin-bottom:12px"><div><b>আপনার একটি প্যাকেজ সক্রিয় আছে!</b><small>মেয়াদ শেষ না হওয়া পর্যন্ত নতুন প্যাকেজ কেনা যাবে না।</small></div></div>' : '') +
 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
 pkgs.map(function(x){
   return '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:2px solid '+(x.hot?'var(--red)':'rgba(251,191,36,0.4)')+';border-radius:16px;padding:12px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.4);position:relative">' +
@@ -824,19 +826,20 @@ pkgs.map(function(x){
   '<b style="color:var(--gold);font-size:13px;display:block;margin-bottom:4px">'+x.d+'</b>' +
   '<div style="font-size:11px;color:var(--mu)">মূল্য: <b>'+x.p+' BDT</b></div>' +
   '<div style="font-size:12px;color:var(--grn);margin:4px 0 8px">মিনিটে: <b>'+formatNum(x.c)+' RS Coins</b></div>' +
-  '<button class="btn s g" style="width:100%" onclick="go(\\'acc\\');depForm('+x.p+',\\''+x.d+'\\')">Buy Package</button></div>';
+  (isBought ? '<button class="btn s" style="width:100%;background:#334155;color:#94a3b8;cursor:not-allowed" disabled>Already Bought</button>' : '<button class="btn s g" style="width:100%" onclick="go(\\'acc\\');depForm('+x.p+',\\''+x.d+'\\')">Buy Package</button>') +
+  '</div>';
 }).join('') +
 '</div>';
 }
 
 function vRank(){
-  $('main').innerHTML=hb('rank','🏆','Top RS Coin Collectors','সবচেয়ে বেশি আরএস কয়েন (RS Coins) কালেক্ট করা ইউজারদের র‍্যাংকিং।')+'<div id="rk">Loading...</div>';
+  $('main').innerHTML=hb('rank','🏆','Ranking & RS Collectors','র‍্যাংকিং তালিকা: ইউজারদের রিয়েল ব্যালেন্স এবং সংগৃহীত আরএস কয়েন (RS Coins)।')+'<div id="rk">Loading...</div>';
   function load(){
     api('leaderboard').then(function(a){
-      if(!a.length){$('rk').innerHTML='<div class="row">No collectors yet.</div>';return}
+      if(!a.length){$('rk').innerHTML='<div class="row">No leaderboard data.</div>';return}
       var p=[a[1],a[0],a[2]],cl=['','p1',''],rk=['#2','#1','#3'];
-      $('rk').innerHTML='<div class="pod">'+p.map(function(u,i){return u?'<div class="'+cl[i]+'">'+(i===1?'👑':'')+'<br>'+esc(u.name)+'<b>'+formatNum(u.rsCoins||0)+' RS Coins</b><small>'+rk[i]+'</small></div>':'<div></div>'}).join('')+'</div>'+
-      a.slice(3).map(function(u,i){return '<div class="row"><div>#'+(i+4)+' '+esc(u.name)+'</div><b style="color:var(--gold)">'+formatNum(u.rsCoins||0)+' RS Coins</b></div>'}).join('')
+      $('rk').innerHTML='<div class="pod">'+p.map(function(u,i){return u?'<div class="'+cl[i]+'">'+(i===1?'👑':'')+'<br>'+esc(u.name)+'<b style="color:var(--grn)">'+money(u.balance||0)+' BDT</b><small style="color:var(--gold)">'+formatNum(u.rsCoins||0)+' RS Coins</small><small>'+rk[i]+'</small></div>':'<div></div>'}).join('')+'</div>'+
+      a.slice(3).map(function(u,i){return '<div class="row"><div>#'+(i+4)+' '+esc(u.name)+'<small style="color:var(--gold)">RS Coins: '+formatNum(u.rsCoins||0)+'</small></div><b style="color:var(--grn)">'+money(u.balance||0)+' BDT</b></div>'}).join('')
     }).catch(function(){})
   }
   load();
@@ -872,20 +875,24 @@ function sendS(){api('support','POST',{text:$('st').value}).then(function(){$('s
 function vAcc(){
   clearInterval(window.REF_TIMER); 
   
-  var globalTxList = [
+  var txPool = [
     '🔔 Rafiq Ahmed deposited 500 BDT via bKash (Package: Gold)',
     '⚡ Sumaiya Akter successfully withdrew 1000 BDT to Nagad',
     '🚀 Shanto Mahmud bought Master RS Coin Package (3000 BDT)',
     '🌟 Tanvir Ahmed withdrew 500 BDT via bKash',
     '💎 Mehedi Hasan deposited 1500 BDT (Package: Platinum)',
-    '🔥 Nusrat Jahan withdrew 300 BDT to Nagad'
+    '🔥 Nusrat Jahan withdrew 300 BDT to Nagad',
+    '⭐ Farhan Hossain purchased Elite RS Package (3000 BDT)',
+    '🎯 Nazmul Huda successfully withdrew 2000 BDT'
   ];
   
   $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স, আয় ও উত্তোলনের হিসাব।')+
   
-  '<div style="background:linear-gradient(90deg,#1e1b4b,#0f172a);border:1px solid var(--gold);border-radius:14px;padding:10px;margin-bottom:12px;text-align:center;box-shadow:0 0 10px rgba(251,191,36,0.2)">'+
-  '<div style="font-size:11px;color:var(--gold);font-weight:bold;margin-bottom:2px">🌐 GLOBAL LIVE TRANSACTIONS</div>'+
-  '<div id="globalTxTicker" style="font-size:12.5px;color:#fff;font-weight:600;min-height:18px">⚡ Live activity updating...</div>'+
+  '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:1px solid var(--gold);border-radius:14px;padding:12px;margin-bottom:12px;box-shadow:0 0 12px rgba(251,191,36,0.25)">'+
+  '<div style="font-size:11px;color:var(--gold);font-weight:bold;margin-bottom:6px;text-align:center">🌐 GLOBAL LIVE TRANSACTIONS (REAL-TIME FEED)</div>'+
+  '<div id="gtx1" style="font-size:12px;color:#fff;font-weight:600;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.08)">⚡ Loading live feed 1...</div>'+
+  '<div id="gtx2" style="font-size:12px;color:#38bdf8;font-weight:600;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.08)">⚡ Loading live feed 2...</div>'+
+  '<div id="gtx3" style="font-size:12px;color:var(--grn);font-weight:600;padding:3px 0">⚡ Loading live feed 3...</div>'+
   '</div>'+
 
   '<div class="row"><div>'+esc(ME.name)+'<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
@@ -897,11 +904,12 @@ function vAcc(){
 
   if(window.GLOBAL_TX_INT) clearInterval(window.GLOBAL_TX_INT);
   window.GLOBAL_TX_INT = setInterval(function(){
-    var ticker = $('globalTxTicker');
-    if(!ticker) { clearInterval(window.GLOBAL_TX_INT); return; }
-    var randTx = globalTxList[Math.floor(Math.random() * globalTxList.length)];
-    ticker.textContent = randTx;
-  }, 2000);
+    var e1 = $('gtx1'), e2 = $('gtx2'), e3 = $('gtx3');
+    if(!e1 || !e2 || !e3) { clearInterval(window.GLOBAL_TX_INT); return; }
+    e1.textContent = txPool[Math.floor(Math.random() * txPool.length)];
+    e2.textContent = txPool[Math.floor(Math.random() * txPool.length)];
+    e3.textContent = txPool[Math.floor(Math.random() * txPool.length)];
+  }, 1500);
 
   api('withdrawals').then(function(a){$('wh').innerHTML=a.length?a.map(function(w){return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' <span class="chip '+w.status+'">'+w.status+'</span></div></div>'}).join(''):'<div class="row">No withdrawals yet.</div>'});
   api('deposits').then(function(a){$('dh').innerHTML=a.length?a.map(function(d){return '<div class="row"><div>'+esc(d.method)+' (Trx: ...'+esc(d.lastDigits)+')<small>'+new Date(d.at).toLocaleDateString()+'</small></div><div>'+money(d.amount)+' <span class="chip '+d.status+'">'+d.status+'</span></div></div>'}).join(''):'<div class="row">No deposits yet.</div>'})
@@ -925,7 +933,7 @@ function doWd(){
   api('withdraw','POST',{method:$('wm').value,amount:$('wa').value,phone:$('wp').value}).then(function(m){
     ME=m; head();
     modal('<h3 style="color:var(--grn);text-align:center">✅ উত্তোলনের রিকোয়েস্ট সফলভাবে জমা হয়েছে!</h3>' +
-    '<div class="tdw" style="text-align:center;line-height:1.8">আপনার রিকোয়েস্টটি যাচাই করা হচ্ছে। অনুগ্রহ করে অপেক্ষা করুন。<br><br>যাচাইকরণ টাইমার:<br><b id="wdTimer" style="font-size:20px;color:var(--gold)">03:00</b></div>' +
+    '<div class="tdw" style="text-align:center;line-height:1.8">আপনার রিকোয়েস্টটি যাচাই করা হচ্ছে। অনুগ্রহ করে অপেক্ষা করুন।<br><br>যাচাইকরণ টাইমার:<br><b id="wdTimer" style="font-size:20px;color:var(--gold)">03:00</b></div>' +
     '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM();vAcc()">OK / Close</button>');
     startRealtimeTimer('wdTimer', 180);
   }).catch(function(e){toast(e.message)});
