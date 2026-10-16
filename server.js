@@ -1,7 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
-const axios = require('axios');
 const xml2js = require('xml2js');
 
 const app = express();
@@ -84,7 +83,6 @@ const today = () => new Date().toISOString().slice(0, 10);
 const dayStart = () => { const o = 6 * 36e5, n = Date.now() + o; return new Date(n - (n % 864e5) - o); };
 const credit = (id, n) => User.updateOne({ _id: id }, { $inc: { balance: n, earned: n } });
 
-// Updated Partners List Including AdGem and CPAGrip along with TimeWall
 const partners = () => [
   ADGEM_APP_ID && ADGEM_POSTBACK_KEY ? 'AdGem' : '',
   CPAGRIP_USER_ID && CPAGRIP_KEY ? 'CPAGrip' : '',
@@ -195,7 +193,7 @@ async function fetchOffers(uid, ctx, dbg) {
   ctx = ctx || { device: '', country: '' };
   let combinedOffers = [];
 
-  // 1. Fetch from AdGem (if configured)
+  // 1. Fetch from AdGem (Native fetch)
   if (ADGEM_APP_ID && ADGEM_POSTBACK_KEY) {
     try {
       const adgemRes = await fetch(`https://api.adgem.com/v1/wall?appid=${ADGEM_APP_ID}&player_id=${encodeURIComponent(uid)}`);
@@ -223,12 +221,11 @@ async function fetchOffers(uid, ctx, dbg) {
     }
   }
 
-  // 2. Fetch from CPAGrip RSS/JSON Feed (if configured)
+  // 2. Fetch from CPAGrip RSS (Native fetch)
   if (CPAGRIP_USER_ID && CPAGRIP_KEY && CPAGRIP_FEED_URL) {
     try {
       const cpagripRes = await fetch(CPAGRIP_FEED_URL);
       const cpagripText = await cpagripRes.text();
-      // Parse XML RSS Feed
       const parser = new xml2js.Parser({ explicitArray: false });
       const parsedXml = await parser.parseStringPromise(cpagripText);
       const items = parsedXml && parsedXml.rss && parsedXml.channel && parsedXml.channel.item ? parsedXml.channel.item : [];
@@ -237,7 +234,6 @@ async function fetchOffers(uid, ctx, dbg) {
       const mappedCpagrip = itemArr.map(item => {
         const payout = +item.payout || 0.5;
         const offerId = item.offerid || item.id || Math.random().toString();
-        // Append tracking_id = uid for postback tracking
         const baseLink = item.offer_link || item.link || '';
         const clickUrl = baseLink ? `${baseLink}&tracking_id=${encodeURIComponent(uid)}` : '';
         return {
@@ -301,7 +297,7 @@ app.post('/api/offers/:id/start', auth, h(async (q, s) => {
   s.json({ url: o.clickUrl });
 }));
 
-// AdGem Postback Callback Handler
+// AdGem Postback Callback
 app.get('/api/callback/adgem', h(async (q, s) => {
   const { user, amount, tx } = q.query;
   if (!user || amount == null || !tx) return bad(s, 'bad request', 400);
@@ -322,7 +318,7 @@ app.get('/api/callback/adgem', h(async (q, s) => {
   s.send('1');
 }));
 
-// CPAGrip Postback Callback Handler
+// CPAGrip Postback Callback
 app.get('/api/callback/cpagrip', h(async (q, s) => {
   const { user, amount, tx } = q.query;
   if (!user || amount == null || !tx) return bad(s, 'bad request', 400);
@@ -809,7 +805,7 @@ function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
  '<div class="fsoc"><a href="'+esc(c.fb)+'" target="_blank" rel="noopener" aria-label="Facebook">'+fb+'</a><a href="https://t.me/'+esc(c.tg)+'" target="_blank" rel="noopener" aria-label="Telegram">'+tg+'</a><a href="https://wa.me/'+esc(c.wa)+'" target="_blank" rel="noopener" aria-label="WhatsApp">'+wa+'</a></div>'+
  '<div class="fage"><span class="bd">'+A+'+</span><div>'+A+' বছরের নিচে কারও এই অ্যাকাউন্টে প্রবেশ করা নিষেধ। অভিভাবকগণ সন্তানদের দিকে নজর রাখুন। কোনো শিশু প্রবেশ করেছে জানলে আমাদের জানান।</div></div>'+
  '<div class="fh">পেমেন্ট মাধ্যম</div><div class="fchips"><span class="fchip">bKash</span><span class="fchip">Nagad</span></div>'+
- (p.length?'<div class="fh">আমাদের পার트নার ও অফারওয়াল</div><div class="fchips">'+p.map(function(x){return '<span class="fchip">⭐ '+esc(x)+'</span>'}).join('')+'</div>':'')+
+ (p.length?'<div class="fh">আমাদের পার্টনার ও অফারওয়াল</div><div class="fchips">'+p.map(function(x){return '<span class="fchip">⭐ '+esc(x)+'</span>'}).join('')+'</div>':'')+
  '<div class="fr" style="margin-top:12px"><span>📧</span><a href="mailto:'+esc(c.e)+'">'+esc(c.e)+'</a></div>'+
  '<div class="fr"><span>📞</span><a href="tel:'+esc(c.p)+'">'+esc(c.p)+'</a></div>'+
  '<div class="fr"><span>✈️</span><a href="https://t.me/'+esc(c.tg)+'" target="_blank" rel="noopener">@'+esc(c.tg)+'</a></div>'+
@@ -863,7 +859,7 @@ function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style
  .catch(function(e){SPUN=false;toast(e.message);closeSpin()})}
 function closeSpin(){closeM();if(TAB==='home')vHome()}
 
-function vTasks(){$('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>📋</div><div><b>Live Tasks</b><small>টাস্কে চাপুন, বিস্তারিত পড়ুন, তারপর Start দিন।</small></div></div><div id="tw"></div><div class="grid4" id="st"></div><div class="mq u"><span>⏳ আপনার টাস্ক পেন্ডিং থাকা মানে যাচাই চলছে, চিন্তার কোনো কারণ নেই। টাস্ক কমপ্লিট হতে কিছুটা সময় লাগে। যাচাই শেষে সফল হলে টাকা আপনার ব্যালেন্সে যোগ হবে। ৪৮ ঘণ্টার মধ্যে যাচাই না হলে টাস্কটি তালিকা থেকে সরে যায়। ধৈর্য ধরুন। 🤍</span></div><div id="tl">Loading...</div>';
+function vTasks(){$('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>📋</div><div><b>Live Tasks</b><small>টাস্কে চাপুন, বিস্তারিত পড়ুন, তারপর Start দিন।</small></div></div><div id="tw"></div><div class="grid4" id="st"></div><div class="mq u"><span>⏳ আপনার টাস্ক পেন্ডিং থাকা মানে যাচাই চলছে, চিন্তার কোনো কারণ নেই। টাস্ক কমপ্লিট হতে কিছুটা সময় লাগে। যাচাই শেষে সফল হলে টাকা ব্যালেন্সে যোগ হবে। ৪৮ ঘণ্টার মধ্যে যাচাই না হলে টাস্কটি তালিকা থেকে সরে যায়। ধৈর্য ধরুন। 🤍</span></div><div id="tl">Loading...</div>';
  api('timewall').then(function(d){TWU=d.url;var e=$('tw');if(e&&d.url)e.innerHTML='<div class="row" style="border-color:rgba(34,197,94,.5)"><div style="display:flex;gap:10px;align-items:center"><span style="font-size:30px">⏱️</span><div>TimeWall Tasks<small>সার্ভে, টাস্ক ও গেম। কাজ শেষ হলে কিছুক্ষণ পর টাকা ব্যালেন্সে যোগ হয়।</small></div></div><button class="btn s g" onclick="openTW()">Open</button></div>'}).catch(function(){});
  function load(){api('offers').then(function(d){var s=d.stats;if(!$('st'))return;
  $('st').innerHTML=[['Pending',s.pending],['Success',s.success],['Cancelled',s.cancelled],['Total',s.total]].map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('');
@@ -1109,7 +1105,7 @@ var DUA=[
 ["৫. দোয়া মাসুরা","اللَّهُمَّ إِنِّي ظَلَمْتُ نَفْسِي ظُلْمًا كَثِيرًا وَلَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ فَاغْفِرْ لِي مَغْفِرَةً مِنْ عِنْدِكَ وَارْحَمْنِي إِنَّكَ أَنْتَ الْغَفُورُ الرَّحِيمُ","আল্লাহুম্মা ইন্নি জালামতু নাফসি জুলমান কাসিরাঁও ওয়া লা ইয়াগفیرুয যুনুবা ইল্লা আনতা ফাগফিরলি মাগফিরাতাম মিন ইনদিকা ওয়ারহামনি ইন্নাকা আনতাল গাফুরুর রাহিম।","হে আল্লাহ, আমি নিজের ওপর অনেক জুলুম করেছি। আপনি ছাড়া কেউ গুনাহ মাফ করতে পারে না। তাই আপনার পক্ষ থেকে আমাকে ক্ষমা করুন ও দয়া করুন। নিশ্চয়ই আপনি ক্ষমাশীল, দয়ালু।"],
 ["৬. নামাজের পরের দোয়া","رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ","রাব্বানা আতিনা ফিদ্দুনইয়া হাসানাতাঁও ওয়া ফিল আখিরাতি হাসানাতাঁও ওয়া কিনা আজাবান নার।","হে আমাদের রব, আমাদের দুনিয়াতে কল্যাণ দিন, আখিরাতে কল্যাণ দিন এবং আমাদের জাহান্নামের আজাব থেকে রক্ষা করুন।"]];
 var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
-var HD=[["কাজ নিয়তের ওপর নির্ভরশীল। প্রত্যেক ব্যক্তি তা-ই পাবে, যার নিয়ত সে করেছে।","সহিহ বুখারি ১, সহিহ মুসলিম ১৯০৭"],["তোমাদের মধ্যে সেই ব্যক্তি সর্বোত্তম, যে কুরআন শেখে এবং অন্যকে শেখায়।","সহিহ বুখারি ৫০২৭"],["তোমাদের কেউ প্রকৃত মুমিন হবে না, যতক্ষণ না সে নিজের জন্য যা পছন্দ করে, তার ভাইয়ের জন্যও তা পছন্দ করে।","সহিহ বুখারি ১৩, সহিহ মুসলিম ৪৫"],["পবিত্রতা ঈমানের অর্ধেক।","সহিহ মুসলিম ২২৩"],["প্রকৃত বীর সে নয়, যে কুস্তিতে অন্যকে হারায়। প্রকৃত বীর সে, যে রাগের সময় নিজেকে নিয়ন্ত্রণ করে।","সহিহ বুখারি ৬১১৪, সহিহ মুসলিম ২৬০৯"],["যে আল্লাহ ও আখিরাতের দিনে বিশ্বাস রাখে, সে যেন ভালো কথা বলে, নয়তো চুপ থাকে।","সহিহ বুখারি ৬০১৮, সহিহ মুসলিম ৪৭"],["যে ব্যক্তি প্রতারণা করে, সে আমাদের দলভুক্ত নয়।","সহিহ মুসলিম ১০১"]];
+var HD=[["কাজ নিয়তের ওপর নির্ভরশীল। প্রত্যেক ব্যক্তি তা-ই পাবে, যার নিয়ত সে করেছে।","সহিহ বুখারি ১, সহিহ মুসলিম ১৯۰৭"],["তোমাদের মধ্যে সেই ব্যক্তি সর্বোত্তম, যে কুরআন শেখে এবং অন্যকে শেখায়।","সহিহ বুখারি ৫০২৭"],["তোমাদের কেউ প্রকৃত মুমিন হবে না, যতক্ষণ না সে নিজের জন্য যা পছন্দ করে, তার ভাইয়ের জন্যও তা পছন্দ করে।","সহিহ বুখারি ১৩, সহিহ মুসলিম ৪৫"],["পবিত্রতা ঈমানের অর্ধেক।","সহিহ মুসলিম ২২৩"],["প্রকৃত বীর সে নয়, যে কুস্তিতে অন্যকে হারায়। প্রকৃত বীর সে, যে রাগের সময় নিজেকে নিয়ন্ত্রণ করে।","সহিহ বুখারি ৬১১৪, সহিহ মুসলিম ২৬০৯"],["যে আল্লাহ ও আখিরাতের দিনে বিশ্বাস রাখে, সে যেন ভালো কথা বলে, নয়তো চুপ থাকে।","সহিহ বুখারি ৬০১৮, সহিহ মুসলিম ৪৭"],["যে ব্যক্তি প্রতারণা করে, সে আমাদের দলভুক্ত নয়।","সহিহ মুসলিম ১০১"]];
 function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\\''+p+'\\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
 function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\\''+p+'\\')">&lsaquo; ফিরে যান</button>'}
 function vBook(){bk('menu')}
@@ -1174,7 +1170,7 @@ function aUs(){api('admin/users','GET',null,ah()).then(function(d){
  (d.active.map(function(u){return '<div class="row"><div>'+esc(u.name)+'<small>'+esc(u.phone)+' · শেষ '+tm(u.seen)+'</small></div><div style="text-align:right"><b style="color:var(--grn)">+'+money(u.today)+'</b><small>ব্যালেন্স '+money(u.balance)+'</small></div></div>'}).join('')||'<div class="row">আজ কেউ ঢোকেনি</div>')}).catch(aErr)}
 function aEa(){api('admin/users','GET',null,ah()).then(function(d){
  $('abody').innerHTML='<h3>আজ যারা আয় করেছে ('+d.earners.length+' জন নাম)</h3>'+
- (d.earners.map(function(u){return '<div class="row"><div>'+esc(u.name)+'<small>'+esc(u.phone)+'</small></div><b style="color:var(--grn)">'+money(u.t)+'</b></div>'}).join('')||'<div class="row">আজ এখনো কেউ আয় করেনি</div>')+
+ (d.earners.map(function(u){return '<div class="row"><div>#'+(i+1)+' '+esc(u.name)+'<small>'+esc(u.phone)+'</small></div><b style="color:var(--grn)">'+money(u.t)+'</b></div>'}).join('')||'<div class="row">আজ এখনো কেউ আয় করেনি</div>')+
  '<h3 style="margin-top:14px">সর্বকালের শীর্ষ আয়কারী</h3>'+
  d.top.map(function(u,i){return '<div class="row"><div>#'+(i+1)+' '+esc(u.name)+'<small>'+esc(u.phone)+' · ব্যালেন্স '+money(u.balance)+'</small></div><b style="color:var(--gold)">'+money(u.earned)+'</b></div>'}).join('')}).catch(aErr)}
 
