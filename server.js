@@ -1,7 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
-const xml2js = require('xml2js');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -193,7 +192,7 @@ async function fetchOffers(uid, ctx, dbg) {
   ctx = ctx || { device: '', country: '' };
   let combinedOffers = [];
 
-  // 1. Fetch from AdGem (Native fetch)
+  // 1. Fetch from AdGem
   if (ADGEM_APP_ID && ADGEM_POSTBACK_KEY) {
     try {
       const adgemRes = await fetch(`https://api.adgem.com/v1/wall?appid=${ADGEM_APP_ID}&player_id=${encodeURIComponent(uid)}`);
@@ -221,32 +220,39 @@ async function fetchOffers(uid, ctx, dbg) {
     }
   }
 
-  // 2. Fetch from CPAGrip RSS (Native fetch)
+  // 2. Fetch from CPAGrip RSS (Fallback to regex extraction to avoid xml2js dependency)
   if (CPAGRIP_USER_ID && CPAGRIP_KEY && CPAGRIP_FEED_URL) {
     try {
       const cpagripRes = await fetch(CPAGRIP_FEED_URL);
       const cpagripText = await cpagripRes.text();
-      const parser = new xml2js.Parser({ explicitArray: false });
-      const parsedXml = await parser.parseStringPromise(cpagripText);
-      const items = parsedXml && parsedXml.rss && parsedXml.channel && parsedXml.channel.item ? parsedXml.channel.item : [];
-      const itemArr = Array.isArray(items) ? items : [items];
       
-      const mappedCpagrip = itemArr.map(item => {
-        const payout = +item.payout || 0.5;
-        const offerId = item.offerid || item.id || Math.random().toString();
-        const baseLink = item.offer_link || item.link || '';
+      const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+      let match;
+      const itemArr = [];
+      while ((match = itemRegex.exec(cpagripText)) !== null) {
+        itemArr.push(match[1]);
+      }
+
+      const mappedCpagrip = itemArr.map((itemXml, idx) => {
+        const getTag = tag => {
+          const m = itemXml.match(new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`, 'i'));
+          return m ? m[1].trim() : '';
+        };
+        const payout = +getTag('payout') || 0.5;
+        const offerId = getTag('offerid') || getTag('id') || String(idx);
+        const baseLink = getTag('offer_link') || getTag('link') || '';
         const clickUrl = baseLink ? `${baseLink}&tracking_id=${encodeURIComponent(uid)}` : '';
         return {
           id: 'cpagrip:' + offerId,
-          title: String(item.title || 'CPAGrip Offer').slice(0, 80),
-          icon: String(item.icon || item.image || ''),
+          title: String(getTag('title') || 'CPAGrip Offer').slice(0, 80),
+          icon: String(getTag('icon') || getTag('image') || ''),
           clickUrl: clickUrl,
-          desc: String(item.description || '').slice(0, 300),
-          req: String(item.requirements || '').slice(0, 300),
+          desc: String(getTag('description') || '').slice(0, 300),
+          req: String(getTag('requirements') || '').slice(0, 300),
           usd: payout,
           bdt: bdtFor(payout),
           cats: [],
-          cnt: item.country ? [String(item.country).toUpperCase()] : [],
+          cnt: getTag('country') ? [String(getTag('country')).toUpperCase()] : [],
           dev: []
         };
       }).filter(o => o.id && o.clickUrl);
@@ -800,7 +806,7 @@ function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
  var wa=ico('#25d366','<path d="M12 5.2a6.8 6.8 0 0 0-5.8 10.3L5.2 18.8l3.4-.9A6.8 6.8 0 1 0 12 5.2z" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M9.6 9.3c.2 2 2 3.8 4 4.1l.9-.9-1.3-.9-.6.5c-.7-.3-1.4-1-1.7-1.7l.5-.6-.9-1.3z" fill="#fff"/>');
  return '<div class="ft"><div class="ftl">'+logo(46)+'<div><b>'+esc(c.n)+'</b><small>টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম</small></div></div>'+
  '<div class="fd">'+esc(c.d||'')+'</div>'+
- '<div class="fcols"><div><h5>প্ল্যাটফর্ম</h5><a onclick="go(\\'home\\')">Home</a><a onclick="go(\\'tasks\\')">Tasks</a><a onclick="go(\\'pkg\\')">Package</a><a onclick="go(\\'rank\\')">Ranking</a><a onclick="go(\\'ref\\')">Refer</a></div>'+
+ '<div class="fcols"><h5>প্ল্যাটফর্ম</h5><a onclick="go(\\'home\\')">Home</a><a onclick="go(\\'tasks\\')">Tasks</a><a onclick="go(\\'pkg\\')">Package</a><a onclick="go(\\'rank\\')">Ranking</a><a onclick="go(\\'ref\\')">Refer</a></div>'+
  '<div><h5>সহায়তা</h5><a onclick="go(\\'help\\')">Support</a><a onclick="go(\\'acc\\')">Account ও Withdraw</a><a onclick="go(\\'book\\')">ইসলামিক বই</a></div></div>'+
  '<div class="fsoc"><a href="'+esc(c.fb)+'" target="_blank" rel="noopener" aria-label="Facebook">'+fb+'</a><a href="https://t.me/'+esc(c.tg)+'" target="_blank" rel="noopener" aria-label="Telegram">'+tg+'</a><a href="https://wa.me/'+esc(c.wa)+'" target="_blank" rel="noopener" aria-label="WhatsApp">'+wa+'</a></div>'+
  '<div class="fage"><span class="bd">'+A+'+</span><div>'+A+' বছরের নিচে কারও এই অ্যাকাউন্টে প্রবেশ করা নিষেধ। অভিভাবকগণ সন্তানদের দিকে নজর রাখুন। কোনো শিশু প্রবেশ করেছে জানলে আমাদের জানান।</div></div>'+
@@ -1105,7 +1111,7 @@ var DUA=[
 ["৫. দোয়া মাসুরা","اللَّهُمَّ إِنِّي ظَلَمْتُ نَفْسِي ظُلْمًا كَثِيرًا وَلَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ فَاغْفِرْ لِي مَغْفِرَةً مِنْ عِنْدِكَ وَارْحَمْنِي إِنَّكَ أَنْتَ الْغَفُورُ الرَّحِيمُ","আল্লাহুম্মা ইন্নি জালামতু নাফসি জুলমান কাসিরাঁও ওয়া লা ইয়াগفیرুয যুনুবা ইল্লা আনতা ফাগফিরলি মাগফিরাতাম মিন ইনদিকা ওয়ারহামনি ইন্নাকা আনতাল গাফুরুর রাহিম।","হে আল্লাহ, আমি নিজের ওপর অনেক জুলুম করেছি। আপনি ছাড়া কেউ গুনাহ মাফ করতে পারে না। তাই আপনার পক্ষ থেকে আমাকে ক্ষমা করুন ও দয়া করুন। নিশ্চয়ই আপনি ক্ষমাশীল, দয়ালু।"],
 ["৬. নামাজের পরের দোয়া","رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ","রাব্বানা আতিনা ফিদ্দুনইয়া হাসানাতাঁও ওয়া ফিল আখিরাতি হাসানাতাঁও ওয়া কিনা আজাবান নার।","হে আমাদের রব, আমাদের দুনিয়াতে কল্যাণ দিন, আখিরাতে কল্যাণ দিন এবং আমাদের জাহান্নামের আজাব থেকে রক্ষা করুন।"]];
 var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
-var HD=[["কাজ নিয়তের ওপর নির্ভরশীল। প্রত্যেক ব্যক্তি তা-ই পাবে, যার নিয়ত সে করেছে।","সহিহ বুখারি ১, সহিহ মুসলিম ১৯۰৭"],["তোমাদের মধ্যে সেই ব্যক্তি সর্বোত্তম, যে কুরআন শেখে এবং অন্যকে শেখায়।","সহিহ বুখারি ৫০২৭"],["তোমাদের কেউ প্রকৃত মুমিন হবে না, যতক্ষণ না সে নিজের জন্য যা পছন্দ করে, তার ভাইয়ের জন্যও তা পছন্দ করে।","সহিহ বুখারি ১৩, সহিহ মুসলিম ৪৫"],["পবিত্রতা ঈমানের অর্ধেক।","সহিহ মুসলিম ২২৩"],["প্রকৃত বীর সে নয়, যে কুস্তিতে অন্যকে হারায়। প্রকৃত বীর সে, যে রাগের সময় নিজেকে নিয়ন্ত্রণ করে।","সহিহ বুখারি ৬১১৪, সহিহ মুসলিম ২৬০৯"],["যে আল্লাহ ও আখিরাতের দিনে বিশ্বাস রাখে, সে যেন ভালো কথা বলে, নয়তো চুপ থাকে।","সহিহ বুখারি ৬০১৮, সহিহ মুসলিম ৪৭"],["যে ব্যক্তি প্রতারণা করে, সে আমাদের দলভুক্ত নয়।","সহিহ মুসলিম ১০১"]];
+var HD=[["কাজ নিয়তের ওপর নির্ভরশীল। প্রত্যেক ব্যক্তি তা-ই পাবে, যার নিয়ত সে করেছে।","সহিহ বুখারি ১, সহিহ মুসলিম ১৯০৭"],["তোমাদের মধ্যে সেই ব্যক্তি সর্বোত্তম, যে কুরআন শেখে এবং অন্যকে শেখায়।","সহিহ বুখারি ৫০২৭"],["তোমাদের কেউ প্রকৃত মুমিন হবে না, যতক্ষণ না সে নিজের জন্য যা পছন্দ করে, তার ভাইয়ের জন্যও তা পছন্দ করে।","সহিহ বুখারি ১৩, সহিহ মুসলিম ৪৫"],["পবিত্রতা ঈমানের অর্ধেক।","সহিহ মুসলিম ২২৩"],["প্রকৃত বীর সে নয়, যে কুস্তিতে অন্যকে হারায়। প্রকৃত বীর সে, যে রাগের সময় নিজেকে নিয়ন্ত্রণ করে।","সহিহ বুখারি ৬১১৪, সহিহ মুসলিম ২৬০৯"],["যে আল্লাহ ও আখিরাতের দিনে বিশ্বাস রাখে, সে যেন ভালো কথা বলে, নয়তো চুপ থাকে।","সহিহ বুখারি ৬০১৮, সহিহ মুসলিম ৪৭"],["যে ব্যক্তি প্রতারণা করে, সে আমাদের দলভুক্ত নয়।","সহিহ মুসলিম ১০১"]];
 function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\\''+p+'\\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
 function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\\''+p+'\\')">&lsaquo; ফিরে যান</button>'}
 function vBook(){bk('menu')}
