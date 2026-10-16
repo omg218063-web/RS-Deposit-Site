@@ -1,6 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
+const axios = require('axios');
+const xml2js = require('xml2js');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -8,8 +10,15 @@ const PORT = process.env.PORT || 10000;
 const SECRET = process.env.SECRET || crypto.randomBytes(32).toString('hex');
 const ADMIN_PASS = process.env.ADMIN_PASSWORD || '';
 const GID = process.env.GOOGLE_CLIENT_ID || '';
-const OW_KEY = process.env.OFFERWALL_KEY || '';
-const OW_SECRET = process.env.OFFERWALL_SECRET || '';
+
+// AdGem & CPAGrip Environment Variables
+const ADGEM_APP_ID = process.env.ADGEM_APP_ID || '';
+const ADGEM_POSTBACK_KEY = process.env.ADGEM_POSTBACK_KEY || '';
+
+const CPAGRIP_USER_ID = process.env.CPAGRIP_USER_ID || '';
+const CPAGRIP_KEY = process.env.CPAGRIP_KEY || '';
+const CPAGRIP_FEED_URL = process.env.CPAGRIP_FEED_URL || '';
+
 const RATE = Number(process.env.BDT_PER_USD) || 120;
 
 const TW_SECRET = process.env.TIMEWALL_SECRET || '';
@@ -74,7 +83,14 @@ const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.fr
 const today = () => new Date().toISOString().slice(0, 10);
 const dayStart = () => { const o = 6 * 36e5, n = Date.now() + o; return new Date(n - (n % 864e5) - o); };
 const credit = (id, n) => User.updateOne({ _id: id }, { $inc: { balance: n, earned: n } });
-const partners = () => [OW_KEY && OW_SECRET ? 'offerwall.gg' : '', TW_SECRET && TW_URL ? 'TimeWall.io (Australian Clearing Pty Ltd)' : ''].filter(Boolean);
+
+// Updated Partners List Including AdGem and CPAGrip along with TimeWall
+const partners = () => [
+  ADGEM_APP_ID && ADGEM_POSTBACK_KEY ? 'AdGem' : '',
+  CPAGRIP_USER_ID && CPAGRIP_KEY ? 'CPAGrip' : '',
+  TW_SECRET && TW_URL ? 'TimeWall.io (Australian Clearing Pty Ltd)' : ''
+].filter(Boolean);
+
 const me = u => ({ name: u.name, phone: u.phone || '', email: u.email || '', av: u.avatar || '', balance: u.balance, earned: u.earned, rsCoins: u.rsCoins || 0, activePkg: u.activePkg || null, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS, ct: CO, pt: partners() });
 const bdtFor = usd => Math.round(usd * RATE * (usd > 1 ? 0.5 : 0.7) * 100) / 100;
 const expire = uid => Click.updateMany(Object.assign({ status: 'pending', at: { $lt: new Date(Date.now() - PENDING_HOURS * 36e5) } }, uid ? { uid } : {}), { status: 'expired' });
@@ -177,22 +193,74 @@ const devOk = (list, device) => {
 
 async function fetchOffers(uid, ctx, dbg) {
   ctx = ctx || { device: '', country: '' };
-  if (!OW_KEY || !OW_SECRET) return [];
-  const r = await fetch('https://offerwall.gg/api/v1/offers?appId=' + OW_KEY + '&userId=' + encodeURIComponent(uid) + '&limit=100', { headers: { 'X-Api-Key': OW_SECRET } });
-  const j = await r.json();
-  const arr = Array.isArray(j) ? j : ((j.data && j.data.offers) || j.offers || (Array.isArray(j.data) ? j.data : []));
-  let l = arr.map(o => {
-    const coins = +pick(o, ['currencyAmount', 'rewardAmount', 'reward', 'coins', 'amount', 'payout']) || 0;
-    return {
-      id: String(pick(o, ['id', 'offerId']) || ''), title: String(pick(o, ['name', 'title', 'offerName']) || 'Offer').slice(0, 80),
-      icon: String(pick(o, ['iconUrl', 'icon', 'imageUrl', 'image', 'thumbnail']) || ''), clickUrl: pick(o, ['clickUrl', 'url']),
-      desc: String(o.description || '').slice(0, 300), req: String(o.requirements || '').slice(0, 300),
-      usd: coins / 100, bdt: bdtFor(coins / 100),
-      cats: arrOf(o.categories).map(c => String(c).toLowerCase().replace(/[^a-z]/g, '')),
-      cnt: arrOf(o.countries).map(c => String(c).toUpperCase()),
-      dev: arrOf(o.devices)
-    };
-  }).filter(o => o.id && o.clickUrl);
+  let combinedOffers = [];
+
+  // 1. Fetch from AdGem (if configured)
+  if (ADGEM_APP_ID && ADGEM_POSTBACK_KEY) {
+    try {
+      const adgemRes = await fetch(`https://api.adgem.com/v1/wall?appid=${ADGEM_APP_ID}&player_id=${encodeURIComponent(uid)}`);
+      const adgemJson = await adgemRes.json();
+      const adgemArr = Array.isArray(adgemJson) ? adgemJson : (adgemJson.offers || adgemJson.data || []);
+      const mappedAdgem = adgemArr.map(o => {
+        const payout = +pick(o, ['payout', 'reward', 'amount']) || 0;
+        return {
+          id: 'adgem:' + String(pick(o, ['campaign_id', 'id']) || ''),
+          title: String(pick(o, ['name', 'title']) || 'AdGem Offer').slice(0, 80),
+          icon: String(pick(o, ['icon', 'image_url']) || ''),
+          clickUrl: pick(o, ['url', 'click_url']),
+          desc: String(o.description || '').slice(0, 300),
+          req: String(o.requirements || '').slice(0, 300),
+          usd: payout,
+          bdt: bdtFor(payout),
+          cats: arrOf(o.categories).map(c => String(c).toLowerCase().replace(/[^a-z]/g, '')),
+          cnt: arrOf(o.countries).map(c => String(c).toUpperCase()),
+          dev: arrOf(o.devices)
+        };
+      }).filter(o => o.id && o.clickUrl);
+      combinedOffers = combinedOffers.concat(mappedAdgem);
+    } catch (err) {
+      console.error('AdGem fetch error:', err.message);
+    }
+  }
+
+  // 2. Fetch from CPAGrip RSS/JSON Feed (if configured)
+  if (CPAGRIP_USER_ID && CPAGRIP_KEY && CPAGRIP_FEED_URL) {
+    try {
+      const cpagripRes = await fetch(CPAGRIP_FEED_URL);
+      const cpagripText = await cpagripRes.text();
+      // Parse XML RSS Feed
+      const parser = new xml2js.Parser({ explicitArray: false });
+      const parsedXml = await parser.parseStringPromise(cpagripText);
+      const items = parsedXml && parsedXml.rss && parsedXml.channel && parsedXml.channel.item ? parsedXml.channel.item : [];
+      const itemArr = Array.isArray(items) ? items : [items];
+      
+      const mappedCpagrip = itemArr.map(item => {
+        const payout = +item.payout || 0.5;
+        const offerId = item.offerid || item.id || Math.random().toString();
+        // Append tracking_id = uid for postback tracking
+        const baseLink = item.offer_link || item.link || '';
+        const clickUrl = baseLink ? `${baseLink}&tracking_id=${encodeURIComponent(uid)}` : '';
+        return {
+          id: 'cpagrip:' + offerId,
+          title: String(item.title || 'CPAGrip Offer').slice(0, 80),
+          icon: String(item.icon || item.image || ''),
+          clickUrl: clickUrl,
+          desc: String(item.description || '').slice(0, 300),
+          req: String(item.requirements || '').slice(0, 300),
+          usd: payout,
+          bdt: bdtFor(payout),
+          cats: [],
+          cnt: item.country ? [String(item.country).toUpperCase()] : [],
+          dev: []
+        };
+      }).filter(o => o.id && o.clickUrl);
+      combinedOffers = combinedOffers.concat(mappedCpagrip);
+    } catch (err) {
+      console.error('CPAGrip fetch error:', err.message);
+    }
+  }
+
+  let l = combinedOffers;
   if (dbg) {
     dbg.total = l.length; dbg.cn = {};
     l.forEach(o => (o.cnt.length ? o.cnt : ['ALL']).forEach(c => { dbg.cn[c] = (dbg.cn[c] || 0) + 1; }));
@@ -233,30 +301,46 @@ app.post('/api/offers/:id/start', auth, h(async (q, s) => {
   s.json({ url: o.clickUrl });
 }));
 
-app.get('/api/offerwall', h(async (q, s) => {
-  const { user, tx, amount, status, offerId, offer, test, sig } = q.query;
-  if (!OW_SECRET || !user || !tx || amount == null || !sig) return bad(s, 'bad request', 400);
-  const exp = crypto.createHmac('sha256', OW_SECRET).update(user + ':' + tx + ':' + amount).digest('hex');
-  if (!same(String(sig), exp)) return bad(s, 'invalid signature', 403);
-  if (test === '1') return s.send('ok');
-  const coins = +amount;
-  if (!isFinite(coins) || !mongoose.isValidObjectId(user)) return s.send('ok');
-  const neg = coins < 0 || status === 'reversed';
-  const bdt = bdtFor(Math.abs(coins) / 100);
-  const oid = String(offerId || tx);
-  if (!neg && !LATE_CREDIT && await Click.exists({ uid: user, offerId: oid, status: 'expired' })) return s.send('ok');
-  try { await Conv.create({ key: tx + ':' + (neg ? 'rev' : 'cr'), uid: user, tx, bdt: neg ? -bdt : bdt, status: neg ? 'reversed' : 'credited' }); }
-  catch (e) { if (e.code === 11000) return s.send('ok'); throw e; }
-  if (!(await User.exists({ _id: user }))) return s.send('ok');
-  if (neg) {
-    await User.updateOne({ _id: user }, { $inc: { balance: -bdt, earned: -bdt } });
-    await Click.findOneAndUpdate({ uid: user, offerId: oid, status: { $in: ['success', 'pending'] } }, { status: 'cancelled' });
-  } else {
-    await credit(user, bdt);
-    const c = await Click.findOneAndUpdate({ uid: user, offerId: oid, status: 'pending' }, { $set: { status: 'success', doneAt: Date.now(), bdt } });
-    if (!c) await Click.create({ uid: user, offerId: oid, title: String(offer || 'Task').slice(0, 80), bdt, status: 'success', doneAt: Date.now() });
+// AdGem Postback Callback Handler
+app.get('/api/callback/adgem', h(async (q, s) => {
+  const { user, amount, tx } = q.query;
+  if (!user || amount == null || !tx) return bad(s, 'bad request', 400);
+  const payout = +amount;
+  if (!isFinite(payout) || !mongoose.isValidObjectId(user)) return s.send('1');
+  const bdt = bdtFor(payout);
+  const oid = 'adgem:' + String(tx);
+  try {
+    await Conv.create({ key: 'adgem:' + tx + ':cr', uid: user, tx, bdt, status: 'credited' });
+  } catch (e) {
+    if (e.code === 11000) return s.send('1');
+    throw e;
   }
-  s.send('ok');
+  if (!(await User.exists({ _id: user }))) return s.send('1');
+  await credit(user, bdt);
+  const c = await Click.findOneAndUpdate({ uid: user, offerId: oid, status: 'pending' }, { $set: { status: 'success', doneAt: Date.now(), bdt } });
+  if (!c) await Click.create({ uid: user, offerId: oid, title: 'AdGem Task', bdt, status: 'success', doneAt: Date.now() });
+  s.send('1');
+}));
+
+// CPAGrip Postback Callback Handler
+app.get('/api/callback/cpagrip', h(async (q, s) => {
+  const { user, amount, tx } = q.query;
+  if (!user || amount == null || !tx) return bad(s, 'bad request', 400);
+  const payout = +amount;
+  if (!isFinite(payout) || !mongoose.isValidObjectId(user)) return s.send('OK');
+  const bdt = bdtFor(payout);
+  const oid = 'cpagrip:' + String(tx);
+  try {
+    await Conv.create({ key: 'cpagrip:' + tx + ':cr', uid: user, tx, bdt, status: 'credited' });
+  } catch (e) {
+    if (e.code === 11000) return s.send('OK');
+    throw e;
+  }
+  if (!(await User.exists({ _id: user }))) return s.send('OK');
+  await credit(user, bdt);
+  const c = await Click.findOneAndUpdate({ uid: user, offerId: oid, status: 'pending' }, { $set: { status: 'success', doneAt: Date.now(), bdt } });
+  if (!c) await Click.create({ uid: user, offerId: oid, title: 'CPAGrip Task', bdt, status: 'success', doneAt: Date.now() });
+  s.send('OK');
 }));
 
 app.get('/api/callback/timewall', h(async (q, s) => {
@@ -291,13 +375,13 @@ app.get('/api/callback/timewall', h(async (q, s) => {
 app.get('/api/timewall', auth, (q, s) => s.json({ url: TW_URL ? TW_URL.replace(/\{uid\}/g, encodeURIComponent(q.user.id)) : '' }));
 
 app.post('/api/daily', auth, h(async (q, s) => {
-  const r = await User.findOneAndUpdate({ _id: q.user.id, lastDaily: { $lte: Date.now() - 864e5 } }, { $set: { lastDaily: Date.now() }, $inc: { balance: DAILY, earned: DAILY } }, { new: true });
+  const r = await User.findOneAndUpdate({ _id: q.user.id, lastDaily: { $lte: Date.now() - 864e5 } }, { $set: { lastDaily: Date.now() },$inc: { balance: DAILY, earned: DAILY } }, { new: true });
   if (!r) return bad(s, 'You already claimed today. Come back in 24 hours.');
   s.json(me(r));
 }));
 
 app.post('/api/checkin', auth, h(async (q, s) => {
-  const r = await User.findOneAndUpdate({ _id: q.user.id, lastCheckin: { $ne: today() } }, { $set: { lastCheckin: today() }, $inc: { balance: CHECKIN, earned: CHECKIN } }, { new: true });
+  const r = await User.findOneAndUpdate({ _id: q.user.id, lastCheckin: { $ne: today() } }, { $set: { lastCheckin: today() },$inc: { balance: CHECKIN, earned: CHECKIN } }, { new: true });
   if (!r) return bad(s, 'You already checked in today.');
   s.json(me(r));
 }));
@@ -306,7 +390,7 @@ app.post('/api/spin', auth, h(async (q, s) => {
   const tot = SPIN.reduce((a, x) => a + x[1], 0);
   let r = crypto.randomInt(tot), prize = SPIN[0][0];
   for (const x of SPIN) { if (r < x[1]) { prize = x[0]; break; } r -= x[1]; }
-  const u = await User.findOneAndUpdate({ _id: q.user.id, $or: [{ lastSpin: { $exists: false } }, { lastSpin: { $lte: Date.now() - 864e5 } }] }, { $set: { lastSpin: Date.now() }, $inc: { balance: prize, earned: prize } }, { new: true });
+  const u = await User.findOneAndUpdate({ _id: q.user.id, $or: [{ lastSpin: { $exists: false } }, { lastSpin: {$lte: Date.now() - 864e5 } }] }, { $set: { lastSpin: Date.now() },$inc: { balance: prize, earned: prize } }, { new: true });
   if (!u) return bad(s, 'You already spun today. Come back in 24 hours.');
   s.json({ prize, me: me(u) });
 }));
@@ -336,7 +420,7 @@ app.post('/api/withdraw', auth, h(async (q, s) => {
   if (!(a >= MIN_WD && a <= MAX_WD)) return bad(s, 'Withdraw amount must be between ' + MIN_WD + ' and ' + MAX_WD + '.');
   if (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
   if (!/^01\d{9}$/.test(String(phone || ''))) return bad(s, 'Enter a valid 11-digit number.');
-  const r = await User.findOneAndUpdate({ _id: q.user.id, balance: { $gte: a } }, { $inc: { balance: -a } }, { new: true });
+  const r = await User.findOneAndUpdate({ _id: q.user.id, balance: { $gte: a } }, {$inc: { balance: -a } }, { new: true });
   if (!r) return bad(s, 'Not enough balance.');
   await Wd.create({ uid: q.user.id, name: q.user.name, amount: a, method, phone });
   s.json(me(r));
@@ -384,7 +468,7 @@ app.post('/api/support', auth, h(async (q, s) => {
 app.get('/api/admin/data', admin, h(async (q, s) => {
   await expire();
   const start = dayStart();
-  const sum = async (M, match, f) => { const r = await M.aggregate([{ $match: match }, { $group: { _id: null, t: { $sum: '$' + f } } }]); return r.length ? r[0].t : 0; };
+  const sum = async (M, match, f) => { const r = await M.aggregate([{ $match: match }, {$group: { _id: null, t: { $sum: '$' + f } } }]); return r.length ? r[0].t : 0; };
   s.json({
     stats: {
       users: await User.countDocuments(), active: await User.countDocuments({ lastSeen: { $gte: start.getTime() } }),
@@ -422,7 +506,7 @@ app.get('/api/admin/support', admin, h(async (q, s) => {
 app.get('/api/admin/users', admin, h(async (q, s) => {
   const st = dayStart();
   const act = await User.find({ lastSeen: { $gte: st.getTime() } }).sort({ lastSeen: -1 }).limit(200).select('name phone email lastSeen balance earned');
-  const ag = await Conv.aggregate([{ $match: { at: { $gte: st } } }, { $group: { _id: '$uid', t: { $sum: '$bdt' } } }]);
+  const ag = await Conv.aggregate([{ $match: { at: {$gte: st } } }, { $group: { _id: '$uid', t: { $sum: '$bdt' } } }]);
   const em = {}; ag.forEach(x => { em[x._id] = x.t; });
   const ids = ag.map(x => x._id).filter(x => mongoose.isValidObjectId(x));
   const eu = ids.length ? await User.find({ _id: { $in: ids } }).select('name phone email') : [];
@@ -465,12 +549,11 @@ app.post('/api/admin/reply', admin, h(async (q, s) => {
 
 app.get('/api/admin/offers-raw', admin, h(async (q, s) => {
   const tw = '\n\nTimeWall: secret ' + (TW_SECRET ? 'set' : 'NOT set') + ', link ' + (TW_URL ? 'set' : 'NOT set') + ', rate ' + TW_RATE;
-  if (!OW_KEY || !OW_SECRET) return s.json({ text: 'OFFERWALL_KEY or OFFERWALL_SECRET is not set in Environment.' + tw });
   const dbg = {};
   await fetchOffers('admin-test', ctxOf(q), dbg);
   const cs = Object.entries(dbg.cn || {}).sort((a, b) => b[1] - a[1]).slice(0, 10).map(x => x[0] + ':' + x[1]).join(', ');
   const tg = TARGETS.map(c => c + ':' + ((dbg.cn || {})[c] || 0)).join(', ');
-  s.json({ text: 'Offers from offerwall.gg: ' + dbg.total + '\nTop countries: ' + cs + '\nYour countries (' + tg + ') + ALL:' + ((dbg.cn || {}).ALL || 0) + '\n\nAfter price limit ($' + MAX_USD + '): ' + dbg.price + '\nAfter category block: ' + dbg.cat + '\nAfter country filter: ' + dbg.country + '\nShown to user (after device filter): ' + dbg.device + tw });
+  s.json({ text: 'Offers fetched successfully.\nTop countries: ' + cs + '\nYour countries (' + tg + ') + ALL:' + ((dbg.cn || {}).ALL || 0) + '\n\nAfter price limit ($' + MAX_USD + '): ' + dbg.price + '\nAfter category block: ' + dbg.cat + '\nAfter country filter: ' + dbg.country + '\nShown to user (after device filter): ' + dbg.device + tw });
 }));
 
 const PAGE = `<!DOCTYPE html>
@@ -726,7 +809,7 @@ function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
  '<div class="fsoc"><a href="'+esc(c.fb)+'" target="_blank" rel="noopener" aria-label="Facebook">'+fb+'</a><a href="https://t.me/'+esc(c.tg)+'" target="_blank" rel="noopener" aria-label="Telegram">'+tg+'</a><a href="https://wa.me/'+esc(c.wa)+'" target="_blank" rel="noopener" aria-label="WhatsApp">'+wa+'</a></div>'+
  '<div class="fage"><span class="bd">'+A+'+</span><div>'+A+' বছরের নিচে কারও এই অ্যাকাউন্টে প্রবেশ করা নিষেধ। অভিভাবকগণ সন্তানদের দিকে নজর রাখুন। কোনো শিশু প্রবেশ করেছে জানলে আমাদের জানান।</div></div>'+
  '<div class="fh">পেমেন্ট মাধ্যম</div><div class="fchips"><span class="fchip">bKash</span><span class="fchip">Nagad</span></div>'+
- (p.length?'<div class="fh">আমাদের পার্টনার</div><div class="fchips">'+p.map(function(x){return '<span class="fchip">'+esc(x)+'</span>'}).join('')+'</div>':'')+
+ (p.length?'<div class="fh">আমাদের পার트নার ও অফারওয়াল</div><div class="fchips">'+p.map(function(x){return '<span class="fchip">⭐ '+esc(x)+'</span>'}).join('')+'</div>':'')+
  '<div class="fr" style="margin-top:12px"><span>📧</span><a href="mailto:'+esc(c.e)+'">'+esc(c.e)+'</a></div>'+
  '<div class="fr"><span>📞</span><a href="tel:'+esc(c.p)+'">'+esc(c.p)+'</a></div>'+
  '<div class="fr"><span>✈️</span><a href="https://t.me/'+esc(c.tg)+'" target="_blank" rel="noopener">@'+esc(c.tg)+'</a></div>'+
@@ -835,7 +918,7 @@ pkgs.map(function(x){
 }
 
 function vRank(){
-  $('main').innerHTML=hb('rank','🏆','Ranking & RS Collectors','র‍্যাংকিং তালিকা: ইউজারদের রিয়েল ব্যালেন্স এবং সংগৃহীত আরএস কয়েন (RS Coins)।')+'<div id="rk">Loading...</div>';
+  $('main').innerHTML=hb('rank','🏆','Ranking & RS Collectors','র‍্যাংকিং তালিকা: ইউজারদের রিয়েল ব্যালেন্স এবং সংগৃহীত আরএস কয়েন (RS Coins).')+'<div id="rk">Loading...</div>';
   function load(){
     api('leaderboard').then(function(a){
       if(!a.length){$('rk').innerHTML='<div class="row">No leaderboard data.</div>';return}
