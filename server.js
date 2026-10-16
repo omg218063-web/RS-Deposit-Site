@@ -649,7 +649,7 @@ function initG(){if(!GID){$('gWrap').style.display='none';return}
  google.accounts.id.initialize({client_id:GID,callback:gCb});google.accounts.id.renderButton($('gBtn'),{theme:'filled_black',size:'large',text:'continue_with',width:280})}
 
 var TABS=[['home','🏠','Home'],['tasks','📋','Tasks'],['pkg','📦','Package'],['rank','🏆','Ranking'],['ref','👥','Refer'],['help','💬','Support'],['acc','👤','Account'],['book','🕌','Islam']];
-function enter(m){ME=m;$('auth').style.display='none';$('nav').innerHTML=TABS.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\''+t[0]+'\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');head();go('home')}
+function enter(m){ME=m;$('auth').style.display='none';$('nav').innerHTML=TABS.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');head();go('home')}
 function head(){$('hName').textContent=ME.name;$('hBal').textContent=money(ME.balance);$('avT').innerHTML=ME.av?'<img src="'+esc(ME.av)+'" alt="">':'📷'}
 function go(t){TAB=t;clearInterval(TIMER);TABS.forEach(function(x){$('n_'+x[0]).className=x[0]===t?'on':''});({home:vHome,tasks:vTasks,pkg:vPkg,rank:vRank,ref:vRef,help:vHelp,acc:vAcc,book:vBook})[t]()}
 function toast(m){alert(m)}
@@ -675,8 +675,8 @@ function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
  var wa=ico('#25d366','<path d="M12 5.2a6.8 6.8 0 0 0-5.8 10.3L5.2 18.8l3.4-.9A6.8 6.8 0 1 0 12 5.2z" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M9.6 9.3c.2 2 2 3.8 4 4.1l.9-.9-1.3-.9-.6.5c-.7-.3-1.4-1-1.7-1.7l.5-.6-.9-1.3z" fill="#fff"/>');
  return '<div class="ft"><div class="ftl">'+logo(46)+'<div><b>'+esc(c.n)+'</b><small>টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম</small></div></div>'+
  '<div class="fd">'+esc(c.d||'')+'</div>'+
- '<div class="fcols"><div><h5>প্ল্যাটফর্ম</h5><a onclick="go(\'home\')">Home</a><a onclick="go(\'tasks\')">Tasks</a><a onclick="go(\'pkg\')">Package</a><a onclick="go(\'rank\')">Ranking</a><a onclick="go(\'ref\')">Refer</a></div>'+
- '<div><h5>সহায়তা</h5><a onclick="go(\'help\')">Support</a><a onclick="go(\'acc\')">Account ও Withdraw</a><a onclick="go(\'book\')">ইসলামিক বই</a></div></div>'+
+ '<div class="fcols"><div><h5>প্ল্যাটফর্ম</h5><a onclick="go(\\'home\\')">Home</a><a onclick="go(\\'tasks\\')">Tasks</a><a onclick="go(\\'pkg\\')">Package</a><a onclick="go(\\'rank\\')">Ranking</a><a onclick="go(\\'ref\\')">Refer</a></div>'+
+ '<div><h5>সহায়তা</h5><a onclick="go(\\'help\\')">Support</a><a onclick="go(\\'acc\\')">Account ও Withdraw</a><a onclick="go(\\'book\\')">ইসলামিক বই</a></div></div>'+
  '<div class="fsoc"><a href="'+esc(c.fb)+'" target="_blank" rel="noopener" aria-label="Facebook">'+fb+'</a><a href="https://t.me/'+esc(c.tg)+'" target="_blank" rel="noopener" aria-label="Telegram">'+tg+'</a><a href="https://wa.me/'+esc(c.wa)+'" target="_blank" rel="noopener" aria-label="WhatsApp">'+wa+'</a></div>'+
  '<div class="fage"><span class="bd">'+A+'+</span><div>'+A+' বছরের নিচে কারও এই অ্যাকাউন্টে প্রবেশ করা নিষেধ। অভিভাবকগণ সন্তানদের দিকে নজর রাখুন। কোনো শিশু প্রবেশ করেছে জানলে আমাদের জানান।</div></div>'+
  '<div class="fh">পেমেন্ট মাধ্যম</div><div class="fchips"><span class="fchip">bKash</span><span class="fchip">Nagad</span></div>'+
@@ -694,8 +694,8 @@ function vHome(){var ok=Date.now()-ME.lastDaily>=864e5,sp=Date.now()-(ME.lastSpi
  '<div class="hs">'+sl+'</div><div class="dots">'+dt+'</div>'+
  '<div class="bo" style="margin-bottom:14px"><div class="bi lk"><span class="ic">🎡</span><div style="flex:1"><b style="margin-top:0">Lucky Draw</b><small>প্রতি ২৪ ঘণ্টায় একবার ঘোরান, ১ থেকে ৫ টাকা জিতুন</small></div><button class="btn s'+(sp?'':' dn')+'" style="'+(sp?'':'background:#1e293b;color:#94a3b8')+'" onclick="spinOpen()">'+(sp?'Spin':'Done ✅')+'</button></div></div>'+
  '<h3>আজকের বোনাস</h3><div class="bn">'+
- '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT · প্রতি ২৪ ঘণ্টায় একবার</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\'daily\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
- '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT · প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\'checkin\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
+ '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT · প্রতি ২৪ ঘণ্টায় একবার</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
+ '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT · প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
  TIMER=setInterval(function(){if(!document.querySelector('.hs')){clearInterval(TIMER);return}hsGo((HSI+1)%HS.length)},6000)}
 function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added to your balance.')}).catch(function(e){toast(e.message)})}
 
@@ -740,7 +740,7 @@ function vPkg(){var pkgs=[
 ];
 $('main').innerHTML=hb('ref','📦','RS Coin Packages','৳২০০ থেকে ৳৩০০০ টাকার মধ্যে পছন্দমতো প্যাকেজ কিনুন ও কয়েন কালেক্ট করুন। চালান চারকোণা রিং ডিজাইনে।') +
 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
-pkgs.map(function(x){return '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:2px solid rgba(251,191,36,0.4);border-radius:16px;padding:12px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.4);position:relative"><div style="position:absolute;top:-8px;right:-8px;background:var(--gold);color:#000;font-size:9px;font-weight:bold;padding:2px 6px;border-radius:6px">HOT</div><b style="color:var(--gold);font-size:13px;display:block;margin-bottom:4px">'+x.d+'</b><div style="font-size:11px;color:var(--mu)">মূল্য: <b>'+x.p+' BDT</b></div><div style="font-size:12px;color:var(--grn);margin:4px 0 8px">রিওয়ার্ড: <b>'+x.c+' RS Coins</b></div><button class="btn s g" style="width:100%" onclick="go(\'acc\');depForm('+x.p+',\''+x.d+'\')">Buy Package</button></div>'}).join('') +
+pkgs.map(function(x){return '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:2px solid rgba(251,191,36,0.4);border-radius:16px;padding:12px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.4);position:relative"><div style="position:absolute;top:-8px;right:-8px;background:var(--gold);color:#000;font-size:9px;font-weight:bold;padding:2px 6px;border-radius:6px">HOT</div><b style="color:var(--gold);font-size:13px;display:block;margin-bottom:4px">'+x.d+'</b><div style="font-size:11px;color:var(--mu)">মূল্য: <b>'+x.p+' BDT</b></div><div style="font-size:12px;color:var(--grn);margin:4px 0 8px">রিওয়ার্ড: <b>'+x.c+' RS Coins</b></div><button class="btn s g" style="width:100%" onclick="go(\\'acc\\');depForm('+x.p+',\\''+x.d+'\\')">Buy Package</button></div>'}).join('') +
 '</div>';
 }
 
@@ -791,12 +791,12 @@ function doWd(){api('withdraw','POST',{method:$('wm').value,amount:$('wa').value
 
 function depForm(presetAmount, pkgName){
  modal('<h3 style="color:var(--gold)">Deposit / Package Payment</h3>' +
- '<div class="tdw" style="background:#0b1224;border-color:var(--gold)"><b>পেমেন্ট করার নিয়ম:</b><br>১. নিচের নাম্বারে (সেন্ড মনি) টাকা পাঠান:<br><b style="font-size:16px;color:var(--grn)">01951639460</b> <button class="btn s g" style="padding:2px 6px;font-size:10px" onclick="navigator.clipboard.writeText(\'01951639460\');toast(\'Number Copied!\')">Copy</button><br>২. ট্রানজেকশন আইডি এবং শেষ ৩ ডিজিট দিন।</div>' +
+ '<div class="tdw" style="background:#0b1224;border-color:var(--gold)"><b>পেমেন্ট করার নিয়ম:</b><br>১. নিচের নাম্বারে (সেন্ড মনি) টাকা পাঠান:<br><b style="font-size:16px;color:var(--grn)">01951639460</b> <button class="btn s g" style="padding:2px 6px;font-size:10px" onclick="navigator.clipboard.writeText(\\'01951639460\\');toast(\\'Number Copied!\\')">Copy</button><br>২. ট্রানজেকশন আইডি এবং শেষ ৩ ডিজিট দিন।</div>' +
  '<label>Method</label><select id="dm"><option>bKash</option><option>Nagad</option></select>' +
  '<label>Amount (BDT)</label><input id="da" type="number" inputmode="numeric" value="'+(presetAmount||'')+'">' +
  '<label>Transaction ID (TrxID)</label><input id="dtx" placeholder="Enter full TrxID">' +
  '<label>Last 3 Digits of Sender Number</label><input id="dlast" maxlength="3" inputmode="numeric" placeholder="e.g. 123">' +
- '<button class="btn g" onclick="doDep(\''+(pkgName||'Custom Deposit')+'\')">Submit Deposit</button>' +
+ '<button class="btn g" onclick="doDep(\\''+(pkgName||'Custom Deposit')+'\\')">Submit Deposit</button>' +
  '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>');
 }
 function doDep(pkgName){
@@ -817,8 +817,8 @@ var DUA=[
 ["৬. নামাজের পরের দোয়া","رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ","রাব্বানা আতিনা ফিদ্দুনইয়া হাসানাতাঁও ওয়া ফিল আখিরাতি হাসানাতাঁও ওয়া কিনা আজাবান নার।","হে আমাদের রব, আমাদের দুনিয়াতে কল্যাণ দিন, আখিরাতে কল্যাণ দিন এবং আমাদের জাহান্নামের আজাব থেকে রক্ষা করুন।"]];
 var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
 var HD=[["কাজ নিয়তের ওপর নির্ভরশীল। প্রত্যেক ব্যক্তি তা-ই পাবে, যার নিয়ত সে করেছে।","সহিহ বুখারি ১, সহিহ মুসলিম ১৯০৭"],["তোমাদের মধ্যে সেই ব্যক্তি সর্বোত্তম, যে কুরআন শেখে এবং অন্যকে শেখায়।","সহিহ বুখারি ৫০২৭"],["তোমাদের কেউ প্রকৃত মুমিন হবে না, যতক্ষণ না সে নিজের জন্য যা পছন্দ করে, তার ভাইয়ের জন্যও তা পছন্দ করে।","সহিহ বুখারি ১৩, সহিহ মুসলিম ৪৫"],["পবিত্রতা ঈমানের অর্ধেক।","সহিহ মুসলিম ২২৩"],["প্রকৃত বীর সে নয়, যে কুস্তিতে অন্যকে হারায়। প্রকৃত বীর সে, যে রাগের সময় নিজেকে নিয়ন্ত্রণ করে।","সহিহ বুখারি ৬১১৪, সহিহ মুসলিম ২৬০৯"],["যে আল্লাহ ও আখিরাতের দিনে বিশ্বাস রাখে, সে যেন ভালো কথা বলে, নয়তো চুপ থাকে।","সহিহ বুখারি ৬০১৮, সহিহ মুসলিম ৪৭"],["যে ব্যক্তি প্রতারণা করে, সে আমাদের দলভুক্ত নয়।","সহিহ মুসলিম ১০১"]];
-function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\''+p+'\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
-function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\''+p+'\')">&lsaquo; ফিরে যান</button>'}
+function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\\''+p+'\\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
+function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\\''+p+'\\')">&lsaquo; ফিরে যান</button>'}
 function vBook(){bk('menu')}
 function nmF(){var q=($('nq').value||'').trim().toLowerCase(),a=NML.filter(function(x){return !q||x.toLowerCase().indexOf(q)>=0});
  $('nl').innerHTML='<h3>'+a.length+'টি নাম</h3>'+(a.length?a.map(function(x){var p=x.split('|');return '<div class="bkc nm"><div><b>'+esc(p[0])+'</b><small>'+esc(p[2]||'')+'</small></div><div class="ar2">'+esc(p[1]||'')+'</div></div>'}).join(''):'<div class="row">'+(NML.length?'কোনো নাম মেলেনি':'নামের ফাইল (names.js) পাওয়া যায়নি')+'</div>')}
@@ -837,7 +837,7 @@ function bk(p){var h='';
 var ATABS=[['ov','📊','ওভারভিউ'],['wd','💸','উত্তোলন'],['dep','💳','ডিপোজিট'],['pkg','📦','প্যাকেজ'],['bn','🎁','বোনাস'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ'],['ea','🏆','ইনকাম']];
 function ah(){return{'x-admin-pass':ADM}}
 function admOpen(){var p=prompt('Admin password');if(!p)return;ADM=p;$('adm').className='adm on';
- $('anav').innerHTML=ATABS.map(function(t){return '<div id="a_'+t[0]+'" onclick="admGo(\''+t[0]+'\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');admGo('ov')}
+ $('anav').innerHTML=ATABS.map(function(t){return '<div id="a_'+t[0]+'" onclick="admGo(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');admGo('ov')}
 function admClose(){$('adm').className='adm'}
 function aErr(e){if(e.message==='Wrong admin password.'){toast(e.message);admClose()}else $('abody').innerHTML='<div class="row">'+esc(e.message)+'</div>'}
 function admGo(t){ATABS.forEach(function(x){$('a_'+x[0]).className=x[0]===t?'on':''});$('abody').innerHTML='<div class="row">Loading...</div>';
