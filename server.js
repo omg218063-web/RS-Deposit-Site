@@ -230,7 +230,6 @@ async function fetchOffers(uid, ctx, dbg) {
   ctx = ctx || { device: '', country: '' };
   let combinedOffers = [];
 
-  // 1. Fetch from AdGem
   if (ADGEM_APP_ID && ADGEM_POSTBACK_KEY) {
     try {
       const adgemRes = await fetch(`https://api.adgem.com/v1/wall?appid=${ADGEM_APP_ID}&player_id=${encodeURIComponent(uid)}`);
@@ -258,7 +257,6 @@ async function fetchOffers(uid, ctx, dbg) {
     }
   }
 
-  // 2. Fetch from CPAGrip RSS
   if (CPAGRIP_USER_ID && CPAGRIP_KEY && CPAGRIP_FEED_URL) {
     try {
       const cpagripRes = await fetch(CPAGRIP_FEED_URL);
@@ -300,7 +298,6 @@ async function fetchOffers(uid, ctx, dbg) {
     }
   }
 
-  // 3. Fallback Demo Tasks (Social Channels)
   if (combinedOffers.length === 0) {
     combinedOffers = [
       {
@@ -386,7 +383,6 @@ app.post('/api/offers/:id/start', auth, h(async (q, s) => {
   s.json({ url: o.clickUrl });
 }));
 
-// AdGem Postback Callback
 app.get('/api/callback/adgem', h(async (q, s) => {
   const { user, amount, tx } = q.query;
   if (!user || amount == null || !tx) return bad(s, 'bad request', 400);
@@ -407,7 +403,6 @@ app.get('/api/callback/adgem', h(async (q, s) => {
   s.send('1');
 }));
 
-// CPAGrip Postback Callback
 app.get('/api/callback/cpagrip', h(async (q, s) => {
   const { user, amount, tx } = q.query;
   if (!user || amount == null || !tx) return bad(s, 'bad request', 400);
@@ -475,7 +470,7 @@ app.post('/api/spin', auth, h(async (q, s) => {
   const tot = SPIN.reduce((a, x) => a + x[1], 0);
   let r = crypto.randomInt(tot), prize = SPIN[0][0];
   for (const x of SPIN) { if (r < x[1]) { prize = x[0]; break; } r -= x[1]; }
-  const u = await User.findOneAndUpdate({ _id: q.user.id, $or: [{ lastSpin: { $exists: false } }, { lastSpin: { $lte: Date.now() - 864e5 } }] }, { $set: { lastSpin: Date.now() }, $inc: { balance: prize, earned: prize } }, { new: true });
+  const u = await User.findOneAndUpdate({ _id: q.user.id, $or: [{ lastSpin: { $exists: false } }, { lastSpin: {$lte: Date.now() - 864e5 } }] }, { $set: { lastSpin: Date.now() },$inc: { balance: prize, earned: prize } }, { new: true });
   if (!u) return bad(s, 'You already spun today. Come back in 24 hours.');
   s.json({ prize, me: me(u) });
 }));
@@ -661,9 +656,9 @@ const PAGE = `<!DOCTYPE html>
 body{background:var(--bg);color:var(--tx);display:flex;justify-content:center;min-height:100vh;padding:8px}
 .app{width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:26px;height:96vh;display:flex;flex-direction:column;overflow:hidden;position:relative}
 
-/* App Install Banner Style */
-.pwa-banner{display:none;background:linear-gradient(90deg,#fbbf24,#f59e0b);color:#000;padding:10px 14px;border-radius:14px;align-items:center;justify-content:space-between;margin-bottom:12px;font-weight:700;font-size:13px;box-shadow:0 4px 12px rgba(251,191,36,0.3)}
-.pwa-banner button{background:#000;color:#fff;border:0;padding:6px 12px;border-radius:10px;font-size:12px;cursor:pointer;font-weight:bold}
+/* Fixed Always Visible App Install Banner */
+.pwa-banner{display:flex;background:linear-gradient(90deg,#fbbf24,#f59e0b);color:#000;padding:12px 16px;border-radius:14px;align-items:center;justify-content:space-between;margin:10px 14px 0 14px;font-weight:700;font-size:13.5px;box-shadow:0 4px 12px rgba(251,191,36,0.3);position:relative;z-index:10}
+.pwa-banner button{background:#000;color:#fff;border:0;padding:7px 14px;border-radius:10px;font-size:12px;cursor:pointer;font-weight:bold}
 
 #auth{position:absolute;inset:0;z-index:50;background:radial-gradient(circle at top,#1e1b4b,#060913 70%);padding:22px;overflow-y:auto;text-align:center;display:none}
 .card{background:rgba(15,23,42,.92);border:1px solid rgba(251,191,36,.3);border-radius:18px;padding:16px;text-align:left}
@@ -828,9 +823,9 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 <input type="file" id="avf" accept="image/*" style="display:none" onchange="avUp(this)">
 <nav id="nav"></nav>
 
-<!-- App Install Banner for New Users -->
-<div id="pwaBanner" class="pwa-banner" style="margin: 8px 14px 0 14px;">
-  <span>📱 অ্যাপ ডাউনলোড করুন</span>
+<!-- Always Visible App Install Banner -->
+<div id="pwaBanner" class="pwa-banner">
+  <span>📱 আপনার ফোনে অ্যাপটি ইনস্টল করুন</span>
   <button onclick="installPWA()">Install</button>
 </div>
 
@@ -839,28 +834,24 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 <div class="adm" id="adm"><div class="ah"><b>Admin Panel</b><button class="btn s" onclick="admClose()">Close</button></div><div id="abody"></div><div id="anav"></div></div>
 <div class="modal" id="modal"><div id="mBody"></div></div>
 <script>
-// Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(function(e){ console.log('SW Registration Failed', e); });
 }
 
 var deferredPrompt = null;
 
-// PWA install prompt handler
 window.addEventListener('beforeinstallprompt', function(e) {
   e.preventDefault();
   deferredPrompt = e;
-  if (!window.matchMedia('(display-mode: standalone)').matches) {
-    var b = $('pwaBanner');
-    if (b) b.style.display = 'flex';
-  }
+  var b = $('pwaBanner');
+  if (b) b.style.display = 'flex';
 });
 
 function installPWA() {
   var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   if (isIOS) {
     modal('<h3 style="color:var(--gold)">🍏 iOS/iPhone-এ ইনস্টল করুন</h3>' +
-    '<div class="tdw">১. নিচে Safari ব্রাউজারের <b>Share (শেয়ার)</b> আইকনে চাপ দিন।<br>২. স্ক্রল করে <b>Add to Home Screen</b> সিলেক্ট করুন।</div>' +
+    '<div class="tdw">১. নিচে Safari ব্রাউজারের <b>Share (শেয়ার)</b> আইকনে চাপ দিন。<br>২. স্ক্রল করে <b>Add to Home Screen</b> সিলেক্ট করুন।</div>' +
     '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">বুঝেছি</button>');
   } else if (deferredPrompt) {
     deferredPrompt.prompt();
@@ -873,12 +864,12 @@ function installPWA() {
     });
   } else {
     modal('<h3 style="color:var(--gold)">📱 অ্যাপ ইনস্টল করার নিয়ম</h3>' +
-    '<div class="tdw">আপনার ব্রাউজারের ডানপাশের <b>৩-ডট (⋮) মেনুতে</b> ক্লিক করে <b>Add to Home screen</b> বা <b>Install app</b> চাপুন।</div>' +
+    '<div class="tdw">আপনার ব্রাউজারের ডানপাশের <b>৩-ডট (⋮) মেনুতে</b> ক্লিক করে <b>Add to Home screen</b> বা <b>Install app</b> অপশনটিতে চাপ দিন।</div>' +
     '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">বুঝেছি</button>');
   }
 }
 
-// Hide banner if running inside installed app
+// Hide banner when inside app
 if (window.matchMedia('(display-mode: standalone)').matches) {
   window.addEventListener('DOMContentLoaded', function(){
     var b = $('pwaBanner');
@@ -1314,7 +1305,7 @@ function aUs(){api('admin/users','GET',null,ah()).then(function(d){
  (d.active.map(function(u){return '<div class="row"><div>'+esc(u.name)+'<small>'+esc(u.phone)+' · শেষ '+tm(u.seen)+'</small></div><div style="text-align:right"><b style="color:var(--grn)">+'+money(u.today)+'</b><small>ব্যালেন্স '+money(u.balance)+'</small></div></div>'}).join('')||'<div class="row">আজ কেউ ঢোকেনি</div>')}).catch(aErr)}
 function aEa(){api('admin/users','GET',null,ah()).then(function(d){
  $('abody').innerHTML='<h3>আজ যারা আয় করেছে ('+d.earners.length+' জন নাম)</h3>'+
- (d.earners.map(function(u){return '<div class="row"><div>#'+(i+1)+' '+esc(u.name)+'<small>'+esc(u.phone)+'</small></div><b style="color:var(--grn)">'+money(u.t)+'</b></div>'}).join('')||'<div class="row">আজ এখনো কেউ আয় করেনি</div>')+
+ (d.earners.map(function(u,i){return '<div class="row"><div>#'+(i+1)+' '+esc(u.name)+'<small>'+esc(u.phone)+'</small></div><b style="color:var(--grn)">'+money(u.t)+'</b></div>'}).join('')||'<div class="row">আজ এখনো কেউ আয় করেনি</div>')+
  '<h3 style="margin-top:14px">সর্বকালের শীর্ষ আয়কারী</h3>'+
  d.top.map(function(u,i){return '<div class="row"><div>#'+(i+1)+' '+esc(u.name)+'<small>'+esc(u.phone)+' · ব্যালেন্স '+money(u.balance)+'</small></div><b style="color:var(--gold)">'+money(u.earned)+'</b></div>'}).join('')}).catch(aErr)}
 
