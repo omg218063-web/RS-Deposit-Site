@@ -34,7 +34,6 @@ const CO = {
 
 const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
 const PENDING_HOURS = 48;
-const LATE_CREDIT = true;
 const SPIN = [[1, 40], [2, 30], [3, 20], [5, 10]];
 const MAX_USD = 5;
 const COUNTRY_FILTER = true;
@@ -132,16 +131,8 @@ app.get('/manifest.json', (req, res) => {
     background_color: "#060913",
     theme_color: "#fbbf24",
     icons: [
-      {
-        src: "https://cdn-icons-png.flaticon.com/512/1041/1041888.png",
-        sizes: "192x192",
-        type: "image/png"
-      },
-      {
-        src: "https://cdn-icons-png.flaticon.com/512/1041/1041888.png",
-        sizes: "512x512",
-        type: "image/png"
-      }
+      { src: "https://cdn-icons-png.flaticon.com/512/1041/1041888.png", sizes: "192x192", type: "image/png" },
+      { src: "https://cdn-icons-png.flaticon.com/512/1041/1041888.png", sizes: "512x512", type: "image/png" }
     ]
   });
 });
@@ -476,8 +467,15 @@ app.post('/api/spin', auth, h(async (q, s) => {
 }));
 
 app.get('/api/leaderboard', auth, h(async (q, s) => {
-  const realTop = await User.find({ earned: { $gt: 0 } }).sort({ rsCoins: -1, earned: -1 }).limit(20).select('name balance earned rsCoins');
+  const realTop = await User.find({ earned: { $gt: 0 } }).sort({ rsCoins: -1, earned: -1 }).limit(20).select('name balance earned rsCoins avatar');
   const demoNames = ['Tanvir Ahmed', 'Rakibul Islam', 'Sumaiya Akter', 'Farhan Hossain', 'Nusrat Jahan', 'Mehedi Hasan', 'Ayesha Siddika', 'Imran Khan', 'Sadia Afrin', 'Nazmul Huda'];
+  const demoAvatars = [
+    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=80'
+  ];
   let demoTop = [];
   let baseEarn = 45000;
   let baseCoins = 150000;
@@ -486,10 +484,11 @@ app.get('/api/leaderboard', auth, h(async (q, s) => {
       name: i === 0 ? '👑 Al-Amin (Top 1)' : (i === 1 ? '⭐ Shanto Mahmud (Top 2)' : (demoNames[i % demoNames.length] + ' ' + (i + 1))),
       balance: Math.max(500, baseEarn - (i * 300)),
       earned: Math.max(1000, baseEarn - (i * 400)),
-      rsCoins: Math.max(500, baseCoins - (i * 1200))
+      rsCoins: Math.max(500, baseCoins - (i * 1200)),
+      avatar: demoAvatars[i % demoAvatars.length]
     });
   }
-  let combined = realTop.map(u => ({ name: u.name, balance: u.balance || 0, earned: u.earned, rsCoins: u.rsCoins || 0 })).concat(demoTop);
+  let combined = realTop.map(u => ({ name: u.name, balance: u.balance || 0, earned: u.earned, rsCoins: u.rsCoins || 0, avatar: u.avatar || '' })).concat(demoTop);
   combined.sort((a, b) => b.rsCoins - a.rsCoins || b.earned - a.earned);
   s.json(combined.slice(0, 100));
 }));
@@ -511,7 +510,7 @@ app.get('/api/withdrawals', auth, h(async (q, s) => s.json(await Wd.find({ uid: 
 app.post('/api/deposit', auth, h(async (q, s) => {
   const { amount, method, txid, lastDigits, pkgName } = q.body || {};
   const a = Math.floor(+amount);
-  if (!(a >= 200 && a <= 5000)) return bad(s, 'Deposit amount must be between 200 and 5000 BDT.');
+  if (!(a >= 200 && a <= 15000)) return bad(s, 'Deposit amount must be between 200 and 15000 BDT.');
   if (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
   if (!txid || txid.trim().length < 10) return bad(s, 'Transaction ID must be at least 10 characters.');
   const lDigits = lastDigits || txid.slice(-3);
@@ -519,7 +518,16 @@ app.post('/api/deposit', auth, h(async (q, s) => {
   
   let pkgData = null;
   if (pkgName && pkgName !== 'Custom Deposit') {
-    const coinsPerMin = Math.max(1, Math.round(a / 200 * 50));
+    let coinsPerMin = 10;
+    if (a >= 3000) coinsPerMin = 300;
+    else if (a >= 2500) coinsPerMin = 220;
+    else if (a >= 2000) coinsPerMin = 160;
+    else if (a >= 1500) coinsPerMin = 110;
+    else if (a >= 1200) coinsPerMin = 80;
+    else if (a >= 800) coinsPerMin = 50;
+    else if (a >= 500) coinsPerMin = 25;
+    else if (a >= 200) coinsPerMin = 10;
+
     pkgData = {
       name: pkgName,
       amount: a,
@@ -601,7 +609,8 @@ app.get('/api/admin/users', admin, h(async (q, s) => {
 }));
 
 app.post('/api/admin/wd/:id', admin, h(async (q, s) => {
-  const x = await Wd.findOneAndUpdate({ _id: q.params.id, status: 'pending' }, { status: q.body.ok ? 'paid' : 'rejected' });
+  const statusVal = q.body.ok ? 'Success' : 'Rejected';
+  const x = await Wd.findOneAndUpdate({ _id: q.params.id, status: 'pending' }, { status: statusVal });
   if (x && !q.body.ok) await User.updateOne({ _id: x.uid }, { $inc: { balance: x.amount } });
   s.json({ ok: true });
 }));
@@ -694,7 +703,7 @@ h3{font-size:13px;color:var(--mu);margin:4px 0 10px}
 .pod .p1{border-color:var(--gold);padding-bottom:26px;background:linear-gradient(180deg,rgba(251,191,36,.18),#131d38)}
 .pod b{display:block;color:var(--gold);font-size:14px;margin-top:4px}
 .chip{font-size:10px;padding:3px 8px;border-radius:10px;background:#1e293b;color:var(--gold)}
-.chip.approved,.chip.paid{color:var(--grn)}.chip.rejected,.chip.cancelled{color:var(--red)}
+.chip.approved,.chip.paid,.chip.Success{color:var(--grn)}.chip.rejected,.chip.cancelled{color:var(--red)}
 .share{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .share a,.share button{display:block;text-align:center;background:#1e293b;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:12px;color:var(--tx);text-decoration:none;cursor:pointer}
 .chat{max-height:40vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
@@ -924,6 +933,7 @@ function startGlobalSync(){
   window.SYNC_INT = setInterval(function(){
     if(!T) return;
     api('me').then(function(m){ ME=m; head(); }).catch(function(){});
+    api('user/heartbeat', 'POST', { userId: ME ? ME.id : '' }).catch(function(){});
   }, 10000);
 }
 function go(t){TAB=t;clearInterval(TIMER);TABS.forEach(function(x){$('n_'+x[0]).className=x[0]===t?'on':''});({home:vHome,tasks:vTasks,pkg:vPkg,rank:vRank,ref:vRef,help:vHelp,acc:vAcc,book:vBook})[t]()}
@@ -970,8 +980,8 @@ function vHome(){
   '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
   '<div class="hs">'+sl+'</div><div class="dots">'+dt+'</div>'+
   
-  '<div class="bo" style="margin-bottom:14px;padding:4px"><div class="bi lk" style="flex-direction:column;text-align:center;padding:18px"><span class="ic" style="font-size:52px">🎡</span><div><b style="font-size:16px;color:var(--gold);margin-top:4px">iPhone 18 Pro Max এবং গ্র্যান্ড প্রাইজ জিতে এখানে স্পিন করুন ফ্রিতে!</b><small style="font-size:11.5px">চাকা ঘুরিয়ে ক্যাশ রিওয়ার্ড (৳১, ৳২, ৳৩, ৳৫) জিতে নিন প্রতি ২৪ ঘণ্টায়!</small></div>'+
-  '<div style="background:#0b1224;border:1px solid rgba(251,191,36,0.4);border-radius:10px;padding:8px;margin-top:10px;font-size:11px;color:var(--mu)">🎁 <b>Recent Grand Winner:</b> Rafiq Ahmed won iPhone 18 Pro Max!</div>'+
+  '<div class="bo" style="margin-bottom:14px;padding:4px"><div class="bi lk" style="flex-direction:column;text-align:center;padding:18px"><span class="ic" style="font-size:52px">🎡</span><div><b style="font-size:16px;color:var(--gold);margin-top:4px">Grand Lucky Spin & Rewards!</b><small style="font-size:11.5px">চাকা ঘুরিয়ে ক্যাশ ও কয়েন রিওয়ার্ড (৳১, ৳২, ৳৩, ৳৫) জিতে নিন প্রতি ২৪ ঘণ্টায়!</small></div>'+
+  '<div style="background:#0b1224;border:1px solid rgba(251,191,36,0.4);border-radius:10px;padding:8px;margin-top:10px;font-size:11px;color:var(--mu)">🎁 <b>Recent Grand Winner:</b> Rafiq Ahmed won ৳5.00!</div>'+
   '<button class="btn'+(sp?'':' dn')+'" style="margin-top:12px;width:100%" onclick="spinOpen()">'+(sp?'Spin Wheel Now':'Spin Completed ✅')+'</button></div></div>'+
 
   '<h3>আজকের বোনাস</h3><div class="bn">'+
@@ -983,16 +993,16 @@ function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward
 
 function wheelSvg(){
   var cols=['#b45309','#1e3a8a','#14532d','#7c2d12','#4c1d95','#0c4a6e','#78350f','#164e63','#065f46','#1e1b4b','#831843','#701a75','#3b0764','#1e293b','#334155','#475569','#0f172a','#134e4a','#042f2e','#451a03','#78350f','#b45309','#92400e','#b91c1c','#6b21a8'];
-  var icons=['📱 iPhone 18','💻 Laptop','⌚ Rolex','🎧 Bluetooth','৳1','৳2','৳3','৳5','৳1','৳2','৳1','৳2','৳1','৳2','৳1','৳2','৳1','৳2','৳1','৳2','৳1','৳2','৳1','৳2','৳1'];
+  var icons=['৳1','৳2','৳3','৳5','50 Coins','100 Coins','৳1','৳2','৳3','৳1','৳2','৳3','৳1','৳2','৳3','৳1','৳2','৳3','৳1','৳2','৳3','৳1','৳2','৳3','৳5'];
   var h='<svg viewBox="0 0 200 200" width="300" height="300" id="whs" style="display:block;margin:0 auto;transition:transform 4.5s cubic-bezier(.17,.67,.12,1);transform:rotate('+ROT+'deg)"><circle cx="100" cy="100" r="98" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/>';
   for(var i=0;i<25;i++){
     var deg = i * (360/25);
-    h+='<g transform="rotate('+deg+' 100 100)"><path d="M100 100L91 8A95 95 0 0 1 109 8Z" fill="'+cols[i]+'" stroke="#fbbf24" stroke-width="1"/><text x="100" y="27" text-anchor="middle" font-size="7.5" font-weight="800" fill="#fff">'+icons[i%icons.length]+'</text></g>';
+    h+='<g transform="rotate('+deg+' 100 100)"><path d="M100 100L91 8A95 95 0 0 1 109 8Z" fill="'+cols[i]+'" stroke="#fbbf24" stroke-width="1"/><text x="100" y="27" text-anchor="middle" font-size="8.5" font-weight="800" fill="#fff">'+icons[i%icons.length]+'</text></g>';
   }
   return h+'<circle cx="100" cy="100" r="16" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/><text x="100" y="104" text-anchor="middle" font-size="11">⭐</text></svg>';
 }
 function spinOpen(){SPUN=false;var ok=Date.now()-(ME.lastSpin||0)>=864e5;
- modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Grand Lucky Wheel (25 Channels)</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন (গ্র্যান্ড প্রাইজ শুধু প্রদর্শনের জন্য)':'আজকের স্পিন শেষ। ২৪ ঘণ্টা পর আবার আসুন।')+'</div><div style="background:#0b1224;border:1px solid var(--gold);border-radius:10px;padding:8px;font-size:11px;text-align:center;margin-bottom:8px">🔥 <b>Demo Grand Prizes:</b> Official iPhone 18, Laptop, Rolex, Bluetooth</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin Now</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeSpin()">Close</button>')}
+ modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Grand Lucky Wheel</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন':'আজকের স্পিন শেষ। ২৪ ঘণ্টা পর আবার আসুন।')+'</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin Now</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeSpin()">Close</button>')}
 function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style.opacity='.5';
  api('spin','POST').then(function(r){var c=[];for(var k=0;k<SEG.length;k++)if(SEG[k][0]===r.prize)c.push(k);var i=c[Math.floor(Math.random()*c.length)]||0;
   ROT=Math.ceil(ROT/360)*360+1800-(i*(360/25));$('whs').style.transform='rotate('+ROT+'deg)';
@@ -1022,14 +1032,14 @@ function modal(h){$('mBody').innerHTML=h;$('modal').style.display='flex'}
 function closeM(){$('modal').style.display='none'}
 
 function vPkg(){var pkgs=[
- {p:200,c:50,d:'Basic RS Coin Package', hot:false},
- {p:500,c:130,d:'Bronze RS Coin Package', hot:false},
- {p:800,c:220,d:'Silver RS Coin Package', hot:false},
- {p:1200,c:350,d:'Gold RS Coin Package', hot:false},
- {p:1500,c:460,d:'Platinum RS Coin Package', hot:true},
- {p:2000,c:650,d:'Diamond RS Coin Package', hot:true},
- {p:2500,c:850,d:'Master RS Coin Package', hot:true},
- {p:3000,c:1050,d:'Elite RS Coin Package', hot:true}
+ {p:200,c:10,d:'Basic RS Coin Package', hot:false},
+ {p:500,c:25,d:'Bronze RS Coin Package', hot:false},
+ {p:800,c:50,d:'Silver RS Coin Package', hot:false},
+ {p:1200,c:80,d:'Gold RS Coin Package', hot:false},
+ {p:1500,c:110,d:'Platinum RS Coin Package', hot:true},
+ {p:2000,c:160,d:'Diamond RS Coin Package', hot:true},
+ {p:2500,c:220,d:'Master RS Coin Package', hot:true},
+ {p:3000,c:300,d:'Elite RS Coin Package', hot:true}
 ];
 var isBought = ME.activePkg && ME.activePkg.expiresAt > Date.now();
 $('main').innerHTML=hb('ref','📦','RS Coin Packages','৳২০০ থেকে ৳৩০০০ টাকার মধ্যে প্যাকেজ কিনুন। ৩০ দিনের জন্য আনলক হবে এবং প্রতি মিনিটে আর এস কয়েন মাইন হবে। অফিসিয়াল প্যাকেজসমূহ।') +
@@ -1054,8 +1064,8 @@ function vRank(){
     api('leaderboard').then(function(a){
       if(!a.length){$('rk').innerHTML='<div class="row">No leaderboard data.</div>';return}
       var p=[a[1],a[0],a[2]],cl=['','p1',''],rk=['#2','#1','#3'];
-      $('rk').innerHTML='<div class="pod">'+p.map(function(u,i){return u?'<div class="'+cl[i]+'">'+(i===1?'👑':'')+'<br>'+esc(u.name)+'<b style="color:var(--grn)">'+money(u.balance||0)+' BDT</b><small style="color:var(--gold)">'+formatCompact(u.rsCoins||0)+' RS Coins</small><small>'+rk[i]+'</small></div>':'<div></div>'}).join('')+'</div>'+
-      a.slice(3).map(function(u,i){return '<div class="row"><div>#'+(i+4)+' '+esc(u.name)+'<small style="color:var(--gold)">RS Coins: '+formatCompact(u.rsCoins||0)+'</small></div><b style="color:var(--grn)">'+money(u.balance||0)+' BDT</b></div>'}).join('')
+      $('rk').innerHTML='<div class="pod">'+p.map(function(u,i){return u?'<div class="'+cl[i]+'">'+(i===1?'👑':'')+'<br>'+(u.avatar?'<img src="'+esc(u.avatar)+'" width="42" height="42" style="border-radius:50%;border:2px solid var(--gold);object-fit:cover;margin:4px auto;display:block">':'👤')+'<br>'+esc(u.name)+'<b style="color:var(--grn)">'+money(u.balance||0)+' BDT</b><small style="color:var(--gold)">'+formatCompact(u.rsCoins||0)+' RS Coins</small><small>'+rk[i]+'</small></div>':'<div></div>'}).join('')+'</div>'+
+      a.slice(3).map(function(u,i){return '<div class="row"><div style="display:flex;align-items:center;gap:10px">'+(u.avatar?'<img src="'+esc(u.avatar)+'" width="32" height="32" style="border-radius:50%;object-fit:cover">':'👤')+'<div>#'+(i+4)+' '+esc(u.name)+'<small style="color:var(--gold)">RS Coins: '+formatCompact(u.rsCoins||0)+'</small></div></div><b style="color:var(--grn)">'+money(u.balance||0)+' BDT</b></div>'}).join('')
     }).catch(function(){})
   }
   load();
@@ -1139,7 +1149,6 @@ function vAcc(){
   '<div class="row"><div>'+esc(ME.name)+'<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
   '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
   '<div style="display:flex;gap:8px"><button class="btn r" style="flex:1;margin-top:0" onclick="wdForm()">Withdraw</button><button class="btn g" style="flex:1;margin-top:0" onclick="depForm()">Deposit</button></div>'+
-  '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn s" style="flex:1;background:#1e293b;color:var(--gold)" onclick="showPendingModal(\\'wd\\')">⏳ Withdraw Pending</button><button class="btn s" style="flex:1;background:#1e293b;color:var(--gold)" onclick="showPendingModal(\\'dep\\')">⏳ Deposit Pending</button></div>'+
   '<h3 style="margin-top:16px">Withdraw history</h3><div id="wh">Loading...</div>'+
   '<h3 style="margin-top:16px">Deposit history</h3><div id="dh">Loading...</div>'+
   
@@ -1163,24 +1172,6 @@ function vAcc(){
 
   api('withdrawals').then(function(a){$('wh').innerHTML=a.length?a.map(function(w){return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' <span class="chip '+w.status+'">'+w.status+'</span></div></div>'}).join(''):'<div class="row">No withdrawals yet.</div>'});
   api('deposits').then(function(a){$('dh').innerHTML=a.length?a.map(function(d){return '<div class="row"><div>'+esc(d.method)+' (Trx: ...'+esc(d.lastDigits)+')<small>'+new Date(d.at).toLocaleDateString()+'</small></div><div>'+money(d.amount)+' <span class="chip '+d.status+'">'+d.status+'</span></div></div>'}).join(''):'<div class="row">No deposits yet.</div>'})
-}
-
-function showPendingModal(type){
-  if(type === 'wd'){
-    api('withdrawals').then(function(a){
-      var pending = a.filter(function(w){return w.status === 'pending'});
-      modal('<h3 style="color:var(--gold)">⏳ Pending Withdrawals</h3>' +
-      (pending.length ? pending.map(function(w){return '<div class="row"><div>'+esc(w.method)+' ('+esc(w.phone)+')<small>'+new Date(w.at).toLocaleString()+'</small></div><div>'+money(w.amount)+' <span class="chip pending">pending</span></div></div>'}).join('') : '<div class="row">কোনো পেন্ডিং উত্তোলন নেই।</div>') +
-      '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>');
-    });
-  } else {
-    api('deposits').then(function(a){
-      var pending = a.filter(function(d){return d.status === 'pending'});
-      modal('<h3 style="color:var(--gold)">⏳ Pending Deposits</h3>' +
-      (pending.length ? pending.map(function(d){return '<div class="row"><div>'+esc(d.method)+' (Trx: '+esc(d.txid)+')<small>'+new Date(d.at).toLocaleString()+'</small></div><div>'+money(d.amount)+' <span class="chip pending">pending</span></div></div>'}).join('') : '<div class="row">কোনো পেন্ডিং ডিপোজিট নেই।</div>') +
-      '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>');
-    });
-  }
 }
 
 function wdForm(){modal('<h3 style="color:var(--gold)">Withdraw (300 - 5000 BDT)</h3><label>Method</label><select id="wm"><option>bKash</option><option>Nagad</option></select><label>Amount</label><input id="wa" type="number" inputmode="numeric"><label>Your bKash/Nagad number (Default: 01951639460)</label><input id="wp" maxlength="11" inputmode="numeric" value="01951639460"><button class="btn r" onclick="doWd()">Send request</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
@@ -1237,10 +1228,10 @@ var DUA=[
 ["২. সূরা ফাতিহা (প্রতি রাকাতে)","بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ الرَّحْمَٰنِ الرَّحِيمِ مَالِكِ يَوْمِ الدِّينِ إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ","","পরম করুণাময় দয়ালু আল্লাহর নামে শুরু। সমস্ত প্রশংসা জগতের প্রতিপালক আল্লাহর। তিনি পরম করুণাময়, অতি দয়ালু, বিচার দিনের মালিক। আমরা শুধু আপনারই ইবাদত করি ও আপনারই কাছে সাহায্য চাই। আমাদের সরল পথ দেখান, তাদের পথ, যাদের আপনি নিয়ামত দিয়েছেন; তাদের পথ নয়, যারা গজবপ্রাপ্ত ও পথভ্রষ্ট।"],
 ["৩. আত্তাহিয়্যাতু (শেষ বৈঠকে)","التَّحِيَّاتُ لِلَّهِ وَالصَّلَوَاتُ وَالطَّيِّبَاتُ السَّلَامُ عَلَيكَ أَيُّهَا النَّبِيُّ وَرَحْمَةُ اللَّهِ وَبَرَكَاتُهُ السَّلَامُ عَلَيْنَا وَعَلَى عِبَادِ اللَّهِ الصَّالِحِينَ أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ","আত্তাহিয়্যাতু লিল্লাহি ওয়াস সালাওয়াতু ওয়াত তাইয়্যিবাতু, আস সালামু আলাইকা আইয়্যুهان নাবিয়্যু ওয়া রাহমাতুল্লাহি ওয়া বারাকাতুহু, আস সালামু আলাইনা ওয়া আলা ইবাদিল্লাহিস সালিহীন, আশহাদু আল লা ইলাহা ইল্লাল্লাহু ওয়া আশহাদু আন্না মুহাম্মাদান আবদুহু ওয়া রাসুলুহু।","সমস্ত সম্মান, ইবাদত ও পবিত্রতা আল্লাহর জন্য। হে নবী, আপনার ওপর শান্তি, আল্লাহর রহমত ও বরকত বর্ষিত হোক। আমাদের ওপর এবং আল্লাহর সৎ বান্দাদের ওপরও শান্তি বর্ষিত হোক। আমি সাক্ষ্য দিচ্ছি আল্লাহ ছাড়া কোনো ইলাহ নেই, আর মুহাম্মদ (সা.) তাঁর বান্দা ও রাসুল।"],
 ["৪. দরুদ ইবরাহিম","اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا صَلَّيْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ اللَّهُمَّ بَارِكْ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا بَارَكْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ","আল্লাহুম্মা সাল্লি আলা মুহাম্মাদিউ ওয়া আলা আলি মুহাম্মাদিন কামা সাল্লাইতা আলা ইবরাহিমা ওয়া আলা আলি ইবরাহিমা ইন্নাকা হামিদুম মাজিদ। আল্লাহুম্মা বারিক আলা মুহাম্মাদিউ ওয়া আলা আলি মুহাম্মাদিন কামা বারাকতা আলা ইবরাহিমা ওয়া আলা আলি ইবরাহিমা ইন্নাকা হামিদুম মাজিদ।","হে আল্লাহ, মুহাম্মদ (সা.) ও তাঁর পরিবারের ওপর রহমত বর্ষণ করুন, যেমন ইবরাহিম (আ.) ও তাঁর পরিবারের ওপর করেছিলেন। নিশ্চয়ই আপনি প্রশংসিত ও মহিমান্বিত। হে আল্লাহ, মুহাম্মদ (সা.) ও তাঁর পরিবারের ওপর বরকত দিন, যেমন ইবরাহিম (আ.) ও তাঁর পরিবারের ওপর দিয়েছিলেন।"],
-["৫. দোয়া মাসুরা","اللَّهُمَّ إِنِّي ظَلَمْتُ نَفْسِي ظُلْمًا كَثِيرًا وَلَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ فَاغْفِرْ لِي مَغْفِرَةً مِنْ عِنْدِكَ وَارْحَمْنِي إِنَّكَ أَنْتَ الْغَفُورُ الرَّحِيمُ","আল্লাহুম্মা ইন্নি জালামতু নাফসি জুলমান কাসিরাঁও ওয়া লা ইয়াগفیرুয যুনুবা ইল্লা আনতা ফاگফিরলি মাগফিরাতাম মিন ইনদیکا ওয়ারহামনি ইন্নাকা আনতাল গাফুরুর রাহিম।","হে আল্লাহ, আমি নিজের ওপর অনেক জুলুম করেছি। আপনি ছাড়া কেউ গুনাহ মাফ করতে পারে না। তাই আপনার পক্ষ থেকে আমাকে ক্ষমা করুন ও দয়া করুন। নিশ্চয়ই আপনি ক্ষমাশীল, দয়ালু।"],
+["৫. দোয়া মাসুরা","اللَّهُمَّ إِنِّي ظَلَمْتُ نَفْسِي ظُلْمًا كَثِيرًا وَلَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ فَاغْفِرْ لِي مَغْفِرَةً مِنْ عِنْدِكَ وَارْحَمْنِي إِنَّكَ أَنْتَ الْغَفُورُ الرَّحِيمُ","আল্লাহুম্মা ইন্নি জালামতু নাফসি জুলমান কাসিরাঁও ওয়া লা ইয়াগفیرুয যুনুবা ইল্লা আনতা ফاگفیرলি মাগফিরাতাম মিন ইনদیکا ওয়ারহামনি ইন্নাকা আনতাল গাফুরুর রাহিম।","হে আল্লাহ, আমি নিজের ওপর অনেক জুলুম করেছি। আপনি ছাড়া কেউ গুনাহ মাফ করতে পারে না। তাই আপনার পক্ষ থেকে আমাকে ক্ষমা করুন ও দয়া করুন। নিশ্চয়ই আপনি ক্ষমাশীল, দয়ালু।"],
 ["৬. নামাজের পরের দোয়া","رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ","রাব্বানা আতিনা ফিদ্দুনইয়া হাসানাতাঁও ওয়া ফিল আখিরাতি হাসানাতাঁও ওয়া কিনা আজাবান নার।","হে আমাদের রব, আমাদের দুনিয়াতে কল্যাণ দিন, আখিরাতে কল্যাণ দিন এবং আমাদের জাহান্নামের আজাব থেকে রক্ষা করুন।"]];
 var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
-var HD=[["কাজ নিয়তের ওপর নির্ভরশীল। প্রত্যেক ব্যক্তি তা-ই পাবে, যার নিয়ত সে করেছে।","সহিহ বুখারি ১, সহিহ মুসলিম ১৯০৭"],["তোমাদের মধ্যে সেই ব্যক্তি সর্বোত্তম, যে কুরআন শেখে এবং অন্যকে শেখায়।","সহিহ বুখারি ৫০২৭"],["তোমাদের কেউ প্রকৃত মুমিন হবে না, যতক্ষণ না সে নিজের জন্য যা পছন্দ করে, তার ভাইয়ের জন্যও তা পছন্দ করে।","সহিহ বুখারি ১৩, সহিহ মুসলিম ৪৫"],["পবিত্রতা ঈমানের অর্ধেক।","সহিহ মুসলিম ২২৩"],["প্রকৃত বীর সে নয়, যে কুস্তিতে অন্যকে হারায়। প্রকৃত বীর সে, যে রাগের সময় নিজেকে নিয়ন্ত্রণ করে।","সহিহ বুখারি ৬১১৪, সহিহ মুসলিম ২৬০৯"],["যে আল্লাহ ও আখিরাতের দিনে বিশ্বাস রাখে, সে যেন ভালো কথা বলে, নয়তো চুপ থাকে।","সহিহ বুখারি ৬০১৮, সহিহ মুসলিম ৪৭"],["যে ব্যক্তি প্রতারণা করে, সে আমাদের দলভুক্ত নয়।","সহিহ মুসলিম ১০১"]];
+var HD=[["কাজ নিয়তের ওপর নির্ভরশীল। প্রত্যেক ব্যক্তি তা-ই পাবে, যার নিয়ত সে করেছে।","সহিহ বুখারি ১, সহিহ মুসলিম ১৯০৭"],["তোমাদের মধ্যে সেই ব্যক্তি সর্বোত্তম, যে কুরআন শেখে এবং অন্যকে শেখায়।","সহিহ বুখারি ৫০২৭"],["তোমাদের কেউ প্রকৃত মুমিন হবে না, যতক্ষণ না সে নিজের জন্য যা পছন্দ করে, তার ভাইয়ের জন্যও তা পছন্দ করে।","সহিহ বুখারি ১৩, সহিহ মুসলিম ৪৫"],["পবিত্রতা ঈমানের অর্ধেক।","সহিহ মুসলিম ২২৩"],["প্রকৃত বীর সে নয়, যে কুস্তিতে অন্যকে হারায়। প্রকৃত বীর সে, যে রাগের সময় নিজেকে নিয়ন্ত্রণ করে।","সহিহ বুখারি ৬১inputFields বা বুখারি ৬১১৪, সহিহ মুসলিম ২৬০৯"],["যে আল্লাহ ও আখিরাতের দিনে বিশ্বাস রাখে, সে যেন ভালো কথা বলে, নয়তো চুপ থাকে।","সহিহ বুখারি ৬০১৮, সহিহ মুসলিম ৪৭"],["যে ব্যক্তি প্রতারণা করে, সে আমাদের দলভুক্ত নয়।","সহিহ মুসলিম ১০১"]];
 function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\\''+p+'\\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
 function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\\''+p+'\\')">&lsaquo; ফিরে যান</button>'}
 function vBook(){bk('menu')}
@@ -1274,11 +1265,11 @@ function aOv(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
  '<button class="btn" style="background:#1e293b;color:#fff" onclick="chk()">Check offers</button>'}).catch(aErr)}
 function chk(){api('admin/offers-raw','GET',null,ah()).then(function(r){modal('<h3 style="color:var(--gold)">Offers response</h3><pre>'+esc(r.text)+'</pre><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')})}
 function cpI(i){var t=AD.wds[i].phone;if(navigator.clipboard)navigator.clipboard.writeText(t).then(function(){toast('Copied: '+t)}).catch(function(){toast(t)});else toast(t)}
-function decI(i,ok){var w=AD.wds[i];if(!confirm((ok?'Paid':'Reject')+' করবেন? '+w.name+' - '+w.amount))return;api('admin/wd/'+w._id,'POST',{ok:!!ok},ah()).then(aWd).catch(aErr)}
+function decI(i,ok){var w=AD.wds[i];if(!confirm((ok?'Success':'Reject')+' করবেন? '+w.name+' - '+w.amount))return;api('admin/wd/'+w._id,'POST',{ok:!!ok},ah()).then(aWd).catch(aErr)}
 function aWd(){api('admin/wd-list','GET',null,ah()).then(function(d){AD.wds=d.pending;
  var tot=d.pending.reduce(function(a,w){return a+w.amount},0);
  $('abody').innerHTML='<div class="grid">'+sc([['অপেক্ষমাণ',d.pending.length],['মোট টাকা',money(tot)]])+'</div><h3>পাঠাতে হবে</h3>'+
- (d.pending.map(function(w,i){return '<div class="th"><div class="hd"><span>'+esc(w.name)+'</span><span style="color:var(--gold)">'+money(w.amount)+'</span></div><div style="font-size:13px">'+esc(w.method)+': <b>'+esc(w.phone)+'</b></div><small style="color:var(--mu)">'+new Date(w.at).toLocaleString()+'</small><div class="gap"><button class="btn s" onclick="cpI('+i+')">নাম্বার কপি</button><button class="btn s g" onclick="decI('+i+',1)">Paid</button><button class="btn s r" onclick="decI('+i+',0)">Reject</button></div></div>'}).join('')||'<div class="row">কোনো রিকোয়েস্ট নেই</div>')+
+ (d.pending.map(function(w,i){return '<div class="th"><div class="hd"><span>'+esc(w.name)+'</span><span style="color:var(--gold)">'+money(w.amount)+'</span></div><div style="font-size:13px">'+esc(w.method)+': <b>'+esc(w.phone)+'</b></div><small style="color:var(--mu)">'+new Date(w.at).toLocaleString()+'</small><div class="gap"><button class="btn s" onclick="cpI('+i+')">নাম্বার কপি</button><button class="btn s g" onclick="decI('+i+',1)">Success</button><button class="btn s r" onclick="decI('+i+',0)">Reject</button></div></div>'}).join('')||'<div class="row">কোনো রিকোয়েস্ট নেই</div>')+
  '<h3 style="margin-top:14px">সর্বশেষ সম্পন্ন</h3>'+(d.done.map(function(w){return '<div class="row"><div>'+esc(w.name)+'<small>'+esc(w.method)+' '+esc(w.phone)+'</small></div><div>'+money(w.amount)+' <span class="chip '+w.status+'">'+w.status+'</span></div></div>'}).join('')||'<div class="row">নেই</div>')}).catch(aErr)}
 function cpDep(i){var t=AD.deps[i].txid;if(navigator.clipboard)navigator.clipboard.writeText(t).then(function(){toast('Copied TrxID')}).catch(function(){toast(t)});else toast(t)}
 function decDep(i,ok){var d=AD.deps[i];if(!confirm((ok?'Approve':'Reject')+' করবেন?'))return;api('admin/dep/'+d._id,'POST',{ok:!!ok},ah()).then(aDep).catch(aErr)}
