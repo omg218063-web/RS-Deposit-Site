@@ -29,7 +29,7 @@ const MIN_AGE = 18;
 const CO = {
   n: 'RS Growth Matrix', e: 'omg218063@gmail.com', p: '01764024069', y: 2026,
   tg: 'rkrana33', wa: '8801764024069', fb: 'https://www.facebook.com/share/1CAK8sYqDw/', age: MIN_AGE,
-  d: 'RS Growth Matrix একটি টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম। এখানে সহজ টাস্ক, দৈনিক বোনাস ও লাকি ড্রয়ের মাধ্যমে ব্যালেন্স জমিয়ে bKash বা Nagad-এ উত্তোলন করা যায়। টাস্কের টাকা আমাদের পার্টনার নেটওয়ার্ক থেকে আসে এবং যাচাই শেষে সফল হলে ব্যালেন্সে যোগ হয়। সাথে আছে ইসলামিক নাম, দোয়া ও হাদিসের একটি বই।'
+  d: 'RS Growth Matrix একটি টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম। এখানে সহজ টাস্ক, দৈনিক বোনাস, অ্যাড দেখে ইনকাম ও লাকি ড্রয়ের মাধ্যমে ব্যালেন্স জমিয়ে bKash বা Nagad-এ উত্তোলন করা যায়।'
 };
 
 const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
@@ -53,13 +53,14 @@ else mongoose.connect(process.env.MONGO_URI).then(async () => {
 const User = mongoose.model('User', new mongoose.Schema({
   name: String, nameKey: { type: String, unique: true, sparse: true }, phone: String,
   email: { type: String, unique: true, sparse: true }, hash: String, salt: String,
+  role: { type: String, default: 'worker' }, // 'worker' or 'employer'
   balance: { type: Number, default: 0 }, earned: { type: Number, default: 0 },
   rsCoins: { type: Number, default: 0 },
   activePkg: { type: Object, default: null },
   refCode: { type: String, unique: true }, refBy: String,
   refEarn: { type: Number, default: 0 }, refCount: { type: Number, default: 0 },
   avatar: { type: String, default: '' },
-  lastDaily: { type: Number, default: 0 }, lastCheckin: String, lastSpin: { type: Number, default: 0 }, lastSeen: Number, created: { type: Date, default: Date.now }
+  lastDaily: { type: Number, default: 0 }, lastCheckin: String, lastSpin: { type: Number, default: 0 }, lastAdWatch: { type: Number, default: 0 }, lastSeen: Number, created: { type: Date, default: Date.now }
 }));
 const Click = mongoose.model('Click', new mongoose.Schema({ uid: String, offerId: String, title: String, icon: String, bdt: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now }, doneAt: Number }));
 const Conv = mongoose.model('Conv', new mongoose.Schema({ key: { type: String, unique: true }, uid: String, tx: String, bdt: Number, status: String, at: { type: Date, default: Date.now } }));
@@ -87,7 +88,7 @@ const partners = () => [
   TW_SECRET && TW_URL ? 'TimeWall.io (Australian Clearing Pty Ltd)' : ''
 ].filter(Boolean);
 
-const me = u => ({ name: u.name, phone: u.phone || '', email: u.email || '', av: u.avatar || '', balance: u.balance, earned: u.earned, rsCoins: u.rsCoins || 0, activePkg: u.activePkg || null, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS, ct: CO, pt: partners() });
+const me = u => ({ name: u.name, phone: u.phone || '', email: u.email || '', av: u.avatar || '', role: u.role || 'worker', balance: u.balance, earned: u.earned, rsCoins: u.rsCoins || 0, activePkg: u.activePkg || null, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, lastAdWatch: u.lastAdWatch || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS, ct: CO, pt: partners() });
 const bdtFor = usd => Math.round(usd * RATE * (usd > 1 ? 0.5 : 0.7) * 100) / 100;
 const expire = uid => Click.updateMany(Object.assign({ status: 'pending', at: { $lt: new Date(Date.now() - PENDING_HOURS * 36e5) } }, uid ? { uid } : {}), { status: 'expired' });
 
@@ -148,15 +149,16 @@ app.get('/sw.js', (req, res) => {
 });
 
 app.post('/api/register', h(async (q, s) => {
-  const { name, phone, password, confirm, ref } = q.body || {};
+  const { name, phone, password, confirm, role, ref } = q.body || {};
   const n = String(name || '').trim();
   if (n.length < 3 || n.length > 30) return bad(s, 'Name must be 3 to 30 characters.');
   if (!/^01\d{9}$/.test(String(phone || ''))) return bad(s, 'Enter a valid 11-digit phone number.');
   if (String(password || '').length < 6) return bad(s, 'Password must be at least 6 characters.');
   if (password !== confirm) return bad(s, 'Passwords do not match.');
   if (await User.exists({ nameKey: n.toLowerCase() })) return bad(s, 'This name is already taken.');
+  const userRole = role === 'employer' ? 'employer' : 'worker';
   const salt = crypto.randomBytes(16).toString('hex');
-  const u = await newUser({ name: n, nameKey: n.toLowerCase(), phone, salt, hash: hashPw(password, salt) }, ref);
+  const u = await newUser({ name: n, nameKey: n.toLowerCase(), phone, role: userRole, salt, hash: hashPw(password, salt) }, ref);
   s.json({ token: sign(u.id), me: me(u) });
 }));
 
@@ -173,7 +175,7 @@ app.post('/api/google', h(async (q, s) => {
   const g = await r.json();
   if (!r.ok || g.aud !== GID || g.email_verified !== 'true') return bad(s, 'Google verification failed.', 401);
   let u = await User.findOne({ email: g.email });
-  if (!u) u = await newUser({ name: (g.name || g.email.split('@')[0]).slice(0, 30), email: g.email }, (q.body || {}).ref);
+  if (!u) u = await newUser({ name: (g.name || g.email.split('@')[0]).slice(0, 30), email: g.email, role: 'worker' }, (q.body || {}).ref);
   s.json({ token: sign(u.id), me: me(u) });
 }));
 
@@ -372,6 +374,17 @@ app.post('/api/offers/:id/start', auth, h(async (q, s) => {
     await Click.create({ uid: q.user.id, offerId: o.id, title: o.title, icon: o.icon, bdt: o.bdt });
   }
   s.json({ url: o.clickUrl });
+}));
+
+// Ad Watch Reward API
+app.post('/api/watch-ad', auth, h(async (q, s) => {
+  const now = Date.now();
+  if (q.user.lastAdWatch && now - q.user.lastAdWatch < 30000) {
+    return bad(s, 'Please wait 30 seconds before watching another ad.');
+  }
+  const adReward = 0.50; // 0.50 BDT per ad
+  const u = await User.findOneAndUpdate({ _id: q.user.id }, { $set: { lastAdWatch: now }, $inc: { balance: adReward, earned: adReward } }, { new: true });
+  s.json({ reward: adReward, me: me(u) });
 }));
 
 app.get('/api/callback/adgem', h(async (q, s) => {
@@ -593,7 +606,7 @@ app.get('/api/admin/support', admin, h(async (q, s) => {
 
 app.get('/api/admin/users', admin, h(async (q, s) => {
   const st = dayStart();
-  const act = await User.find({ lastSeen: { $gte: st.getTime() } }).sort({ lastSeen: -1 }).limit(200).select('name phone email lastSeen balance earned');
+  const act = await User.find({ lastSeen: { $gte: st.getTime() } }).sort({ lastSeen: -1 }).limit(200).select('name phone email lastSeen balance earned role');
   const ag = await Conv.aggregate([{ $match: { at: {$gte: st } } }, { $group: { _id: '$uid', t: { $sum: '$bdt' } } }]);
   const em = {}; ag.forEach(x => { em[x._id] = x.t; });
   const ids = ag.map(x => x._id).filter(x => mongoose.isValidObjectId(x));
@@ -602,7 +615,7 @@ app.get('/api/admin/users', admin, h(async (q, s) => {
   const top = await User.find({ earned: { $gt: 0 } }).sort({ earned: -1 }).limit(30).select('name phone email earned balance');
   s.json({
     newToday: await User.countDocuments({ created: { $gte: st } }),
-    active: act.map(u => ({ name: u.name, phone: u.phone || u.email || '', seen: u.lastSeen, balance: u.balance, today: em[String(u._id)] || 0 })),
+    active: act.map(u => ({ name: u.name, phone: u.phone || u.email || '', role: u.role || 'worker', seen: u.lastSeen, balance: u.balance, today: em[String(u._id)] || 0 })),
     earners,
     top: top.map(u => ({ name: u.name, phone: u.phone || u.email || '', earned: u.earned, balance: u.balance }))
   });
@@ -808,10 +821,15 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 </style></head><body>
 <div class="app">
 <div id="auth">
-  <div id="logoA"></div><div class="brand">RS Growth Matrix</div><div class="sub">Complete tasks. Earn rewards. Withdraw.</div>
+  <div id="logoA"></div><div class="brand">RS Growth Matrix</div><div class="sub">Complete tasks, watch ads & earn rewards.</div>
   <div class="card">
     <div class="seg"><div id="tReg" class="on" onclick="mode('reg')">Register</div><div id="tLog" onclick="mode('log')">Login</div></div>
     <div id="fReg">
+      <label>Account Type</label>
+      <select id="rRole">
+        <option value="worker">Worker (কাজ করতে চাই)</option>
+        <option value="employer">Employer (কাজ প্রমোট করাতে চাই)</option>
+      </select>
       <label>Name</label><input id="rN" autocomplete="username" placeholder="Your name">
       <label>Phone number</label><input id="rP" inputmode="numeric" maxlength="11" placeholder="01XXXXXXXXX">
       <label>Password (at least 6 characters)</label><input id="rW" type="password" autocomplete="new-password">
@@ -913,7 +931,7 @@ function out(){localStorage.removeItem('t');T=null;ME=null;admClose();$('auth').
 function mode(m){$('tReg').className=m==='reg'?'on':'';$('tLog').className=m==='log'?'on':'';$('fReg').style.display=m==='reg'?'block':'none';$('fLog').style.display=m==='log'?'block':'none';$('aErr').textContent=''}
 function done(d){T=d.token;localStorage.setItem('t',T);localStorage.removeItem('ref');enter(d.me)}
 function fail(e){$('aErr').textContent=e.message}
-function reg(){api('register','POST',{name:$('rN').value,phone:$('rP').value,password:$('rW').value,confirm:$('rC').value,ref:REF}).then(done).catch(fail)}
+function reg(){api('register','POST',{name:$('rN').value,phone:$('rP').value,password:$('rW').value,confirm:$('rC').value,role:$('rRole').value,ref:REF}).then(done).catch(fail)}
 function login(){api('login','POST',{name:$('lN').value,password:$('lW').value}).then(done).catch(fail)}
 function gCb(r){api('google','POST',{credential:r.credential,ref:REF}).then(done).catch(fail)}
 function initG(){if(!GID){$('gWrap').style.display='none';return}
@@ -923,7 +941,7 @@ function initG(){if(!GID){$('gWrap').style.display='none';return}
 var TABS=[['home','🏠','Home'],['tasks','📋','Tasks'],['pkg','📦','Package'],['rank','🏆','Ranking'],['ref','👥','Refer'],['help','💬','Support'],['acc','👤','Account'],['book','🕌','Islam']];
 function enter(m){ME=m;$('auth').style.display='none';$('nav').innerHTML=TABS.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');head();go('home');startGlobalSync()}
 function head(){
-  $('hName').textContent=ME.name;
+  $('hName').textContent=ME.name + (ME.role === 'employer' ? ' (Employer)' : '');
   $('hBal').textContent=money(ME.balance);
   $('hRsCoins').textContent='RS Coins: '+formatCompact(ME.rsCoins||0);
   $('avT').innerHTML=ME.av?'<img src="'+esc(ME.av)+'" alt="">':'📷';
@@ -933,7 +951,6 @@ function startGlobalSync(){
   window.SYNC_INT = setInterval(function(){
     if(!T) return;
     api('me').then(function(m){ ME=m; head(); }).catch(function(){});
-    api('user/heartbeat', 'POST', { userId: ME ? ME.id : '' }).catch(function(){});
   }, 10000);
 }
 function go(t){TAB=t;clearInterval(TIMER);TABS.forEach(function(x){$('n_'+x[0]).className=x[0]===t?'on':''});({home:vHome,tasks:vTasks,pkg:vPkg,rank:vRank,ref:vRef,help:vHelp,acc:vAcc,book:vBook})[t]()}
@@ -949,8 +966,8 @@ function avUp(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();
 
 var HS=[
  ['s0','🕌 নামাজের স্মরণ','নামাজ কি পড়েছেন?','নামাজ আমাদের জীবনের সবচেয়ে বড় আমানত। কাজের ফাঁকে ওয়াক্ত হলেই নামাজ আদায় করে নিন। মনও শান্ত থাকবে, কাজেও বরকত আসবে।','🕌','🌙','⭐'],
- ['s1','🌟 আমাদের সাইট','RS Growth Matrix','এটি একটি টাস্কভিত্তিক আয়ের সাইট। এখানে সহজ টাস্ক শেষ করলে ব্যালেন্সে টাকা যোগ হয়। আছে দৈনিক বোনাস, লাকি ড্র, রেফার, র‍্যাংকিং, সাপোর্ট ও একটি ইসলামিক বই।','🚀','✨','💎'],
- ['s2','📋 টাস্ক ও আয়','সহজ টাস্ক, নিয়মিত আয়','Tasks ট্যাবে গিয়ে পছন্দের টাস্কে চাপুন, বিস্তারিত পড়ুন এবং Start দিন। যাচাই শেষে সফল হলে টাকা ব্যালেন্সে যোগ হবে। পেন্ডিং দেখালে ধৈর্য ধরুন।','📱','💰','🎯'],
+ ['s1','🌟 আমাদের সাইট','RS Growth Matrix','এটি একটি টাস্কভিত্তিক আয়ের সাইট। এখানে সহজ টাস্ক ও অ্যাড দেখে আয় করা যায়। আছে দৈনিক বোনাস, লাকি ড্র, রেফার, র‍্যাংকিং, সাপোর্ট ও একটি ইসলামিক বই।','🚀','✨','💎'],
+ ['s2','📋 টাস্ক ও অ্যাড আয়','টাস্ক এবং অ্যাড দেখে আয়','Tasks ট্যাবে গিয়ে টাস্ক সম্পন্ন করুন অথবা Watch Ads অপশনে গিয়ে অ্যাড দেখে ইনস্ট্যান্ট ক্যাশ আয় করুন।','📱','💰','🎯'],
  ['s3','💸 উত্তোলন','সহজে টাকা তুলুন','Account থেকে Withdraw চেপে bKash বা Nagad নাম্বার দিন। উত্তোলন ৩০০ থেকে ৫০০০ টাকা পর্যন্ত করা যায়। রিকোয়েস্ট যাচাই করে আমরা নিজে টাকা পাঠাই।','💸','🏦','✅']];
 function hsGo(i){HSI=i;var s=document.querySelectorAll('.sl'),d=document.querySelectorAll('.dots i');for(var k=0;k<s.length;k++){s[k].className='sl '+HS[k][0]+(k===i?' on':'');d[k].className=k===i?'on':''}}
 function ico(c,p){return '<svg width="46" height="46" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="'+c+'"/>'+p+'</svg>'}
@@ -960,7 +977,7 @@ function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
  var wa=ico('#25d366','<path d="M12 5.2a6.8 6.8 0 0 0-5.8 10.3L5.2 18.8l3.4-.9A6.8 6.8 0 1 0 12 5.2z" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M9.6 9.3c.2 2 2 3.8 4 4.1l.9-.9-1.3-.9-.6.5c-.7-.3-1.4-1-1.7-1.7l.5-.6-.9-1.3z" fill="#fff"/>');
  return '<div class="ft"><div class="ftl">'+logo(46)+'<div><b>'+esc(c.n)+'</b><small>টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম</small></div></div>'+
  '<div class="fd">'+esc(c.d||'')+'</div>'+
- '<div class="fcols"><h5>প্ল্যাটফর্ম</h5><a onclick="go(\\'home\\')">Home</a><a onclick="go(\\'tasks\\')">Tasks</a><a onclick="go(\\'pkg\\')">Package</a><a onclick="go(\\'rank\\')">Ranking</a><a onclick="go(\\'ref\\')">Refer</a></div>'+
+ '<div class="fcols"><h5>প্ল্যাটফর্ম</h5><a onclick="go(\\'home\\')">Home</a><a onclick="go(\\'tasks\\')">Tasks & Ads</a><a onclick="go(\\'pkg\\')">Package</a><a onclick="go(\\'rank\\')">Ranking</a><a onclick="go(\\'ref\\')">Refer</a></div>'+
  '<div><h5>সহায়তা</h5><a onclick="go(\\'help\\')">Support</a><a onclick="go(\\'acc\\')">Account ও Withdraw</a><a onclick="go(\\'book\\')">ইসলামিক বই</a></div></div>'+
  '<div class="fsoc"><a href="'+esc(c.fb)+'" target="_blank" rel="noopener" aria-label="Facebook">'+fb+'</a><a href="https://t.me/'+esc(c.tg)+'" target="_blank" rel="noopener" aria-label="Telegram">'+tg+'</a><a href="https://wa.me/'+esc(c.wa)+'" target="_blank" rel="noopener" aria-label="WhatsApp">'+wa+'</a></div>'+
  '<div class="fage"><span class="bd">'+A+'+</span><div>'+A+' বছরের নিচে কারও এই অ্যাকাউন্টে প্রবেশ করা নিষেধ। অভিভাবকগণ সন্তানদের দিকে নজর রাখুন। কোনো শিশু প্রবেশ করেছে জানলে আমাদের জানান।</div></div>'+
@@ -976,7 +993,7 @@ function vHome(){
   var sl=HS.map(function(x,i){return '<div class="sl '+x[0]+(i===0?' on':'')+'"><span class="tag">'+x[1]+'</span><h4>'+x[2]+'</h4><p>'+x[3]+'</p><span class="em">'+x[4]+'</span><span class="e2">'+x[5]+'</span><span class="e3">'+x[6]+'</span></div>'}).join('');
   var dt=HS.map(function(x,i){return '<i class="'+(i===0?'on':'')+'" onclick="hsGo('+i+')"></i>'}).join('');
   
-  $('main').innerHTML='<div class="mq"><span>🌙 RS Growth Matrix-এ স্বাগতম! আপনার নামাজের কথা মনে আছে তো? 🤲 নামাজ পড়ুন, তারপর কাজে মন দিন। ✨ আমাদের এই সাইটে আপনি নিশ্চিন্তে সহজ টাস্ক করে আয় করতে পারেন। 🤝 কোনো সমস্যা হলে সাপোর্ট-এ জানান। 💬</span></div>'+
+  $('main').innerHTML='<div class="mq"><span>🌙 RS Growth Matrix-এ স্বাগতম! আপনার নামাজের কথা মনে আছে তো? 🤲 নামাজ পড়ুন, তারপর কাজে মন দিন। ✨ আমাদের এই সাইটে আপনি নিশ্চিন্তে সহজ টাস্ক ও অ্যাড দেখে আয় করতে পারেন। 💬</span></div>'+
   '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
   '<div class="hs">'+sl+'</div><div class="dots">'+dt+'</div>'+
   
@@ -1010,14 +1027,58 @@ function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style
  .catch(function(e){SPUN=false;toast(e.message);closeSpin()})}
 function closeSpin(){closeM();if(TAB==='home')vHome()}
 
-function vTasks(){$('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>📋</div><div><b>Live Tasks</b><small>টাস্কে চাপুন, বিস্তারিত পড়ুন, তারপর Start দিন।</small></div></div><div id="tw"></div><div class="grid4" id="st"></div><div class="mq u"><span>⏳ আপনার টাস্ক পেন্ডিং থাকা মানে যাচাই চলছে, চিন্তার কোনো কারণ নেই। টাস্ক কমপ্লিট হতে কিছুটা সময় লাগে। যাচাই শেষে সফল হলে টাকা ব্যালেন্সে যোগ হবে। ৪৮ ঘণ্টার মধ্যে যাচাই না হলে টাস্কটি তালিকা থেকে সরে যায়। ধৈর্য ধরুন। 🤍</span></div><div id="tl">Loading...</div>';
- api('timewall').then(function(d){TWU=d.url;var e=$('tw');if(e&&d.url)e.innerHTML='<div class="row" style="border-color:rgba(34,197,94,.5)"><div style="display:flex;gap:10px;align-items:center"><span style="font-size:30px">⏱️</span><div>TimeWall Tasks<small>সার্ভে, টাস্ক ও গেম। কাজ শেষ হলে কিছুক্ষণ পর টাকা ব্যালেন্সে যোগ হয়।</small></div></div><button class="btn s g" onclick="openTW()">Open</button></div>'}).catch(function(){});
- function load(){api('offers').then(function(d){var s=d.stats;if(!$('st'))return;
- $('st').innerHTML=[['Pending',s.pending],['Success',s.success],['Cancelled',s.cancelled],['Total',s.total]].map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('');
- window.OF=d.list;
- $('tl').innerHTML=d.list.length?d.list.map(function(t,i){var op=t.status==='open',b=op?'<button class="btn s">Details</button>':'<span class="chip '+(t.status==='success'?'approved':t.status)+'">'+t.status+'</span>';
- return '<div class="row"'+(op?' style="cursor:pointer" onclick="showT('+i+')"':'')+'><div style="display:flex;gap:10px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="38" height="38" style="border-radius:10px" alt="">':'')+'<div>'+esc(t.title)+'<small>Reward: '+money(t.bdt)+' BDT</small></div></div>'+b+'</div>'}).join(''):'<div class="row">এই মুহূর্তে কোনো টাস্ক নেই।</div>'}).catch(function(e){if($('tl'))$('tl').textContent=e.message})}
- load();TIMER=setInterval(load,30000)}
+function vTasks(){
+  $('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>📋</div><div><b>Tasks & Watch Ads Dashboard</b><small>নিচের ট্যাব থেকে টাস্ক কিংবা অ্যাড দেখে ইনকাম বেছে নিন।</small></div></div>' +
+  '<div class="seg" style="margin-bottom:14px"><div id="subTask" class="on" onclick="switchTaskSub(\\'tasks\\')">📋 Offerwall Tasks</div><div id="subAd" onclick="switchTaskSub(\\'ads\\')">📺 Watch Ads (অ্যাড দেখে আয়)</div></div>' +
+  '<div id="taskSubContent"></div>';
+  switchTaskSub('tasks');
+}
+
+function switchTaskSub(sub){
+  $('subTask').className = sub === 'tasks' ? 'on' : '';
+  $('subAd').className = sub === 'ads' ? 'on' : '';
+  var c = $('taskSubContent');
+  if(!c) return;
+  if(sub === 'tasks'){
+    c.innerHTML = '<div id="tw"></div><div class="grid4" id="st"></div><div class="mq u"><span>⏳ আপনার টাস্ক পেন্ডিং থাকা মানে যাচাই চলছে। যাচাই শেষে সফল হলে টাকা ব্যালেন্সে যোগ হবে।</span></div><div id="tl">Loading...</div>';
+    api('timewall').then(function(d){TWU=d.url;var e=$('tw');if(e&&d.url)e.innerHTML='<div class="row" style="border-color:rgba(34,197,94,.5)"><div style="display:flex;gap:10px;align-items:center"><span style="font-size:30px">⏱️</span><div>TimeWall Tasks<small>সার্ভে, টাস্ক ও গেম।</small></div></div><button class="btn s g" onclick="openTW()">Open</button></div>'}).catch(function(){});
+    function loadOffers(){api('offers').then(function(d){var s=d.stats;if(!$('st'))return;
+    $('st').innerHTML=[['Pending',s.pending],['Success',s.success],['Cancelled',s.cancelled],['Total',s.total]].map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('');
+    window.OF=d.list;
+    $('tl').innerHTML=d.list.length?d.list.map(function(t,i){var op=t.status==='open',b=op?'<button class="btn s">Details</button>':'<span class="chip '+(t.status==='success'?'approved':t.status)+'">'+t.status+'</span>';
+    return '<div class="row"'+(op?' style="cursor:pointer" onclick="showT('+i+')"':'')+'><div style="display:flex;gap:10px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="38" height="38" style="border-radius:10px" alt="">':'')+'<div>'+esc(t.title)+'<small>Reward: '+money(t.bdt)+' BDT</small></div></div>'+b+'</div>'}).join(''):'<div class="row">এই মুহূর্তে কোনো টাস্ক নেই।</div>'}).catch(function(e){if($('tl'))$('tl').textContent=e.message})}
+    loadOffers();
+  } else {
+    c.innerHTML = '<div class="card" style="text-align:center;padding:24px"><span style="font-size:48px">📺</span><h3 style="color:var(--gold);margin-top:10px">Watch Ads & Earn Cash</h3><div class="sub">প্রতিটি অ্যাড সম্পূর্ণ দেখলে ইনস্ট্যান্ট ৳০.৫০ আপনার ব্যালেন্সে যোগ হবে।</div><div id="adTimerBox" style="font-size:14px;color:var(--mu);margin:14px 0">অ্যাড দেখতে নিচে ক্লিক করুন</div><button id="watchBtn" class="btn g" onclick="startWatchAd()">Watch Ad Now (+৳0.50)</button></div>';
+  }
+}
+
+function startWatchAd(){
+  var btn = $('watchBtn');
+  var box = $('adTimerBox');
+  if(!btn || !box) return;
+  btn.disabled = true; btn.style.opacity = '.5';
+  var sec = 10;
+  box.innerHTML = 'অ্যাড চলছে... অনুগ্রহ করে <b style="color:var(--gold)">'+sec+'</b> সেকেন্ড অপেক্ষা করুন';
+  var int = setInterval(function(){
+    sec--;
+    if(sec > 0){
+      box.innerHTML = 'অ্যাড চলছে... অনুগ্রহ করে <b style="color:var(--gold)">'+sec+'</b> সেকেন্ড অপেক্ষা করুন';
+    } else {
+      clearInterval(int);
+      api('watch-ad', 'POST').then(function(r){
+        ME = r.me; head();
+        box.innerHTML = '<span style="color:var(--grn);font-weight:bold">🎉 সফল! আপনি ০.৫০ টাকা অর্জন করেছেন।</span>';
+        btn.disabled = false; btn.style.opacity = '1';
+        btn.textContent = 'Watch Another Ad';
+      }).catch(function(e){
+        box.innerHTML = '<span style="color:var(--red)">'+e.message+'</span>';
+        btn.disabled = false; btn.style.opacity = '1';
+      });
+    }
+  }, 1000);
+}
+
 function openTW(){if(TWU){var w=window.open(TWU,'_blank');if(!w)location.href=TWU}}
 function showT(i){var t=OF[i],cn=t.cnt||[],dv=t.dev||[],tc=(ME&&ME.tc)||[],okC=!cn.length||cn.some(function(c){return tc.indexOf(c)>=0});
  modal('<div style="display:flex;gap:12px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="54" height="54" style="border-radius:14px" alt="">':'')+'<div><b style="font-size:15px">'+esc(t.title)+'</b><div style="color:var(--grn);font-weight:800;margin-top:3px">Reward: '+money(t.bdt)+' BDT</div></div></div>'+
@@ -1146,7 +1207,7 @@ function vAcc(){
   ];
   
   $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স, আয় ও উত্তোলনের হিসাব।')+
-  '<div class="row"><div>'+esc(ME.name)+'<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
+  '<div class="row"><div>'+esc(ME.name)+' ('+(ME.role==='employer'?'Employer':'Worker')+')<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
   '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
   '<div style="display:flex;gap:8px"><button class="btn r" style="flex:1;margin-top:0" onclick="wdForm()">Withdraw</button><button class="btn g" style="flex:1;margin-top:0" onclick="depForm()">Deposit</button></div>'+
   '<h3 style="margin-top:16px">Withdraw history</h3><div id="wh">Loading...</div>'+
@@ -1231,7 +1292,7 @@ var DUA=[
 ["৫. দোয়া মাসুরা","اللَّهُمَّ إِنِّي ظَلَمْتُ نَفْسِي ظُلْمًا كَثِيرًا وَلَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ فَاغْفِرْ لِي مَغْفِرَةً مِنْ عِنْدِكَ وَارْحَمْنِي إِنَّكَ أَنْتَ الْغَفُورُ الرَّحِيمُ","আল্লাহুম্মা ইন্নি জালামতু নাফসি জুলমান কাসিরাঁও ওয়া লা ইয়াগفیرুয যুনুবা ইল্লা আনতা ফاگفیرলি মাগফিরাতাম মিন ইনদیکا ওয়ারহামনি ইন্নাকা আনতাল গাফুরুর রাহিম।","হে আল্লাহ, আমি নিজের ওপর অনেক জুলুম করেছি। আপনি ছাড়া কেউ গুনাহ মাফ করতে পারে না। তাই আপনার পক্ষ থেকে আমাকে ক্ষমা করুন ও দয়া করুন। নিশ্চয়ই আপনি ক্ষমাশীল, দয়ালু।"],
 ["৬. নামাজের পরের দোয়া","رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ","রাব্বানা আতিনা ফিদ্দুনইয়া হাসানাতাঁও ওয়া ফিল আখিরাতি হাসানাতাঁও ওয়া কিনা আজাবান নার।","হে আমাদের রব, আমাদের দুনিয়াতে কল্যাণ দিন, আখিরাতে কল্যাণ দিন এবং আমাদের জাহান্নামের আজাব থেকে রক্ষা করুন।"]];
 var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
-var HD=[["কাজ নিয়তের ওপর নির্ভরশীল। প্রত্যেক ব্যক্তি তা-ই পাবে, যার নিয়ত সে করেছে।","সহিহ বুখারি ১, সহিহ মুসলিম ১৯০৭"],["তোমাদের মধ্যে সেই ব্যক্তি সর্বোত্তম, যে কুরআন শেখে এবং অন্যকে শেখায়।","সহিহ বুখারি ৫০২৭"],["তোমাদের কেউ প্রকৃত মুমিন হবে না, যতক্ষণ না সে নিজের জন্য যা পছন্দ করে, তার ভাইয়ের জন্যও তা পছন্দ করে।","সহিহ বুখারি ১৩, সহিহ মুসলিম ৪৫"],["পবিত্রতা ঈমানের অর্ধেক।","সহিহ মুসলিম ২২৩"],["প্রকৃত বীর সে নয়, যে কুস্তিতে অন্যকে হারায়। প্রকৃত বীর সে, যে রাগের সময় নিজেকে নিয়ন্ত্রণ করে।","সহিহ বুখারি ৬১inputFields বা বুখারি ৬১১৪, সহিহ মুসলিম ২৬০৯"],["যে আল্লাহ ও আখিরাতের দিনে বিশ্বাস রাখে, সে যেন ভালো কথা বলে, নয়তো চুপ থাকে।","সহিহ বুখারি ৬০১৮, সহিহ মুসলিম ৪৭"],["যে ব্যক্তি প্রতারণা করে, সে আমাদের দলভুক্ত নয়।","সহিহ মুসলিম ১০১"]];
+var HD=[["কাজ নিয়তের ওপর নির্ভরশীল। প্রত্যেক ব্যক্তি তা-ই পাবে, যার নিয়ত সে করেছে।","সহিহ বুখারি ১, সহিহ মুসলিম ১৯০৭"],["তোমাদের মধ্যে সেই ব্যক্তি সর্বোত্তম, যে কুরআন শেখে এবং অন্যকে শেখায়।","সহিহ বুখারি ৫০২৭"],["তোমাদের কেউ প্রকৃত মুমিন হবে না, যতক্ষণ না সে নিজের জন্য যা পছন্দ করে, তার ভাইয়ের জন্যও তা পছন্দ করে।","সহিহ বুখারি ১৩, সহিহ মুসলিম ৪৫"],["পবিত্রতা ঈমানের অর্ধেক।","সহিহ মুসলিম ২২৩"],["প্রকৃত বীর সে নয়, যে কুস্তিতে অন্যকে হারায়। প্রকৃত বীর সে, যে রাগের সময় নিজেকে নিয়ন্ত্রণ করে।","সহিহ বুখারি ৬১১৪, সহিহ মুসলিম ২৬০৯"],["যে আল্লাহ ও আখিরাতের দিনে বিশ্বাস রাখে, সে যেন ভালো কথা বলে, নয়তো চুপ থাকে।","সহিহ বুখারি ৬০১৮, সহিহ মুসলিম ৪৭"],["যে ব্যক্তি প্রতারণা করে, সে আমাদের দলভুক্ত নয়।","সহিহ মুসলিম ১০১"]];
 function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\\''+p+'\\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
 function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\\''+p+'\\')">&lsaquo; ফিরে যান</button>'}
 function vBook(){bk('menu')}
@@ -1293,7 +1354,7 @@ function aSp(){api('admin/support','GET',null,ah()).then(function(d){AD.th=d;
  $('abody').innerHTML=d.length?d.map(function(t,i){return '<div class="th"><div class="hd"><span>'+esc(t.name)+'</span>'+(t.needs?'<span class="chip" style="color:var(--red)">উত্তর দিন</span>':'<span class="chip approved">উত্তর দেওয়া হয়েছে</span>')+'</div><div class="chat" style="max-height:30vh">'+t.msgs.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join('')+'</div><textarea id="rp'+i+'" rows="2" maxlength="500" placeholder="উত্তর লিখুন"></textarea><button class="btn s" style="margin-top:8px" onclick="repI('+i+')">Send</button></div>'}).join(''):'<div class="row">কোনো মেসেজ নেই</div>'}).catch(aErr)}
 function aUs(){api('admin/users','GET',null,ah()).then(function(d){
  $('abody').innerHTML='<div class="grid">'+sc([['আজ ঢুকেছে',d.active.length],['আজ নতুন',d.newToday]])+'</div><h3>আজ যারা ঢুকেছে</h3>'+
- (d.active.map(function(u){return '<div class="row"><div>'+esc(u.name)+'<small>'+esc(u.phone)+' · শেষ '+tm(u.seen)+'</small></div><div style="text-align:right"><b style="color:var(--grn)">+'+money(u.today)+'</b><small>ব্যালেন্স '+money(u.balance)+'</small></div></div>'}).join('')||'<div class="row">আজ কেউ ঢোকেনি</div>')}).catch(aErr)}
+ (d.active.map(function(u){return '<div class="row"><div>'+esc(u.name)+' ('+esc(u.role)+')<small>'+esc(u.phone)+' · শেষ '+tm(u.seen)+'</small></div><div style="text-align:right"><b style="color:var(--grn)">+'+money(u.today)+'</b><small>ব্যালেন্স '+money(u.balance)+'</small></div></div>'}).join('')||'<div class="row">আজ কেউ ঢোকেনি</div>')}).catch(aErr)}
 function aEa(){api('admin/users','GET',null,ah()).then(function(d){
  $('abody').innerHTML='<h3>আজ যারা আয় করেছে ('+d.earners.length+' জন নাম)</h3>'+
  (d.earners.map(function(u,i){return '<div class="row"><div>#'+(i+1)+' '+esc(u.name)+'<small>'+esc(u.phone)+'</small></div><b style="color:var(--grn)">'+money(u.t)+'</b></div>'}).join('')||'<div class="row">আজ এখনো কেউ আয় করেনি</div>')+
