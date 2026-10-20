@@ -119,7 +119,10 @@ async function newUser(data, ref) {
   return u;
 }
 
+// Keep-Alive Endpoint
 app.get('/ping', (req, res) => res.send('OK'));
+
+// PWA Manifest Endpoint
 app.get('/manifest.json', (req, res) => {
   res.json({
     name: "RS Growth Matrix", short_name: "RS Matrix",
@@ -131,9 +134,15 @@ app.get('/manifest.json', (req, res) => {
     ]
   });
 });
+
+// Service Worker Endpoint
 app.get('/sw.js', (req, res) => {
   res.setHeader('Content-Type', 'application/javascript');
-  res.send(`self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));`);
+  res.send(`
+    self.addEventListener('install', (e) => { self.skipWaiting(); });
+    self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
+    self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request).catch(() => caches.match(e.request))); });
+  `);
 });
 
 app.post('/api/register', h(async (q, s) => {
@@ -185,7 +194,7 @@ app.get('/api/me', auth, h(async (q, s) => {
 
 app.post('/api/avatar', auth, h(async (q, s) => {
   const img = String((q.body || {}).img || '');
-  if (img.length > 30000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(img)) return bad(s, 'Photo is invalid or too large.');
+  if (img.length > 30000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(img)) return bad(s, 'Photo is invalid or too large. Try another photo.');
   await User.updateOne({ _id: q.user.id }, { avatar: img });
   s.json({ av: img });
 }));
@@ -194,6 +203,7 @@ app.get('/api/names/:t', auth, (q, s) => s.json(q.params.t === 'girls' ? NAMES.g
 
 const pick = (o, ks) => { for (const k of ks) if (o[k] != null && o[k] !== '') return o[k]; };
 const arrOf = v => Array.isArray(v) ? v : [];
+
 const ctxOf = q => {
   const ua = String(q.headers['user-agent'] || '');
   const device = /android/i.test(ua) ? 'android' : /iphone|ipad|ipod/i.test(ua) ? 'ios' : 'desktop';
@@ -299,7 +309,7 @@ app.post('/api/offers/:id/start', auth, h(async (q, s) => {
   if (!o) return bad(s, 'This task is no longer available.', 404);
   const mine = used.find(c => c.offerId === o.id);
   if (!mine) {
-    if (used.length >= SLOTS) return bad(s, 'Daily task limit reached.');
+    if (used.length >= SLOTS) return bad(s, 'Daily task limit reached. New tasks arrive after 24 hours.');
     await Click.create({ uid: q.user.id, offerId: o.id, title: o.title, icon: o.icon, bdt: o.bdt });
   }
   s.json({ url: o.clickUrl });
@@ -313,7 +323,7 @@ app.post('/api/employer/task', auth, h(async (q, s) => {
   if (!platform || !title || !link || isNaN(r) || isNaN(tw) || r <= 0 || tw <= 0) return bad(s, 'Invalid task details.');
   
   const totalBudget = r * tw;
-  if (q.user.balance < totalBudget) return bad(s, 'Insufficient balance. Required: ' + totalBudget + ' BDT');
+  if (q.user.balance < totalBudget) return bad(s, 'Insufficient balance. Deposit required: ' + totalBudget + ' BDT');
 
   await User.updateOne({ _id: q.user.id }, { $inc: { balance: -totalBudget } });
   await CustomTask.create({ uid: q.user.id, platform, title: String(title).trim(), link: String(link).trim(), reward: r, targetWorkers: tw, totalBudget, status: 'pending' });
@@ -326,24 +336,27 @@ app.get('/api/employer/tasks', auth, h(async (q, s) => {
   s.json(await CustomTask.find({ uid: q.user.id }).sort({ at: -1 }));
 }));
 
+// Ad Watch Reward API
 app.post('/api/watch-ad', auth, h(async (q, s) => {
   const now = Date.now();
-  if (q.user.lastAdWatch && now - q.user.lastAdWatch < 30000) return bad(s, 'Please wait 30 seconds.');
+  if (q.user.lastAdWatch && now - q.user.lastAdWatch < 30000) {
+    return bad(s, 'Please wait 30 seconds before watching another ad.');
+  }
   const adReward = 0.50;
-  const u = await User.findOneAndUpdate({ _id: q.user.id }, { $set: { lastAdWatch: now },$inc: { balance: adReward, earned: adReward } }, { new: true });
+  const u = await User.findOneAndUpdate({ _id: q.user.id }, { $set: { lastAdWatch: now }, $inc: { balance: adReward, earned: adReward } }, { new: true });
   s.json({ reward: adReward, me: me(u) });
 }));
 
 app.get('/api/timewall', auth, (q, s) => s.json({ url: TW_URL ? TW_URL.replace(/\{uid\}/g, encodeURIComponent(q.user.id)) : '' }));
 
 app.post('/api/daily', auth, h(async (q, s) => {
-  const r = await User.findOneAndUpdate({ _id: q.user.id, lastDaily: { $lte: Date.now() - 864e5 } }, { $set: { lastDaily: Date.now() },$inc: { balance: DAILY, earned: DAILY } }, { new: true });
-  if (!r) return bad(s, 'You already claimed today.');
+  const r = await User.findOneAndUpdate({ _id: q.user.id, lastDaily: { $lte: Date.now() - 864e5 } }, { $set: { lastDaily: Date.now() }, $inc: { balance: DAILY, earned: DAILY } }, { new: true });
+  if (!r) return bad(s, 'You already claimed today. Come back in 24 hours.');
   s.json(me(r));
 }));
 
 app.post('/api/checkin', auth, h(async (q, s) => {
-  const r = await User.findOneAndUpdate({ _id: q.user.id, lastCheckin: { $ne: today() } }, { $set: { lastCheckin: today() },$inc: { balance: CHECKIN, earned: CHECKIN } }, { new: true });
+  const r = await User.findOneAndUpdate({ _id: q.user.id, lastCheckin: { $ne: today() } }, { $set: { lastCheckin: today() }, $inc: { balance: CHECKIN, earned: CHECKIN } }, { new: true });
   if (!r) return bad(s, 'You already checked in today.');
   s.json(me(r));
 }));
@@ -352,8 +365,8 @@ app.post('/api/spin', auth, h(async (q, s) => {
   const tot = SPIN.reduce((a, x) => a + x[1], 0);
   let r = crypto.randomInt(tot), prize = SPIN[0][0];
   for (const x of SPIN) { if (r < x[1]) { prize = x[0]; break; } r -= x[1]; }
-  const u = await User.findOneAndUpdate({ _id: q.user.id, $or: [{ lastSpin: { $exists: false } }, { lastSpin: {$lte: Date.now() - 864e5 } }] }, { $set: { lastSpin: Date.now() },$inc: { balance: prize, earned: prize } }, { new: true });
-  if (!u) return bad(s, 'You already spun today.');
+  const u = await User.findOneAndUpdate({ _id: q.user.id, $or: [{ lastSpin: { $exists: false } }, { lastSpin: {$lte: Date.now() - 864e5 } }] }, { $set: { lastSpin: Date.now() }, $inc: { balance: prize, earned: prize } }, { new: true });
+  if (!u) return bad(s, 'You already spun today. Come back in 24 hours.');
   s.json({ prize, me: me(u) });
 }));
 
@@ -391,7 +404,7 @@ app.post('/api/withdraw', auth, h(async (q, s) => {
   if (!(a >= MIN_WD && a <= MAX_WD)) return bad(s, 'Withdraw amount must be between ' + MIN_WD + ' and ' + MAX_WD + '.');
   if (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
   if (!/^01\d{9}$/.test(String(phone || ''))) return bad(s, 'Enter a valid 11-digit number.');
-  const r = await User.findOneAndUpdate({ _id: q.user.id, balance: { $gte: a } }, {$inc: { balance: -a } }, { new: true });
+  const r = await User.findOneAndUpdate({ _id: q.user.id, balance: { $gte: a } }, { $inc: { balance: -a } }, { new: true });
   if (!r) return bad(s, 'Not enough balance.');
   await Wd.create({ uid: q.user.id, name: q.user.name, amount: a, method, phone });
   s.json(me(r));
@@ -420,7 +433,14 @@ app.post('/api/deposit', auth, h(async (q, s) => {
     else if (a >= 500) coinsPerMin = 25;
     else if (a >= 200) coinsPerMin = 10;
 
-    pkgData = { name: pkgName, amount: a, coinsPerMin, startedAt: Date.now(), lastClaim: Date.now(), expiresAt: Date.now() + (30 * 86400000) };
+    pkgData = {
+      name: pkgName,
+      amount: a,
+      coinsPerMin: coinsPerMin,
+      startedAt: Date.now(),
+      lastClaim: Date.now(),
+      expiresAt: Date.now() + (30 * 86400000)
+    };
     await User.updateOne({ _id: q.user.id }, { $set: { activePkg: pkgData } });
   }
 
@@ -438,6 +458,7 @@ app.post('/api/support', auth, h(async (q, s) => {
   s.json({ ok: true });
 }));
 
+// Admin Endpoints
 app.get('/api/admin/data', admin, h(async (q, s) => {
   await expire();
   const start = dayStart();
@@ -457,11 +478,15 @@ app.get('/api/admin/data', admin, h(async (q, s) => {
 }));
 
 app.get('/api/admin/wd-list', admin, h(async (q, s) => {
-  s.json({ pending: await Wd.find({ status: 'pending' }).sort({ at: 1 }).limit(100), done: await Wd.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20) });
+  const pending = await Wd.find({ status: 'pending' }).sort({ at: 1 }).limit(100);
+  const done = await Wd.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20);
+  s.json({ pending, done });
 }));
 
 app.get('/api/admin/dep-list', admin, h(async (q, s) => {
-  s.json({ pending: await Deposit.find({ status: 'pending' }).sort({ at: 1 }).limit(100), done: await Deposit.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20) });
+  const pending = await Deposit.find({ status: 'pending' }).sort({ at: 1 }).limit(100);
+  const done = await Deposit.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20);
+  s.json({ pending, done });
 }));
 
 app.get('/api/admin/custom-tasks', admin, h(async (q, s) => {
@@ -525,7 +550,7 @@ app.post('/api/admin/bonus', admin, h(async (q, s) => {
   const a = Number(amount);
   if (!phone || isNaN(a) || a <= 0) return bad(s, 'Invalid phone or amount.');
   const u = await User.findOneAndUpdate({ phone: String(phone).trim() }, { $inc: { balance: a, earned: a } });
-  if (!u) return bad(s, 'User not found.');
+  if (!u) return bad(s, 'User not found with this phone number.');
   s.json({ ok: true });
 }));
 
@@ -536,14 +561,17 @@ app.post('/api/admin/reply', admin, h(async (q, s) => {
 }));
 
 app.get('/api/admin/offers-raw', admin, h(async (q, s) => {
+  const tw = '\n\nTimeWall: secret ' + (TW_SECRET ? 'set' : 'NOT set') + ', link ' + (TW_URL ? 'set' : 'NOT set') + ', rate ' + TW_RATE;
   const dbg = {};
   await fetchOffers('admin-test', ctxOf(q), dbg);
-  s.json({ text: 'Offers fetched successfully.' });
+  s.json({ text: 'Offers fetched successfully.' + tw });
 }));
 
 const PAGE = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="google-site-verification" content="LFCR_Ofi-3uqR900pf2ntTa2io3ymE1PRv4jlyWoX28" />
+
+<!-- PWA Meta Tags for Android & iOS -->
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#fbbf24">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -558,8 +586,11 @@ const PAGE = `<!DOCTYPE html>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Roboto,Arial,sans-serif}
 body{background:var(--bg);color:var(--tx);display:flex;justify-content:center;min-height:100vh;padding:8px}
 .app{width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:26px;height:96vh;display:flex;flex-direction:column;overflow:hidden;position:relative}
+
+/* Fixed Always Visible App Install Banner */
 .pwa-banner{display:flex;background:linear-gradient(90deg,#fbbf24,#f59e0b);color:#000;padding:12px 16px;border-radius:14px;align-items:center;justify-content:space-between;margin:10px 14px 0 14px;font-weight:700;font-size:13.5px;box-shadow:0 4px 12px rgba(251,191,36,0.3);position:relative;z-index:10}
 .pwa-banner button{background:#000;color:#fff;border:0;padding:7px 14px;border-radius:10px;font-size:12px;cursor:pointer;font-weight:bold}
+
 #auth{position:absolute;inset:0;z-index:50;background:radial-gradient(circle at top,#1e1b4b,#060913 70%);padding:22px;overflow-y:auto;text-align:center;display:none}
 .card{background:rgba(15,23,42,.92);border:1px solid rgba(251,191,36,.3);border-radius:18px;padding:16px;text-align:left}
 .brand{font-family:Georgia,serif;font-size:24px;font-weight:700;color:var(--gold);margin:6px 0 2px;letter-spacing:.5px}
@@ -569,7 +600,7 @@ body{background:var(--bg);color:var(--tx);display:flex;justify-content:center;mi
 .seg .on{background:linear-gradient(90deg,var(--gold),#f59e0b);color:#000}
 label{font-size:11px;color:var(--mu);display:block;margin-top:9px}
 input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px;color:#fff;font-size:14px;margin-top:4px}
-input:focus,select:focus,textarea:focus{outline:2px solid var(--gold)}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--gold)}
 .btn{width:100%;border:0;border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:12px;background:linear-gradient(90deg,var(--gold),#f59e0b);color:#000}
 .btn.g{background:var(--grn);color:#fff}.btn.r{background:var(--red);color:#fff}.btn.s{width:auto;padding:6px 12px;font-size:12px;margin:0;border-radius:14px}
 .or{font-size:11px;color:var(--mu);margin:14px 0 8px;text-align:center}
@@ -579,16 +610,16 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--gold)}
 .av{width:40px;height:40px;border-radius:50%;border:2px solid var(--gold);background:#16213f;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;overflow:hidden;flex-shrink:0;box-shadow:0 0 10px rgba(251,191,36,.3)}
 .av img{width:100%;height:100%;object-fit:cover;display:block}
 nav{display:flex;gap:2px;padding:7px 3px 9px;background:#0b1224;box-shadow:0 10px 20px rgba(0,0,0,.6);position:relative;z-index:5}
-nav div{flex:1;text-align:center;font-size:9px;color:var(--mu);padding:6px 0;cursor:pointer;border-radius:11px;background:linear-gradient(180deg,#18244a,#0e1730)}
+nav div{flex:1;text-align:center;font-size:9px;color:var(--mu);padding:6px 0;cursor:pointer;border-radius:11px;background:linear-gradient(180deg,#18244a,#0e1730);box-shadow:0 4px 9px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.07);transition:transform .2s}
 nav div i{display:block;font-style:normal;font-size:14px;position:relative;width:22px;height:22px;line-height:22px;margin:0 auto}
-nav .on{color:var(--gold);transform:translateY(-1px);background:linear-gradient(180deg,#2a2208,#13100a);box-shadow:0 0 0 1px var(--gold)}
+nav .on{color:var(--gold);transform:translateY(-1px);background:linear-gradient(180deg,#2a2208,#13100a);box-shadow:0 0 0 1px var(--gold),0 6px 14px rgba(251,191,36,.28),inset 0 1px 0 rgba(255,255,255,.1)}
 main{flex:1;overflow-y:auto;padding:14px}
 .row{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;box-shadow:0 4px 10px rgba(0,0,0,.35)}
 .row small{display:block;color:var(--mu);font-size:11px;margin-top:2px}
 h3{font-size:13px;color:var(--mu);margin:4px 0 10px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
-.stat{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}.stat b{display:block;font-size:16px;color:var(--gold)}.stat small{font-size:11px;color:var(--mu)}
+.stat{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center;box-shadow:0 4px 10px rgba(0,0,0,.35)}.stat b{display:block;font-size:16px;color:var(--gold)}.stat small{font-size:11px;color:var(--mu)}
 .pod{display:flex;gap:8px;align-items:flex-end;margin-bottom:14px}
 .pod div{flex:1;text-align:center;border-radius:16px;padding:14px 6px;background:#131d38;border:1px solid var(--line);font-size:12px}
 .pod .p1{border-color:var(--gold);padding-bottom:26px;background:linear-gradient(180deg,rgba(251,191,36,.18),#131d38)}
@@ -603,14 +634,14 @@ h3{font-size:13px;color:var(--mu);margin:4px 0 10px}
 .modal>div{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;width:100%;max-width:410px;max-height:90vh;overflow-y:auto}
 pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-height:1.5;margin:8px 0}
 .err{color:var(--red);font-size:12px;margin-top:8px;min-height:14px}
-.mq{overflow:hidden;white-space:nowrap;border-radius:14px;background:linear-gradient(90deg,#2b1f04,#4a3508,#2b1f04);border:1px solid rgba(251,191,36,.55);padding:10px 0;margin-bottom:12px}
-.mq span{display:inline-block;padding-left:100%;animation:mq 26s linear infinite;color:var(--gold);font-size:12.5px;font-weight:700}
+.mq{overflow:hidden;white-space:nowrap;border-radius:14px;background:linear-gradient(90deg,#2b1f04,#4a3508,#2b1f04);border:1px solid rgba(251,191,36,.55);box-shadow:0 0 14px rgba(251,191,36,.18);padding:10px 0;margin-bottom:12px}
+.mq span{display:inline-block;padding-left:100%;animation:mq 26s linear infinite;color:var(--gold);font-size:12.5px;font-weight:700;letter-spacing:.2px}
 @keyframes mq{to{transform:translateX(-100%)}}
-.ar{font-size:20px;line-height:2.1;direction:rtl;text-align:right;color:var(--gold);font-family:'Amiri',serif;margin:6px 0}
-.bkc{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;font-size:13px;line-height:1.7}
+.ar{font-size:20px;line-height:2.1;direction:rtl;text-align:right;color:var(--gold);font-family:'Amiri','Traditional Arabic',serif;margin:6px 0}
+.bkc{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;font-size:13px;line-height:1.7;box-shadow:0 4px 10px rgba(0,0,0,.35)}
 .bkc b{color:var(--gold)}.bkc small{display:block;color:var(--mu);font-size:11px;margin-top:4px}
-.nm{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;margin-bottom:8px}
-.nm .ar2{font-size:26px;color:var(--gold);font-family:'Amiri',serif;direction:rtl;text-align:right;white-space:nowrap}
+.nm{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;margin-bottom:8px;line-height:1.4}
+.nm .ar2{font-size:26px;color:var(--gold);font-family:'Amiri','Traditional Arabic',serif;direction:rtl;text-align:right;white-space:nowrap}
 .bkh{text-align:center;margin-bottom:14px;border-radius:20px;padding:10px;border:1px solid rgba(251,191,36,.45);background:linear-gradient(180deg,#14263f,#0b1224)}
 .bkh .t{font-size:20px;font-weight:700;color:var(--gold);margin-top:6px}
 .bkh .u{font-size:12px;color:var(--mu)}
@@ -619,20 +650,20 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .ah{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#131d38,#0f172a)}
 .ah b{color:var(--gold);font-size:15px}
 #abody{flex:1;overflow-y:auto;padding:14px}
-#anav{display:flex;gap:4px;padding:8px 5px 10px;background:#0b1224}
-#anav div{flex:1;text-align:center;font-size:9.5px;color:var(--mu);padding:7px 0;cursor:pointer;border-radius:13px;background:linear-gradient(180deg,#18244a,#0e1730)}
+#anav{display:flex;gap:4px;padding:8px 5px 10px;background:#0b1224;box-shadow:0 -8px 18px rgba(0,0,0,.6)}
+#anav div{flex:1;text-align:center;font-size:9.5px;color:var(--mu);padding:7px 0;cursor:pointer;border-radius:13px;background:linear-gradient(180deg,#18244a,#0e1730);box-shadow:0 4px 9px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.07)}
 #anav div i{display:block;font-style:normal;font-size:16px}
-#anav .on{color:var(--gold);background:linear-gradient(180deg,#2a2208,#13100a);box-shadow:0 0 0 1px var(--gold)}
+#anav .on{color:var(--gold);background:linear-gradient(180deg,#2a2208,#13100a);box-shadow:0 0 0 1px var(--gold),0 6px 14px rgba(251,191,36,.28)}
 .th{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
 .th .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:700}
 .gap{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-.hs{position:relative;height:200px;border-radius:24px;overflow:hidden;margin-bottom:10px;border:1px solid rgba(251,191,36,.45)}
-.sl{position:absolute;inset:0;padding:18px 16px;opacity:0;transform:scale(.96);transition:opacity .7s,transform .7s;display:flex;flex-direction:column;justify-content:center;pointer-events:none}
+.hs{position:relative;height:200px;border-radius:24px;overflow:hidden;margin-bottom:10px;border:1px solid rgba(251,191,36,.45);box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.sl{position:absolute;inset:0;padding:18px 16px;opacity:0;transform:scale(.96);transition:opacity .7s,transform .7s;display:flex;flex-direction:column;justify-content:center;pointer-events:none;overflow:hidden}
 .sl.on{opacity:1;transform:none;pointer-events:auto}
-.sl .tag{display:inline-block;align-self:flex-start;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.35);color:#fde68a;margin-bottom:8px}
-.sl h4{font-size:18px;color:#fff;margin-bottom:6px;max-width:72%}
-.sl p{font-size:12.5px;line-height:1.65;color:#f1f5f9;max-width:74%}
-.sl .em{position:absolute;right:8px;bottom:6px;font-size:76px}
+.sl .tag{display:inline-block;align-self:flex-start;font-size:10px;font-weight:700;letter-spacing:.4px;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.35);color:#fde68a;margin-bottom:8px;position:relative;z-index:2}
+.sl h4{font-size:18px;color:#fff;margin-bottom:6px;position:relative;z-index:2;max-width:72%}
+.sl p{font-size:12.5px;line-height:1.65;color:#f1f5f9;position:relative;z-index:2;max-width:74%}
+.sl .em{position:absolute;right:8px;bottom:6px;font-size:76px;z-index:1;animation:fl 3.2s ease-in-out infinite;filter:drop-shadow(0 6px 10px rgba(0,0,0,.4))}
 .s0{background:linear-gradient(135deg,#0f3d2e,#14532d 55%,#052e1a)}
 .s1{background:linear-gradient(135deg,#1e1b4b,#312e81 55%,#0f172a)}
 .s2{background:linear-gradient(135deg,#0c4a6e,#075985 55%,#082f49)}
@@ -641,9 +672,9 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .dots i{width:7px;height:7px;border-radius:50%;background:#334155;cursor:pointer;transition:all .3s}
 .dots i.on{background:var(--gold);width:22px;border-radius:6px}
 .bn{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.bo{border-radius:22px;padding:3px;background:linear-gradient(135deg,#fde68a,#b45309 50%,#fbbf24)}
+.bo{border-radius:22px;padding:3px;background:linear-gradient(135deg,#fde68a,#b45309 50%,#fbbf24);box-shadow:0 6px 18px rgba(251,191,36,.18)}
 .bi{border-radius:19px;background:linear-gradient(180deg,#16213f,#0b1224);padding:14px 10px;text-align:center;border:1px solid rgba(251,191,36,.25)}
-.bi .ic{font-size:34px;display:block}
+.bi .ic{font-size:34px;display:block;animation:fl 3.4s ease-in-out infinite}
 .bi b{display:block;font-size:13px;margin:6px 0 2px;color:#fff}
 .bi small{display:block;font-size:10.5px;color:var(--mu);margin-bottom:10px}
 .bi .btn{margin-top:0;padding:9px;font-size:12px}
@@ -653,15 +684,14 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .wheel .pt{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:28px;color:#fbbf24;z-index:3}
 .tdw{font-size:12.5px;line-height:1.7;color:#e2e8f0;background:#131d38;border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0}
 .tdw b{color:var(--gold)}
-.stp{font-size:12.5px;line-height:1.9;color:#cbd5e1;margin:8px 0 4px;padding-left:4px}
-.thero{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,#0c2a4a,#0b1224);border:1px solid rgba(56,189,248,.35);border-radius:20px;padding:14px;margin-bottom:12px}
+.thero{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,#0c2a4a,#0b1224);border:1px solid rgba(56,189,248,.35);border-radius:20px;padding:14px;margin-bottom:12px;box-shadow:0 8px 20px rgba(0,0,0,.45)}
 .thero b{font-size:16px;color:#fff}.thero small{display:block;color:var(--mu);font-size:11.5px;margin-top:4px}
 .rg{position:relative;width:78px;height:78px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:30px}
 .rg .r{position:absolute;border-radius:50%;border:2px solid transparent}
 .rg .r1{inset:0;border-top-color:#fbbf24;border-bottom-color:#fbbf24;animation:rot 3.2s linear infinite}
 .rg .r2{inset:9px;border-left-color:#38bdf8;border-right-color:#38bdf8;animation:rot 2.2s linear infinite reverse}
 .rg .r3{inset:18px;border-top-color:#22c55e;border-right-color:#22c55e;animation:rot 1.4s linear infinite}
-.hbn{display:flex;align-items:center;gap:14px;border-radius:20px;padding:14px;margin-bottom:12px;border:1px solid}
+.hbn{display:flex;align-items:center;gap:14px;border-radius:20px;padding:14px;margin-bottom:12px;box-shadow:0 8px 20px rgba(0,0,0,.45);border:1px solid}
 .hbn .e{font-size:38px;flex-shrink:0;display:block}
 .hbn b{font-size:16px;color:#fff}.hbn small{display:block;color:#cbd5e1;font-size:11.5px;margin-top:3px}
 .hb-rank{background:linear-gradient(135deg,#3b0a4a,#0b1224);border-color:rgba(217,70,239,.45)}
@@ -669,14 +699,17 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .hb-help{background:linear-gradient(135deg,#0c2350,#0b1224);border-color:rgba(59,130,246,.45)}
 .hb-acc{background:linear-gradient(135deg,#4a1d08,#0b1224);border-color:rgba(249,115,22,.45)}
 @keyframes rot{to{transform:rotate(360deg)}}
-.ft{margin-top:6px;border-radius:22px;padding:18px 16px;background:linear-gradient(180deg,#0d1a2e,#070d1a);border:1px solid rgba(251,191,36,.35)}
+@keyframes fl{50%{transform:translateY(-9px) rotate(4deg)}}
+
+/* Footer Styling */
+.ft{margin-top:6px;border-radius:22px;padding:18px 16px;background:linear-gradient(180deg,#0d1a2e,#070d1a);border:1px solid rgba(251,191,36,.35);box-shadow:0 10px 24px rgba(0,0,0,.5)}
 .ftl{display:flex;align-items:center;gap:12px;margin-bottom:10px}.ftl b{font-size:16px;color:var(--gold)}.ftl small{display:block;font-size:11px;color:var(--mu)}
 .fd{font-size:12px;line-height:1.75;color:#94a3b8;margin-bottom:14px}
 .fcols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.fcols h5{font-size:12px;color:var(--gold);margin-bottom:6px}
+.fcols h5{font-size:12px;color:var(--gold);margin-bottom:6px;letter-spacing:.3px}
 .fcols a{display:block;font-size:12.5px;color:#94a3b8;padding:5px 0;cursor:pointer;text-decoration:none}
 .fsoc{display:flex;align-items:center;justify-content:center;gap:14px;padding:14px 0;border-top:1px solid #1e293b;border-bottom:1px solid #1e293b;margin-bottom:12px}
-.fsoc a{display:block;width:46px;height:46px;border-radius:50%}
+.fsoc a{display:block;width:46px;height:46px;border-radius:50%;box-shadow:0 4px 10px rgba(0,0,0,.5);transition:transform .2s}
 .fage{display:flex;align-items:center;gap:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.4);border-radius:14px;padding:10px;margin-bottom:12px}
 .fage .bd{width:46px;height:46px;border-radius:50%;border:3px solid var(--red);color:var(--red);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0}
 .fage div{font-size:11.5px;line-height:1.6;color:#fecaca}
@@ -686,6 +719,15 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .fr{display:flex;align-items:center;gap:10px;font-size:12.5px;color:#cbd5e1;padding:7px 0;border-top:1px solid #1e293b}
 .fr a{color:#7dd3fc;text-decoration:none}
 .fc{font-size:10.5px;color:#64748b;text-align:center;margin-top:12px;border-top:1px solid #1e293b;padding-top:10px}
+
+/* E-Commerce Employer Mall Styles */
+.shop-banner{background:linear-gradient(135deg,#1e1b4b,#312e81);border:1px solid var(--gold);border-radius:18px;padding:16px;text-align:center;margin-bottom:14px;box-shadow:0 6px 16px rgba(251,191,36,0.2)}
+.shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.ecom-card{background:#131d38;border:1px solid var(--line);border-radius:16px;padding:12px;text-align:center;position:relative;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 4px 10px rgba(0,0,0,0.3)}
+.ecom-card img{width:48px;height:48px;margin:0 auto 8px;object-fit:contain}
+.ecom-card h4{font-size:13px;color:#fff;margin-bottom:4px}
+.ecom-card .price{font-size:13.5px;font-weight:bold;color:var(--gold);margin-bottom:8px}
+.ecom-card .badge{position:absolute;top:8px;right:8px;background:var(--grn);color:#000;font-size:9px;font-weight:bold;padding:2px 6px;border-radius:6px}
 </style></head><body>
 <div class="app">
 <div id="auth">
@@ -700,10 +742,10 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
       </select>
       <label>Name</label><input id="rN" autocomplete="username" placeholder="Your name">
       <label>Phone number</label><input id="rP" inputmode="numeric" maxlength="11" placeholder="01XXXXXXXXX">
-      <label>Password</label><input id="rW" type="password" autocomplete="new-password">
+      <label>Password (at least 6 characters)</label><input id="rW" type="password" autocomplete="new-password">
       <label>Confirm password</label><input id="rC" type="password" autocomplete="new-password">
       <button class="btn g" onclick="reg()">Confirm</button>
-      <div class="agn">রেজিস্ট্রেশন করলে আপনি নিশ্চিত করছেন আপনার বয়স __AGE__ বছর বা তার বেশি।</div>
+      <div class="agn">রেজিস্ট্রেশন করলে আপনি নিশ্চিত করছেন আপনার বয়স __AGE__ বছর বা তার বেশি।</div>
     </div>
     <div id="fLog" style="display:none">
       <label>Name</label><input id="lN" autocomplete="username">
@@ -718,6 +760,7 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 <input type="file" id="avf" accept="image/*" style="display:none" onchange="avUp(this)">
 <nav id="nav"></nav>
 
+<!-- Always Visible App Install Banner -->
 <div id="pwaBanner" class="pwa-banner">
   <span>📱 আপনার ফোনে অ্যাপটি ইনস্টল করুন</span>
   <button onclick="installPWA()">Install</button>
@@ -727,16 +770,29 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 </div>
 <div class="adm" id="adm"><div class="ah"><b>Admin Panel</b><button class="btn s" onclick="admClose()">Close</button></div><div id="abody"></div><div id="anav"></div></div>
 <div class="modal" id="modal"><div id="mBody"></div></div>
+
 <script>
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function(){});
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function(e){});
+}
+
 var deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', function(e) { e.preventDefault(); deferredPrompt = e; var b = $('pwaBanner'); if (b) b.style.display = 'flex'; });
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault(); deferredPrompt = e;
+  var b = $('pwaBanner'); if (b) b.style.display = 'flex';
+});
+
 function installPWA() {
   if (deferredPrompt) {
     deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(function(choice) { if (choice.outcome === 'accepted') { var b = $('pwaBanner'); if (b) b.style.display = 'none'; } deferredPrompt = null; });
+    deferredPrompt.userChoice.then(function(choice) {
+      if (choice.outcome === 'accepted') { var b = $('pwaBanner'); if (b) b.style.display = 'none'; }
+      deferredPrompt = null;
+    });
   } else {
-    modal('<h3 style="color:var(--gold)">📱 অ্যাপ ইনস্টল করার নিয়ম</h3><div class="tdw">আপনার ব্রাউজারের ডানপাশের <b>৩-ডট (⋮) মেনুতে</b> ক্লিক করে <b>Add to Home screen</b> বা <b>Install app</b> অপশনটিতে চাপ দিন।</div><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">বুঝেছি</button>');
+    modal('<h3 style="color:var(--gold)">📱 অ্যাপ ইনস্টল করার নিয়ম</h3>' +
+    '<div class="tdw">আপনার ব্রাউজারের ডানপাশের <b>৩-ডট (⋮) মেনুতে</b> ক্লিক করে <b>Add to Home screen</b> বা <b>Install app</b> অপশনটিতে চাপ দিন।</div>' +
+    '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">বুঝেছি</button>');
   }
 }
 
@@ -749,8 +805,10 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 function money(n){return Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function formatCompact(n){n=Number(n)||0;if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'k';return n.toString()}
 function tm(t){return new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}
-function logo(s){var g='lg'+(LC++);return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 100 100"><defs><linearGradient id="'+g+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset=".5" stop-color="#fbbf24"/><stop offset="1" stop-color="#b45309"/></linearGradient></defs><path d="M50 4 90 20v30c0 25-17 42-40 48C27 92 10 75 10 50V20z" fill="#0b1020" stroke="url(#'+g+')" stroke-width="4"/><text x="50" y="60" text-anchor="middle" font-size="34" font-weight="800" fill="url(#'+g+')" font-family="Georgia,serif">RS</text><path d="M30 71h40M38 77h24" stroke="url(#'+g+')" stroke-width="2.5" stroke-linecap="round"/></svg>'}
-function mosque(w){var g='mg'+(LC++);return '<svg width="'+w+'" viewBox="0 0 200 120" style="max-width:100%"><defs><linearGradient id="'+g+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset="1" stop-color="#b45309"/></linearGradient><linearGradient id="'+g+'s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e1b4b"/><stop offset="1" stop-color="#0f3d2e"/></linearGradient><clipPath id="'+g+'c"><rect width="200" height="120" rx="16"/></clipPath></defs><g clip-path="url(#'+g+'c)"><rect width="200" height="120" fill="url(#'+g+'s)"/><rect x="26" y="52" width="14" height="56" fill="#0b1020" stroke="url(#'+g+')" stroke-width="1.5"/><path d="M26 52l7-18 7 18z" fill="url(#'+g+')"/><rect x="160" y="52" width="14" height="56" fill="#0b1020" stroke="url(#'+g+')" stroke-width="1.5"/><path d="M160 52l7-18 7 18z" fill="url(#'+g+')"/><rect x="58" y="80" width="84" height="28" fill="#0b1020" stroke="url(#'+g+')" stroke-width="1.5"/><path d="M68 80a32 32 0 0 1 64 0z" fill="url(#'+g+')"/><rect y="108" width="200" height="12" fill="#052e1a"/></g></svg>'}
+function logo(s){var g='lg'+(LC++);return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 100 100" aria-label="RS Growth Matrix"><defs><linearGradient id="'+g+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset=".5" stop-color="#fbbf24"/><stop offset="1" stop-color="#b45309"/></linearGradient></defs><path d="M50 4 90 20v30c0 25-17 42-40 48C27 92 10 75 10 50V20z" fill="#0b1020" stroke="url(#'+g+')" stroke-width="4"/><text x="50" y="60" text-anchor="middle" font-size="34" font-weight="800" fill="url(#'+g+')" font-family="Georgia,serif">RS</text><path d="M30 71h40M38 77h24" stroke="url(#'+g+')" stroke-width="2.5" stroke-linecap="round"/></svg>'}
+function mosque(w){var g='mg'+(LC++);return '<svg width="'+w+'" viewBox="0 0 200 120" style="max-width:100%" aria-label="Mosque"><defs><linearGradient id="'+g+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset="1" stop-color="#b45309"/></linearGradient><linearGradient id="'+g+'s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e1b4b"/><stop offset="1" stop-color="#0f3d2e"/></linearGradient><clipPath id="'+g+'c"><rect width="200" height="120" rx="16"/></clipPath></defs><g clip-path="url(#'+g+'c)"><rect width="200" height="120" fill="url(#'+g+'s)"/>'+
+ '<rect x="26" y="52" width="14" height="56" fill="#0b1020" stroke="url(#'+g+')" stroke-width="1.5"/><path d="M26 52l7-18 7 18z" fill="url(#'+g+')"/><rect x="160" y="52" width="14" height="56" fill="#0b1020" stroke="url(#'+g+')" stroke-width="1.5"/><path d="M160 52l7-18 7 18z" fill="url(#'+g+')"/><rect x="58" y="80" width="84" height="28" fill="#0b1020" stroke="url(#'+g+')" stroke-width="1.5"/><path d="M68 80a32 32 0 0 1 64 0z" fill="url(#'+g+')"/><rect y="108" width="200" height="12" fill="#052e1a"/></g></svg>'}
+function ico(c,p){return '<svg width="46" height="46" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="'+c+'"/>'+p+'</svg>'}
 function hb(c,e,t,s){return '<div class="hbn hb-'+c+'"><span class="e">'+e+'</span><div><b>'+t+'</b><small>'+s+'</small></div></div>'}
 function api(p,m,b,hd){hd=hd||{};hd['Content-Type']='application/json';if(T)hd.Authorization='Bearer '+T;
  return fetch('/api/'+p,{method:m||'GET',headers:hd,body:b?JSON.stringify(b):undefined}).then(function(r){return r.json().then(function(d){if(r.status===401&&T){out();throw new Error(d.error)}if(!r.ok)throw new Error(d.error||'Error');return d})})}
@@ -765,20 +823,19 @@ function initG(){if(!GID){$('gWrap').style.display='none';return}
  if(!window.google||!google.accounts){return setTimeout(initG,400)}
  google.accounts.id.initialize({client_id:GID,callback:gCb});google.accounts.id.renderButton($('gBtn'),{theme:'filled_black',size:'large',text:'continue_with',width:280})}
 
-function getTabs() {
-  if (ME && ME.role === 'employer') {
-    return [['emp','📢','Promote'],['help','💬','Support'],['acc','👤','Account']];
+function getTabs(){
+  if(ME && ME.role==='employer'){
+    return [['emp','🛒','Promotion Mall'],['help','💬','Support'],['acc','👤','Account']];
   }
   return [['home','🏠','Home'],['tasks','📋','Tasks'],['pkg','📦','Package'],['rank','🏆','Ranking'],['ref','👥','Refer'],['help','💬','Support'],['acc','👤','Account'],['book','🕌','Islam']];
 }
 
 function enter(m){
-  ME=m;
-  $('auth').style.display='none';
+  ME=m; $('auth').style.display='none';
   var tbs = getTabs();
   $('nav').innerHTML=tbs.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
   head();
-  go(ME.role === 'employer' ? 'emp' : 'home');
+  go(ME.role==='employer'?'emp':'home');
   startGlobalSync();
 }
 
@@ -788,10 +845,15 @@ function head(){
   $('hRsCoins').textContent='RS Coins: '+formatCompact(ME.rsCoins||0);
   $('avT').innerHTML=ME.av?'<img src="'+esc(ME.av)+'" alt="">':'📷';
 }
+
 function startGlobalSync(){
   if(window.SYNC_INT) clearInterval(window.SYNC_INT);
-  window.SYNC_INT = setInterval(function(){ if(!T) return; api('me').then(function(m){ ME=m; head(); }).catch(function(){}); }, 10000);
+  window.SYNC_INT = setInterval(function(){
+    if(!T) return;
+    api('me').then(function(m){ ME=m; head(); }).catch(function(){});
+  }, 10000);
 }
+
 function go(t){
   TAB=t; clearInterval(TIMER);
   getTabs().forEach(function(x){ var el = $('n_'+x[0]); if(el) el.className=x[0]===t?'on':''; });
@@ -809,17 +871,28 @@ function avUp(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();
  r.readAsDataURL(f);inp.value=''}
 
 var HS=[
- ['s0','🕌 নামাজের স্মরণ','নামাজ কি পড়েছেন?','নামাজ আমাদের জীবনের সবচেয়ে বড় আমানত। কাজের ফাঁকে ওয়াক্ত হলেই নামাজ আদায় করে নিন।','🕌','🌙','⭐'],
- ['s1','🌟 আমাদের সাইট','RS Growth Matrix','এটি একটি টাস্কভিত্তিক আয়ের সাইট। এখানে সহজ টাস্ক ও অ্যাড দেখে আয় করা যায়।','🚀','✨','💎'],
+ ['s0','🕌 নামাজের স্মরণ','নামাজ কি পড়েছেন?','নামাজ আমাদের জীবনের সবচেয়ে বড় আমানত। কাজের ফাঁকে ওয়াক্ত হলেই নামাজ আদায় করে নিন। মনও শান্ত থাকবে, কাজেও বরকত আসবে।','🕌','🌙','⭐'],
+ ['s1','🌟 আমাদের সাইট','RS Growth Matrix','এটি একটি টাস্কভিত্তিক আয়ের সাইট। এখানে সহজ টাস্ক ও অ্যাড দেখে আয় করা যায়। আছে দৈনিক বোনাস, লাকি ড্র, রেফার, র‍্যাংকিং, সাপোর্ট ও একটি ইসলামিক বই।','🚀','✨','💎'],
  ['s2','📋 টাস্ক ও অ্যাড আয়','টাস্ক এবং অ্যাড দেখে আয়','Tasks ট্যাবে গিয়ে টাস্ক সম্পন্ন করুন অথবা Watch Ads অপশনে গিয়ে অ্যাড দেখে ইনস্ট্যান্ট ক্যাশ আয় করুন।','📱','💰','🎯'],
- ['s3','💸 উত্তোলন','সহজে টাকা তুলুন','Account থেকে Withdraw চেপে bKash বা Nagad নাম্বার দিন। উত্তোলন ৩০০ থেকে ৫০০০ টাকা পর্যন্ত করা যায়।','💸','🏦','✅']];
+ ['s3','💸 উত্তোলন','সহজে টাকা তুলুন','Account থেকে Withdraw চেপে bKash বা Nagad নাম্বার দিন। উত্তোলন ৩০০ থেকে ৫০০০ টাকা পর্যন্ত করা যায়। রিকোয়েস্ট যাচাই করে আমরা নিজে টাকা পাঠাই।','💸','🏦','✅']];
 function hsGo(i){HSI=i;var s=document.querySelectorAll('.sl'),d=document.querySelectorAll('.dots i');for(var k=0;k<s.length;k++){s[k].className='sl '+HS[k][0]+(k===i?' on':'');d[k].className=k===i?'on':''}}
+
+/* Full Complete Footer Component */
 function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
+ var fb=ico('#1877f2','<path d="M13.2 19v-6.2h2.1l.4-2.6h-2.5V8.6c0-.8.3-1.3 1.4-1.3h1.2V5.1c-.2 0-1-.1-1.9-.1-1.9 0-3.2 1.2-3.2 3.3v1.9H8.6v2.6h2.1V19z" fill="#fff"/>');
+ var tg=ico('#29a9eb','<path d="M18.6 6.2L5.4 11.3c-.9.4-.9.9-.2 1.1l3.3 1 1.3 4c.2.5.1.7.7.7.4 0 .6-.2.8-.4l1.6-1.6 3.3 2.4c.6.3 1 .2 1.2-.6l2-9.5c.2-.9-.3-1.3-.8-1 z" fill="#fff"/>');
+ var wa=ico('#25d366','<path d="M12 5.2a6.8 6.8 0 0 0-5.8 10.3L5.2 18.8l3.4-.9A6.8 6.8 0 1 0 12 5.2z" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M9.6 9.3c.2 2 2 3.8 4 4.1l.9-.9-1.3-.9-.6.5c-.7-.3-1.4-1-1.7-1.7l.5-.6-.9-1.3z" fill="#fff"/>');
  return '<div class="ft"><div class="ftl">'+logo(46)+'<div><b>'+esc(c.n)+'</b><small>টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম</small></div></div>'+
  '<div class="fd">'+esc(c.d||'')+'</div>'+
- '<div class="fcols"><h5>প্ল্যাটফর্ম</h5><a onclick="go(\\'home\\')">Home</a><a onclick="go(\\'tasks\\')">Tasks</a><a onclick="go(\\'pkg\\')">Package</a><a onclick="go(\\'rank\\')">Ranking</a><a onclick="go(\\'ref\\')">Refer</a></div>'+
- '<div><h5>সহায়তা</h5><a onclick="go(\\'help\\')">Support</a><a onclick="go(\\'acc\\')">Account</a><a onclick="go(\\'book\\')">ইসলামিক বই</a></div></div>'+
- '<div class="fage"><span class="bd">'+A+'+</span><div>'+A+' বছরের নিচে কারও এই অ্যাকাউন্টে প্রবেশ করা নিষেধ।</div></div>'+
+ '<div class="fcols"><h5>প্ল্যাটফর্ম</h5><a onclick="go(\\'home\\')">Home</a><a onclick="go(\\'tasks\\')">Tasks & Ads</a><a onclick="go(\\'pkg\\')">Package</a><a onclick="go(\\'rank\\')">Ranking</a><a onclick="go(\\'ref\\')">Refer</a></div>'+
+ '<div><h5>সহায়তা</h5><a onclick="go(\\'help\\')">Support</a><a onclick="go(\\'acc\\')">Account ও Withdraw</a><a onclick="go(\\'book\\')">ইসলামিক বই</a></div></div>'+
+ '<div class="fsoc"><a href="'+esc(c.fb)+'" target="_blank" rel="noopener" aria-label="Facebook">'+fb+'</a><a href="https://t.me/'+esc(c.tg)+'" target="_blank" rel="noopener" aria-label="Telegram">'+tg+'</a><a href="https://wa.me/'+esc(c.wa)+'" target="_blank" rel="noopener" aria-label="WhatsApp">'+wa+'</a></div>'+
+ '<div class="fage"><span class="bd">'+A+'+</span><div>'+A+' বছরের নিচে কারও এই অ্যাকাউন্টে প্রবেশ করা নিষেধ। অভিভাবকগণ সন্তানদের দিকে নজর রাখুন।</div></div>'+
+ '<div class="fh">পেমেন্ট মাধ্যম</div><div class="fchips"><span class="fchip">bKash</span><span class="fchip">Nagad</span></div>'+
+ (p.length?'<div class="fh">আমাদের পার্টনার ও অফারওয়াল</div><div class="fchips">'+p.map(function(x){return '<span class="fchip">⭐ '+esc(x)+'</span>'}).join('')+'</div>':'')+
+ '<div class="fr" style="margin-top:12px"><span>📧</span><a href="mailto:'+esc(c.e)+'">'+esc(c.e)+'</a></div>'+
+ '<div class="fr"><span>📞</span><a href="tel:'+esc(c.p)+'">'+esc(c.p)+'</a></div>'+
+ '<div class="fr"><span>✈️</span><a href="https://t.me/'+esc(c.tg)+'" target="_blank" rel="noopener">@'+esc(c.tg)+'</a></div>'+
  '<div class="fc">© '+esc(c.y)+' '+esc(c.n)+'. সর্বস্বত্ব সংরক্ষিত।</div></div>'}
 
 function vHome(){
@@ -827,19 +900,19 @@ function vHome(){
   var sl=HS.map(function(x,i){return '<div class="sl '+x[0]+(i===0?' on':'')+'"><span class="tag">'+x[1]+'</span><h4>'+x[2]+'</h4><p>'+x[3]+'</p><span class="em">'+x[4]+'</span></div>'}).join('');
   var dt=HS.map(function(x,i){return '<i class="'+(i===0?'on':'')+'" onclick="hsGo('+i+')"></i>'}).join('');
   
-  $('main').innerHTML='<div class="mq"><span>🌙 RS Growth Matrix-এ স্বাগতম! আপনার নামাজের কথা মনে আছে তো? 🤲 নামাজ পড়ুন, তারপর কাজে মন দিন। ✨</span></div>'+
+  $('main').innerHTML='<div class="mq"><span>🌙 RS Growth Matrix-এ স্বাগতম! আপনার নামাজের কথা মনে আছে তো? 🤲 নামাজ পড়ুন, তারপর কাজে মন দিন। ✨ আমাদের এই সাইটে আপনি নিশ্চিন্তে সহজ টাস্ক ও অ্যাড দেখে আয় করতে পারেন। 💬</span></div>'+
   '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
   '<div class="hs">'+sl+'</div><div class="dots">'+dt+'</div>'+
   
-  '<div class="bo" style="margin-bottom:14px;padding:4px"><div class="bi lk" style="flex-direction:column;text-align:center;padding:18px"><span class="ic" style="font-size:52px">🎡</span><div><b style="font-size:16px;color:var(--gold);margin-top:4px">Grand Lucky Spin & Rewards!</b><small style="font-size:11.5px">চাকা ঘুরিয়ে ক্যাশ ও কয়েন রিওয়ার্ড জিতে নিন!</small></div>'+
+  '<div class="bo" style="margin-bottom:14px;padding:4px"><div class="bi lk" style="flex-direction:column;text-align:center;padding:18px"><span class="ic" style="font-size:52px">🎡</span><div><b style="font-size:16px;color:var(--gold);margin-top:4px">Grand Lucky Spin & Rewards!</b><small style="font-size:11.5px">চাকা ঘুরিয়ে ক্যাশ ও কয়েন রিওয়ার্ড (৳১, ৳২, ৳৩, ৳৫) জিতে নিন প্রতি ২৪ ঘণ্টায়!</small></div>'+
   '<button class="btn'+(sp?'':' dn')+'" style="margin-top:12px;width:100%" onclick="spinOpen()">'+(sp?'Spin Wheel Now':'Spin Completed ✅')+'</button></div></div>'+
 
   '<h3>আজকের বোনাস</h3><div class="bn">'+
-  '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
-  '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
+  '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT · প্রতি ২৪ ঘণ্টায় একবার</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
+  '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT · প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
   TIMER=setInterval(function(){if(!document.querySelector('.hs')){clearInterval(TIMER);return}hsGo((HSI+1)%HS.length)},6000)
 }
-function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added.')}).catch(function(e){toast(e.message)})}
+function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added to your balance.')}).catch(function(e){toast(e.message)})}
 
 function wheelSvg(){
   var cols=['#b45309','#1e3a8a','#14532d','#7c2d12','#4c1d95','#0c4a6e','#78350f','#164e63','#065f46','#1e1b4b'];
@@ -852,7 +925,7 @@ function wheelSvg(){
   return h+'<circle cx="100" cy="100" r="16" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/><text x="100" y="104" text-anchor="middle" font-size="11">⭐</text></svg>';
 }
 function spinOpen(){SPUN=false;var ok=Date.now()-(ME.lastSpin||0)>=864e5;
- modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Grand Lucky Wheel</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন':'আজকের স্পিন শেষ।')+'</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin Now</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeSpin()">Close</button>')}
+ modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Grand Lucky Wheel</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন':'আজকের স্পিন শেষ। ২৪ ঘণ্টা পর আবার আসুন।')+'</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin Now</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeSpin()">Close</button>')}
 function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style.opacity='.5';
  api('spin','POST').then(function(r){var c=[];for(var k=0;k<SEG.length;k++)if(SEG[k][0]===r.prize)c.push(k);var i=c[Math.floor(Math.random()*c.length)]||0;
   ROT=Math.ceil(ROT/360)*360+1800-(i*(360/10));$('whs').style.transform='rotate('+ROT+'deg)';
@@ -860,39 +933,70 @@ function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style
  .catch(function(e){SPUN=false;toast(e.message);closeSpin()})}
 function closeSpin(){closeM();if(TAB==='home')vHome()}
 
-// Employer Panel View
+// E-Commerce Style Promotion Mall for Employer Page
 function vEmp(){
-  api('employer/tasks').then(tasks=>{
-    $('main').innerHTML='<h3>📢 প্রমোশন টাস্ক পোস্ট করুন (Employer Panel)</h3>' +
-    '<div class="card">' +
-    '<label>প্লাটফর্ম নির্বাচন করুন</label>' +
-    '<select id="etPlatform"><option value="youtube">YouTube</option><option value="facebook">Facebook</option><option value="telegram">Telegram</option></select>' +
-    '<label>চ্যানেল বা পেজের নাম/টাইটেল</label><input id="etTitle" placeholder="যেমন: My YouTube Channel">' +
-    '<label>লিংক (URL)</label><input id="etLink" placeholder="https://...">' +
-    '<label>প্রতি ওয়ার্কারের পেমেন্ট (BDT)</label><input id="etReward" type="number" placeholder="2">' +
-    '<label>কতজন ওয়ার্কার কাজ করবে (Target Workers)</label><input id="etWorkers" type="number" placeholder="1000">' +
-    '<button class="btn g" onclick="submitEmpTask()">Submit Task (ব্যালেন্স থেকে বাজেট কাটা হবে)</button>' +
+  api('employer/tasks').then(function(tasks){
+    var products = [
+      { id:'youtube', name:'YouTube Subscriber Package', price:'৳2.00 / Worker', img:'https://cdn-icons-png.flaticon.com/512/1384/1384060.png', tag:'Popular' },
+      { id:'facebook', name:'Facebook Page Like/Follow', price:'৳1.50 / Worker', img:'https://cdn-icons-png.flaticon.com/512/124/124010.png', tag:'Trending' },
+      { id:'telegram', name:'Telegram Channel Members', price:'৳1.00 / Worker', img:'https://cdn-icons-png.flaticon.com/512/2111/2111646.png', tag:'Hot' },
+      { id:'app', name:'App Install & Download', price:'৳5.00 / Worker', img:'https://cdn-icons-png.flaticon.com/512/1041/1041888.png', tag:'High ROI' }
+    ];
+
+    var html = '<div class="shop-banner"><h3>🛍️ Employer Promotion Mall</h3><p style="font-size:11px;color:var(--mu);margin-top:4px">আপনার ব্র্যান্ড, চ্যানেল বা পেজ প্রমোট করার সেরা ই-কমার্স ক্যাটালগ</p></div>' +
+    '<h3>প্রমোট প্যাকেজ নির্বাচন করুন</h3>' +
+    '<div class="shop-grid">' +
+    products.map(function(p){ 
+      return '<div class="ecom-card">' +
+      '<span class="badge">'+p.tag+'</span>' +
+      '<img src="'+p.img+'" alt="">' +
+      '<h4>'+p.name+'</h4>' +
+      '<div class="price">'+p.price+'</div>' +
+      '<button class="btn s g" onclick="openOrderForm(\\''+p.id+'\\',\\''+p.name+'\\')">Buy Service</button>' +
+      '</div>';
+    }).join('') +
     '</div>' +
-    '<h3 style="margin-top:14px">আপনার প্রমোশন লিস্ট</h3>' +
-    (tasks.length ? tasks.map(t=>'<div class="row"><div><b>'+esc(t.title)+' ('+esc(t.platform)+')</b><small>Budget: '+t.totalBudget+' BDT | Workers: '+t.targetWorkers+'</small></div><span class="chip '+t.status+'">'+t.status+'</span></div>').join('') : '<div class="row">কোনো টাস্ক নেই।</div>');
+    
+    '<div id="orderFormBox" style="display:none" class="card" style="margin-bottom:16px">' +
+      '<h3 style="color:var(--gold)">🛒 সার্ভিস অর্ডার ইনফরমেশন</h3>' +
+      '<input type="hidden" id="selectedPlatform">' +
+      '<label>চ্যানেল বা পেজের নাম/টাইটেল</label><input id="ordTitle" placeholder="যেমন: My Official Channel">' +
+      '<label>লিংক (URL)</label><input id="ordLink" placeholder="https://...">' +
+      '<label>প্রতি জন ওয়ার্কারের রেট (BDT)</label><input id="ordReward" type="number" value="2">' +
+      '<label>কতজন ওয়ার্কার লাগবে (Target Workers)</label><input id="ordWorkers" type="number" placeholder="1000">' +
+      '<button class="btn g" onclick="confirmOrder()">Confirm & Place Order</button>' +
+    '</div>' +
+
+    '<h3 style="margin-top:16px">আপনার ক্যাম্পেইন হিস্ট্রি (Active/Pending)</h3>' +
+    (tasks.length ? tasks.map(function(t){return '<div class="row"><div><b>'+esc(t.title)+' ('+esc(t.platform.toUpperCase())+')</b><small>Budget: '+t.totalBudget+' BDT | Workers: '+t.targetWorkers+'</small></div><span class="chip '+t.status+'">'+t.status+'</span></div>'}).join('') : '<div class="row">কোনো পূর্ববর্তী অর্ডার নেই।</div>') +
+    foot();
+
+    $('main').innerHTML = html;
   });
 }
 
-function submitEmpTask(){
+function openOrderForm(id, name){
+  $('orderFormBox').style.display = 'block';
+  $('selectedPlatform').value = id;
+  $('ordTitle').value = name;
+  window.scrollTo({ top: 300, behavior: 'smooth' });
+}
+
+function confirmOrder(){
   api('employer/task','POST',{
-    platform: $('etPlatform').value,
-    title: $('etTitle').value,
-    link: $('etLink').value,
-    reward: $('etReward').value,
-    targetWorkers: $('etWorkers').value
-  }).then(r=>{
-    ME = r.me; head(); toast('টাস্কটি সফলভাবে সাবমিট হয়েছে। এডমিন অ্যাপ্রুভ করলে লাইভ হবে।'); vEmp();
-  }).catch(e=>toast(e.message));
+    platform: $('selectedPlatform').value,
+    title: $('ordTitle').value,
+    link: $('ordLink').value,
+    reward: $('ordReward').value,
+    targetWorkers: $('ordWorkers').value
+  }).then(function(r){
+    ME = r.me; head(); toast('ক্যাম্পেইন অর্ডার সফল হয়েছে! এডমিন যাচাই করে লাইভ করবে।'); vEmp();
+  }).catch(function(e){toast(e.message)});
 }
 
 function vTasks(){
   $('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>📋</div><div><b>Tasks & Watch Ads Dashboard</b><small>নিচের ট্যাব থেকে টাস্ক কিংবা অ্যাড দেখে ইনকাম বেছে নিন।</small></div></div>' +
-  '<div class="seg" style="margin-bottom:14px"><div id="subTask" class="on" onclick="switchTaskSub(\\'tasks\\')">📋 Offerwall Tasks</div><div id="subAd" onclick="switchTaskSub(\\'ads\\')">📺 Watch Ads</div></div>' +
+  '<div class="seg" style="margin-bottom:14px"><div id="subTask" class="on" onclick="switchTaskSub(\\'tasks\\')">📋 Offerwall Tasks</div><div id="subAd" onclick="switchTaskSub(\\'ads\\')">📺 Watch Ads (অ্যাড দেখে আয়)</div></div>' +
   '<div id="taskSubContent"></div>';
   switchTaskSub('tasks');
 }
@@ -903,8 +1007,8 @@ function switchTaskSub(sub){
   var c = $('taskSubContent');
   if(!c) return;
   if(sub === 'tasks'){
-    c.innerHTML = '<div id="tw"></div><div class="grid4" id="st"></div><div id="tl">Loading...</div>';
-    api('timewall').then(function(d){TWU=d.url;var e=$('tw');if(e&&d.url)e.innerHTML='<div class="row" style="border-color:rgba(34,197,94,.5)"><div style="display:flex;gap:10px;align-items:center"><span style="font-size:30px">⏱️</span><div>TimeWall Tasks</div></div><button class="btn s g" onclick="openTW()">Open</button></div>'}).catch(function(){});
+    c.innerHTML = '<div id="tw"></div><div class="grid4" id="st"></div><div class="mq u"><span>⏳ আপনার টাস্ক পেন্ডিং থাকা মানে যাচাই চলছে। যাচাই শেষে সফল হলে টাকা ব্যালেন্সে যোগ হবে।</span></div><div id="tl">Loading...</div>';
+    api('timewall').then(function(d){TWU=d.url;var e=$('tw');if(e&&d.url)e.innerHTML='<div class="row" style="border-color:rgba(34,197,94,.5)"><div style="display:flex;gap:10px;align-items:center"><span style="font-size:30px">⏱️</span><div>TimeWall Tasks<small>সার্ভে, টাস্ক ও গেম।</small></div></div><button class="btn s g" onclick="openTW()">Open</button></div>'}).catch(function(){});
     function loadOffers(){api('offers').then(function(d){var s=d.stats;if(!$('st'))return;
     $('st').innerHTML=[['Pending',s.pending],['Success',s.success],['Cancelled',s.cancelled],['Total',s.total]].map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('');
     window.OF=d.list;
@@ -975,7 +1079,7 @@ pkgs.map(function(x){
 }
 
 function vRank(){
-  $('main').innerHTML=hb('rank','🏆','Ranking','ইউজারদের রিয়েল ব্যালেন্স এবং সংগৃহীত আরএস কয়েন।')+'<div id="rk">Loading...</div>';
+  $('main').innerHTML=hb('rank','🏆','Ranking & RS Collectors','র‍্যাংকিং তালিকা: ইউজারদের রিয়েল ব্যালেন্স এবং সংগৃহীত আরএস কয়েন।')+'<div id="rk">Loading...</div>';
   function load(){
     api('leaderboard').then(function(a){
       if(!a.length){$('rk').innerHTML='<div class="row">No data.</div>';return}
@@ -996,7 +1100,7 @@ function vRef(){var link=location.origin+'/?ref='+ME.refCode,e=encodeURIComponen
 function copyL(){(navigator.clipboard?navigator.clipboard.writeText(RL):Promise.reject()).then(function(){toast('Link copied.')}).catch(function(){$('rl').select();toast('Copied.')})}
 
 function vHelp(){
-  $('main').innerHTML=hb('help','💬','Support','কোনো সমস্যা হলে এখানে লিখুন।') +
+  $('main').innerHTML=hb('help','💬','Support','কোনো সমস্যা হলে এখানে লিখুন, আমাদের টিম উত্তর দেবে।') +
   '<div class="chat" id="ch"></div><textarea id="st" rows="2" maxlength="500" placeholder="Describe your problem"></textarea><button class="btn" onclick="sendS()">Send</button>';
   loadSupportMsgs();
   if(window.SUP_TIMER) clearInterval(window.SUP_TIMER);
@@ -1011,22 +1115,33 @@ function loadSupportMsgs(){
 }
 function sendS(){api('support','POST',{text:$('st').value}).then(function(){$('st').value='';loadSupportMsgs()}).catch(function(e){toast(e.message)})}
 
+/* Account Page with Full History Restoration */
 function vAcc(){
   if(window.SUP_TIMER) clearInterval(window.SUP_TIMER);
   var isEmp = ME.role === 'employer';
-  $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স ও হিসাব।')+
+  
+  $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স, আয় ও উত্তোলনের হিসাব।')+
   '<div class="row"><div>'+esc(ME.name)+' ('+(isEmp?'Employer':'Worker')+')<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
   '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
   '<div style="display:flex;gap:8px"><button class="btn g" style="flex:1" onclick="depForm()">Deposit</button>'+(isEmp?'':'<button class="btn r" style="flex:1" onclick="wdForm()">Withdraw</button>')+'</div>'+
+  
   (isEmp?'':'<h3 style="margin-top:16px">Withdraw history</h3><div id="wh">Loading...</div>')+
   '<h3 style="margin-top:16px">Deposit history</h3><div id="dh">Loading...</div>'+
+  
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:16px" onclick="admOpen()">Admin panel</button>';
 
-  if(!isEmp) api('withdrawals').then(function(a){var el=$('wh');if(el)el.innerHTML=a.length?a.map(function(w){return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' <span class="chip '+w.status+'">'+w.status+'</span></div></div>'}).join(''):'<div class="row">No withdrawals.</div>'});
-  api('deposits').then(function(a){var el=$('dh');if(el)el.innerHTML=a.length?a.map(function(d){return '<div class="row"><div>'+esc(d.method)+' (Trx: ...'+esc(d.lastDigits)+')<small>'+new Date(d.at).toLocaleDateString()+'</small></div><div>'+money(d.amount)+' <span class="chip '+d.status+'">'+d.status+'</span></div></div>'}).join(''):'<div class="row">No deposits.</div>'})
+  if(!isEmp) {
+    api('withdrawals').then(function(a){
+      var el=$('wh');if(el)el.innerHTML=a.length?a.map(function(w){return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' <span class="chip '+w.status+'">'+w.status+'</span></div></div>'}).join(''):'<div class="row">No withdrawals yet.</div>';
+    });
+  }
+  
+  api('deposits').then(function(a){
+    var el=$('dh');if(el)el.innerHTML=a.length?a.map(function(d){return '<div class="row"><div>'+esc(d.method)+' (Trx: ...'+esc(d.lastDigits)+')<small>'+new Date(d.at).toLocaleDateString()+'</small></div><div>'+money(d.amount)+' <span class="chip '+d.status+'">'+d.status+'</span></div></div>'}).join(''):'<div class="row">No deposits yet.</div>';
+  });
 }
 
-function wdForm(){modal('<h3 style="color:var(--gold)">Withdraw (300 - 5000 BDT)</h3><label>Method</label><select id="wm"><option>bKash</option><option>Nagad</option></select><label>Amount</label><input id="wa" type="number"><label>Phone number</label><input id="wp" maxlength="11" value="01951639460"><button class="btn r" onclick="doWd()">Send request</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
+function wdForm(){modal('<h3 style="color:var(--gold)">Withdraw (300 - 5000 BDT)</h3><label>Method</label><select id="wm"><option>bKash</option><option>Nagad</option></select><label>Amount</label><input id="wa" type="number"><label>Your bKash/Nagad number</label><input id="wp" maxlength="11" value="01951639460"><button class="btn r" onclick="doWd()">Send request</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
 function doWd(){
   api('withdraw','POST',{method:$('wm').value,amount:$('wa').value,phone:$('wp').value}).then(function(m){
     ME=m; head(); closeM(); toast('Withdrawal request submitted.'); vAcc();
@@ -1035,14 +1150,15 @@ function doWd(){
 
 function depForm(presetAmount, pkgName){
  modal('<h3 style="color:var(--gold)">Deposit / Package Payment</h3>' +
- '<div class="tdw"><b>সেন্ড মনি করুন:</b> <b style="color:var(--grn)">01951639460</b></div>' +
+ '<div class="tdw"><b>পেমেন্ট করার নিয়ম:</b><br>নিচের নাম্বারে সেন্ড মনি করুন:<br><b style="font-size:16px;color:var(--grn)">01951639460</b></div>' +
  '<label>Method</label><select id="dm"><option>bKash</option><option>Nagad</option></select>' +
  '<label>Amount (BDT)</label><input id="da" type="number" value="'+(presetAmount||'')+'">' +
- '<label>Transaction ID (TrxID)</label><input id="dtx" placeholder="Min 10 chars">' +
- '<label>Last 3 Digits</label><input id="dlast" maxlength="3" placeholder="123">' +
+ '<label>Transaction ID (TrxID - Min 10 chars)</label><input id="dtx" placeholder="Enter valid TrxID">' +
+ '<label>Last 3 Digits of Sender Number</label><input id="dlast" maxlength="3" placeholder="e.g. 123">' +
  '<button class="btn g" onclick="doDep(\\''+(pkgName||'Custom Deposit')+'\\')">Submit Deposit</button>' +
  '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>');
 }
+
 function doDep(pkgName){
  var txVal = $('dtx').value.trim();
  if(txVal.length < 10) { toast('TrxID কমপক্ষে ১০ অক্ষরের হতে হবে।'); return; }
@@ -1053,7 +1169,7 @@ function doDep(pkgName){
 }
 
 var DUA=[
-["১. সানা","سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ","সুবহানাকাল্লাহুম্মা ওয়া বিহামدিকা...","হে আল্লাহ, আপনি পবিত্র।"],
+["১. সানা","سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ","সুবহানাকাল্লাহুম্মা ওয়া বিহামদিকা...","হে আল্লাহ, আপনি পবিত্র।"],
 ["২. সূরা ফাতিহা","بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ","বিসমিল্লাহির রাহমানির রাহিম...","পরম করুণাময় আল্লাহর নামে।"],
 ["৩. আত্তাহিয়্যাতু","التَّحِيَّاتُ لِلَّهِ","আত্তাহিয়্যাতু লিল্লাহি...","সমস্ত সম্মান আল্লাহর জন্য।"]];
 var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
@@ -1114,7 +1230,4 @@ function aUs(){api('admin/users','GET',null,ah()).then(function(d){
 document.addEventListener('DOMContentLoaded',function(){$('logoA').innerHTML=logo(88);$('logoT').innerHTML=logo(40);initG();
  if(REF)mode('reg');
  if(T)api('me').then(enter).catch(function(){$('auth').style.display='block'});else $('auth').style.display='block'});
-</script></body></html>`;
-
-app.get('/', (req, res) => res.send(PAGE.replace('__GID__', GID.replace(/[^\w.\-]/g, '')).replace(/__AGE__/g, String(MIN_AGE | 0))));
-app.listen(PORT, () => console.log('Server is running on port ' + PORT));
+</script></body></html>
