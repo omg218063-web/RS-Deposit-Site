@@ -812,16 +812,16 @@ function ico(c,p){return '<svg width="46" height="46" viewBox="0 0 24 24"><circl
 function hb(c,e,t,s){return '<div class="hbn hb-'+c+'"><span class="e">'+e+'</span><div><b>'+t+'</b><small>'+s+'</small></div></div>'}
 function api(p,m,b,hd){hd=hd||{};hd['Content-Type']='application/json';if(T)hd.Authorization='Bearer '+T;
  return fetch('/api/'+p,{method:m||'GET',headers:hd,body:b?JSON.stringify(b):undefined}).then(function(r){return r.json().then(function(d){if(r.status===401&&T){out();throw new Error(d.error)}if(!r.ok)throw new Error(d.error||'Error');return d})})}
-function out(){localStorage.removeItem('t');T=null;ME=null;admClose();$('auth').style.display='block'}
+function out(){localStorage.removeItem('t');T=null;ME=null;admClose();var authEl = $('auth');if(authEl) authEl.style.display='block'}
 function mode(m){$('tReg').className=m==='reg'?'on':'';$('tLog').className=m==='log'?'on':'';$('fReg').style.display=m==='reg'?'block':'none';$('fLog').style.display=m==='log'?'block':'none';$('aErr').textContent=''}
 function done(d){T=d.token;localStorage.setItem('t',T);localStorage.removeItem('ref');enter(d.me)}
 function fail(e){$('aErr').textContent=e.message}
 function reg(){api('register','POST',{name:$('rN').value,phone:$('rP').value,password:$('rW').value,confirm:$('rC').value,role:$('rRole').value,ref:REF}).then(done).catch(fail)}
 function login(){api('login','POST',{name:$('lN').value,password:$('lW').value}).then(done).catch(fail)}
 function gCb(r){api('google','POST',{credential:r.credential,ref:REF}).then(done).catch(fail)}
-function initG(){if(!GID){$('gWrap').style.display='none';return}
+function initG(){if(!GID){var gw = $('gWrap');if(gw) gw.style.display='none';return}
  if(!window.google||!google.accounts){return setTimeout(initG,400)}
- google.accounts.id.initialize({client_id:GID,callback:gCb});google.accounts.id.renderButton($('gBtn'),{theme:'filled_black',size:'large',text:'continue_with',width:280})}
+ google.accounts.id.initialize({client_id:GID,callback:gCb});var gb = $('gBtn');if(gb) google.accounts.id.renderButton(gb,{theme:'filled_black',size:'large',text:'continue_with',width:280})}
 
 function getTabs(){
   if(ME && ME.role==='employer'){
@@ -831,19 +831,24 @@ function getTabs(){
 }
 
 function enter(m){
-  ME=m; $('auth').style.display='none';
+  ME=m; 
+  var authEl = $('auth');
+  if(authEl) authEl.style.display='none';
   var tbs = getTabs();
-  $('nav').innerHTML=tbs.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\''+t[0]+'\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
+  var navEl = $('nav');
+  if(navEl) navEl.innerHTML=tbs.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\''+t[0]+'\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
   head();
   go(ME.role==='employer'?'emp':'home');
   startGlobalSync();
 }
 
 function head(){
-  $('hName').textContent=ME.name + (ME.role === 'employer' ? ' (Employer)' : '');
-  $('hBal').textContent=money(ME.balance);
-  $('hRsCoins').textContent='RS Coins: '+formatCompact(ME.rsCoins||0);
-  $('avT').innerHTML=ME.av?'<img src="'+esc(ME.av)+'" alt="">':'📷';
+  if(!ME) return;
+  var hName = $('hName'), hBal = $('hBal'), hRs = $('hRsCoins'), avT = $('avT');
+  if(hName) hName.textContent = ME.name + (ME.role === 'employer' ? ' (Employer)' : '');
+  if(hBal) hBal.textContent = money(ME.balance);
+  if(hRs) hRs.textContent = 'RS Coins: '+formatCompact(ME.rsCoins||0);
+  if(avT) avT.innerHTML = ME.av ? '<img src="'+esc(ME.av)+'" alt="">' : '📷';
 }
 
 function startGlobalSync(){
@@ -1050,8 +1055,8 @@ function showT(i){var t=OF[i];
  (t.req?'<div class="tdw"><b>শর্ত:</b> '+esc(t.req)+'</div>':'')+
  '<button class="btn g" onclick="closeM();startO('+i+')">Start</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
 function startO(i){api('offers/'+encodeURIComponent(OF[i].id)+'/start','POST').then(function(r){var w=window.open(r.url,'_blank');if(!w)location.href=r.url;vTasks()}).catch(function(e){toast(e.message)})}
-function modal(h){$('mBody').innerHTML=h;$('modal').style.display='flex'}
-function closeM(){$('modal').style.display='none'}
+function modal(h){var mb = $('mBody');if(mb) mb.innerHTML=h;var m = $('modal');if(m) m.style.display='flex'}
+function closeM(){var m = $('modal');if(m) m.style.display='none'}
 
 function vPkg(){var pkgs=[
  {p:200,c:10,d:'Basic RS Coin Package', hot:false},
@@ -1082,9 +1087,10 @@ function vRank(){
   $('main').innerHTML=hb('rank','🏆','Ranking & RS Collectors','র‍্যাংকিং তালিকা: ইউজারদের রিয়েল ব্যালেন্স এবং সংগৃহীত আরএস কয়েন।')+'<div id="rk">Loading...</div>';
   function load(){
     api('leaderboard').then(function(a){
-      if(!a.length){$('rk').innerHTML='<div class="row">No data.</div>';return}
+      if(!a.length){var rkEl = $('rk');if(rkEl) rkEl.innerHTML='<div class="row">No data.</div>';return}
       var p=[a[1],a[0],a[2]],cl=['','p1',''],rk=['#2','#1','#3'];
-      $('rk').innerHTML='<div class="pod">'+p.map(function(u,i){return u?'<div class="'+cl[i]+'">'+(i===1?'👑':'')+'<br>'+(u.avatar?'<img src="'+esc(u.avatar)+'" width="42" height="42" style="border-radius:50%;border:2px solid var(--gold);object-fit:cover;margin:4px auto;display:block">':'👤')+'<br>'+esc(u.name)+'<b style="color:var(--grn)">'+money(u.balance||0)+' BDT</b><small style="color:var(--gold)">'+formatCompact(u.rsCoins||0)+' RS Coins</small><small>'+rk[i]+'</small></div>':'<div></div>'}).join('')+'</div>'+
+      var rkEl = $('rk');
+      if(rkEl) rkEl.innerHTML='<div class="pod">'+p.map(function(u,i){return u?'<div class="'+cl[i]+'">'+(i===1?'👑':'')+'<br>'+(u.avatar?'<img src="'+esc(u.avatar)+'" width="42" height="42" style="border-radius:50%;border:2px solid var(--gold);object-fit:cover;margin:4px auto;display:block">':'👤')+'<br>'+esc(u.name)+'<b style="color:var(--grn)">'+money(u.balance||0)+' BDT</b><small style="color:var(--gold)">'+formatCompact(u.rsCoins||0)+' RS Coins</small><small>'+rk[i]+'</small></div>':'<div></div>'}).join('')+'</div>'+
       a.slice(3).map(function(u,i){return '<div class="row"><div style="display:flex;align-items:center;gap:10px">'+(u.avatar?'<img src="'+esc(u.avatar)+'" width="32" height="32" style="border-radius:50%;object-fit:cover">':'👤')+'<div>#'+(i+4)+' '+esc(u.name)+'<small style="color:var(--gold)">RS Coins: '+formatCompact(u.rsCoins||0)+'</small></div></div><b style="color:var(--grn)">'+money(u.balance||0)+' BDT</b></div>'}).join('')
     }).catch(function(){})
   }
@@ -1097,7 +1103,7 @@ function vRef(){var link=location.origin+'/?ref='+ME.refCode,e=encodeURIComponen
  '<input readonly id="rl" value="'+esc(link)+'"><button class="btn" onclick="copyL()">Copy link</button></div>'+
  '<div class="grid" style="margin-top:12px"><div class="stat"><b>'+ME.refCount+'</b><small>Friends joined</small></div><div class="stat"><b>'+money(ME.refEarn)+'</b><small>Referral earnings</small></div></div>';
 }
-function copyL(){(navigator.clipboard?navigator.clipboard.writeText(RL):Promise.reject()).then(function(){toast('Link copied.')}).catch(function(){$('rl').select();toast('Copied.')})}
+function copyL(){(navigator.clipboard?navigator.clipboard.writeText(RL):Promise.reject()).then(function(){toast('Link copied.')}).catch(function(){var rlEl=$('rl');if(rlEl) rlEl.select();toast('Copied.')})}
 
 function vHelp(){
   $('main').innerHTML=hb('help','💬','Support','কোনো সমস্যা হলে এখানে লিখুন, আমাদের টিম উত্তর দেবে।') +
@@ -1113,7 +1119,7 @@ function loadSupportMsgs(){
     c.scrollTop=c.scrollHeight;
   }).catch(function(){})
 }
-function sendS(){api('support','POST',{text:$('st').value}).then(function(){$('st').value='';loadSupportMsgs()}).catch(function(e){toast(e.message)})}
+function sendS(){var stEl = $('st');if(!stEl) return; api('support','POST',{text:stEl.value}).then(function(){stEl.value='';loadSupportMsgs()}).catch(function(e){toast(e.message)})}
 
 /* Account Page with Full History Restoration */
 function vAcc(){
@@ -1143,7 +1149,9 @@ function vAcc(){
 
 function wdForm(){modal('<h3 style="color:var(--gold)">Withdraw (300 - 5000 BDT)</h3><label>Method</label><select id="wm"><option>bKash</option><option>Nagad</option></select><label>Amount</label><input id="wa" type="number"><label>Your bKash/Nagad number</label><input id="wp" maxlength="11" value="01951639460"><button class="btn r" onclick="doWd()">Send request</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
 function doWd(){
-  api('withdraw','POST',{method:$('wm').value,amount:$('wa').value,phone:$('wp').value}).then(function(m){
+  var wmEl = $('wm'), waEl = $('wa'), wpEl = $('wp');
+  if(!wmEl || !waEl || !wpEl) return;
+  api('withdraw','POST',{method:wmEl.value,amount:waEl.value,phone:wpEl.value}).then(function(m){
     ME=m; head(); closeM(); toast('Withdrawal request submitted.'); vAcc();
   }).catch(function(e){toast(e.message)});
 }
@@ -1160,9 +1168,11 @@ function depForm(presetAmount, pkgName){
 }
 
 function doDep(pkgName){
- var txVal = $('dtx').value.trim();
+ var dtxEl = $('dtx'), dmEl = $('dm'), daEl = $('da'), dlastEl = $('dlast');
+ if(!dtxEl) return;
+ var txVal = dtxEl.value.trim();
  if(txVal.length < 10) { toast('TrxID কমপক্ষে ১০ অক্ষরের হতে হবে।'); return; }
- api('deposit','POST',{method:$('dm').value,amount:$('da').value,txid:txVal,lastDigits:$('dlast').value,pkgName:pkgName}).then(function(r){
+ api('deposit','POST',{method:dmEl.value,amount:daEl.value,txid:txVal,lastDigits:dlastEl.value,pkgName:pkgName}).then(function(r){
   if(r.activePkg) ME.activePkg = r.activePkg;
   closeM(); toast('ডিপোজিট সফলভাবে সাবমিট হয়েছে।'); vAcc();
  }).catch(function(e){toast(e.message)})
@@ -1177,41 +1187,50 @@ var HD=[["কাজ নিয়তের ওপর নির্ভরশীল�
 function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\''+p+'\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
 function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\''+p+'\')">&lsaquo; ফিরে যান</button>'}
 function vBook(){bk('menu')}
-function nmF(){var q=($('nq').value||'').trim().toLowerCase(),a=NML.filter(function(x){return !q||x.toLowerCase().indexOf(q)>=0});
- $('nl').innerHTML='<h3>'+a.length+'টি নাম</h3>'+(a.length?a.map(function(x){var p=x.split('|');return '<div class="bkc nm"><div><b>'+esc(p[0])+'</b><small>'+esc(p[2]||'')+'</small></div><div class="ar2">'+esc(p[1]||'')+'</div></div>'}).join(''):'<div class="row">কোনো নাম মেলেনি</div>')}
+function nmF(){
+  var nqEl = $('nq');
+  var q=(nqEl&&nqEl.value||'').trim().toLowerCase(),a=NML.filter(function(x){return !q||x.toLowerCase().indexOf(q)>=0});
+  var nlEl = $('nl');
+  if(nlEl) nlEl.innerHTML='<h3>'+a.length+'টি নাম</h3>'+(a.length?a.map(function(x){var p=x.split('|');return '<div class="bkc nm"><div><b>'+esc(p[0])+'</b><small>'+esc(p[2]||'')+'</small></div><div class="ar2">'+esc(p[1]||'')+'</div></div>'}).join(''):'<div class="row">কোনো নাম মেলেনি</div>')
+}
 function bk(p){var h='';
  if(p==='menu'){h='<div class="bkh">'+mosque(230)+'<div class="t">ইসলামিক বই</div><div class="u">নাম, দোয়া ও হাদিস</div></div>'+
   bkb('names','🌙','ইসলামিক নাম','ছেলে ও মেয়েদের নাম')+bkb('dua','🤲','নামাজের দোয়া','নামাজে যা যা পড়তে হয়')+bkb('rakat','🕌','পাঁচ ওয়াক্ত নামাজ','ফরজ রাকাত')+bkb('hadith','📜','হাদিস','সহিহ হাদিস')}
  else if(p==='names'){h=bkBack('menu')+'<h3>কাদের নাম দেখতে চান?</h3>'+bkb('boys','👦','ছেলেদের নাম','')+bkb('girls','👧','মেয়েদের নাম','')}
  else if(p==='boys'||p==='girls'){NML=[];h=bkBack('names')+'<h3>'+(p==='boys'?'ছেলেদের':'মেয়েদের')+' ইসলামিক নাম</h3><input id="nq" placeholder="নাম খুঁজুন..." oninput="nmF()"><div id="nl" style="margin-top:10px"><div class="row">Loading...</div></div>';
-  $('main').innerHTML=h;$('main').scrollTop=0;
+  var mainEl = $('main'); if(mainEl) { mainEl.innerHTML=h; mainEl.scrollTop=0; }
   api('names/'+p).then(function(a){NML=a;nmF()}).catch(function(e){var l=$('nl');if(l)l.textContent=e.message});return}
  else if(p==='dua'){h=bkBack('menu')+'<h3>নামাজের দোয়া</h3>'+DUA.map(function(d){return '<div class="bkc"><b>'+esc(d[0])+'</b><div class="ar">'+esc(d[1])+'</div><small>অর্থ: '+esc(d[3])+'</small></div>'}).join('')}
  else if(p==='rakat'){h=bkBack('menu')+'<h3>পাঁচ ওয়াক্ত নামাজ</h3>'+RK.map(function(r){return '<div class="row"><div><b style="color:var(--gold)">'+r[0]+'</b></div><div>'+r[1]+'</div></div>'}).join('')}
  else if(p==='hadith'){h=bkBack('menu')+'<h3>হাদিস</h3>'+HD.map(function(x){return '<div class="bkc">'+esc(x[0])+'<small>সূত্র: '+esc(x[1])+'</small></div>'}).join('')}
- $('main').innerHTML=h;$('main').scrollTop=0}
+ var mainEl2 = $('main'); if(mainEl2) { mainEl2.innerHTML=h; mainEl2.scrollTop=0; }
+}
 
 var ATABS=[['ov','📊','ওভারভিউ'],['wd','💸','উত্তোলন'],['dep','💳','ডিপোজিট'],['ctask','📢','প্রমোশন'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ']];
 function ah(){return{'x-admin-pass':ADM}}
-function admOpen(){var p=prompt('Admin password');if(!p)return;ADM=p;$('adm').className='adm on';
- $('anav').innerHTML=ATABS.map(function(t){return '<div id="a_'+t[0]+'" onclick="admGo(\''+t[0]+'\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');admGo('ov')}
-function admClose(){$('adm').className='adm'}
-function aErr(e){if(e.message==='Wrong admin password.'){toast(e.message);admClose()}else $('abody').innerHTML='<div class="row">'+esc(e.message)+'</div>'}
-function admGo(t){ATABS.forEach(function(x){$('a_'+x[0]).className=x[0]===t?'on':''});$('abody').innerHTML='<div class="row">Loading...</div>';
- ({ov:aOv,wd:aWd,dep:aDep,ctask:aCTask,sp:aSp,us:aUs})[t]()}
+function admOpen(){var p=prompt('Admin password');if(!p)return;ADM=p;var admEl=$('adm');if(admEl) admEl.className='adm on';
+ var anavEl=$('anav');if(anavEl) anavEl.innerHTML=ATABS.map(function(t){return '<div id="a_'+t[0]+'" onclick="admGo(\''+t[0]+'\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');admGo('ov')}
+function admClose(){var admEl=$('adm');if(admEl) admEl.className='adm'}
+function aErr(e){if(e.message==='Wrong admin password.'){toast(e.message);admClose()}else {var abodyEl=$('abody');if(abodyEl) abodyEl.innerHTML='<div class="row">'+esc(e.message)+'</div>'}}
+function admGo(t){
+  ATABS.forEach(function(x){var el=$('a_'+x[0]);if(el) el.className=x[0]===t?'on':''});
+  var abodyEl=$('abody');if(abodyEl) abodyEl.innerHTML='<div class="row">Loading...</div>';
+  ({ov:aOv,wd:aWd,dep:aDep,ctask:aCTask,sp:aSp,us:aUs})[t]()
+}
 function sc(a){return a.map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('')}
 function aOv(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
- $('abody').innerHTML='<h3>আজকের হিসাব</h3><div class="grid">'+sc([['মোট ইউজার',s.users],['আজ ঢুকেছে',s.active],['ডিপোজিট পেন্ডিং',s.depPending],['অপেক্ষমাণ টাস্ক',s.pendingTasks]])+'</div>'}).catch(aErr)}
+ var abodyEl=$('abody');if(abodyEl) abodyEl.innerHTML='<h3>আজকের হিসাব</h3><div class="grid">'+sc([['মোট ইউজার',s.users],['আজ ঢুকেছে',s.active],['ডিপোজিট পেন্ডিং',s.depPending],['অপেক্ষমাণ টাস্ক',s.pendingTasks]])+'</div>'}).catch(aErr)}
 function decI(i,ok){var w=AD.wds[i];api('admin/wd/'+w._id,'POST',{ok:!!ok},ah()).then(aWd).catch(aErr)}
 function aWd(){api('admin/wd-list','GET',null,ah()).then(function(d){AD.wds=d.pending;
- $('abody').innerHTML='<h3>অপেক্ষমাণ উত্তোলন</h3>'+(d.pending.map(function(w,i){return '<div class="th"><div class="hd"><span>'+esc(w.name)+'</span><span style="color:var(--gold)">'+money(w.amount)+'</span></div><div style="font-size:13px">'+esc(w.method)+': <b>'+esc(w.phone)+'</b></div><div class="gap"><button class="btn s g" onclick="decI('+i+',1)">Success</button><button class="btn s r" onclick="decI('+i+',0)">Reject</button></div></div>'}).join('')||'<div class="row">নেই</div>')}).catch(aErr)}
+ var abodyEl=$('abody');if(abodyEl) abodyEl.innerHTML='<h3>অপেক্ষমাণ উত্তোলন</h3>'+(d.pending.map(function(w,i){return '<div class="th"><div class="hd"><span>'+esc(w.name)+'</span><span style="color:var(--gold)">'+money(w.amount)+'</span></div><div style="font-size:13px">'+esc(w.method)+': <b>'+esc(w.phone)+'</b></div><div class="gap"><button class="btn s g" onclick="decI('+i+',1)">Success</button><button class="btn s r" onclick="decI('+i+',0)">Reject</button></div></div>'}).join('')||'<div class="row">নেই</div>')}).catch(aErr)}
 function decDep(i,ok){var d=AD.deps[i];api('admin/dep/'+d._id,'POST',{ok:!!ok},ah()).then(aDep).catch(aErr)}
 function aDep(){api('admin/dep-list','GET',null,ah()).then(function(d){AD.deps=d.pending;
- $('abody').innerHTML='<h3>অপেক্ষমাণ ডিপোজিট</h3>'+(d.pending.map(function(dep,i){return '<div class="th"><div class="hd"><span>'+esc(dep.name)+'</span><span style="color:var(--gold)">'+money(dep.amount)+'</span></div><div style="font-size:13px">'+esc(dep.method)+': <b>'+esc(dep.txid)+'</b></div><div class="gap"><button class="btn s g" onclick="decDep('+i+',1)">Approve</button><button class="btn s r" onclick="decDep('+i+',0)">Reject</button></div></div>'}).join('')||'<div class="row">নেই</div>')}).catch(aErr)}
+ var abodyEl=$('abody');if(abodyEl) abodyEl.innerHTML='<h3>অপেক্ষমাণ ডিপোজিট</h3>'+(d.pending.map(function(dep,i){return '<div class="th"><div class="hd"><span>'+esc(dep.name)+'</span><span style="color:var(--gold)">'+money(dep.amount)+'</span></div><div style="font-size:13px">'+esc(dep.method)+': <b>'+esc(dep.txid)+'</b></div><div class="gap"><button class="btn s g" onclick="decDep('+i+',1)">Approve</button><button class="btn s r" onclick="decDep('+i+',0)">Reject</button></div></div>'}).join('')||'<div class="row">নেই</div>')}).catch(aErr)}
 
 function aCTask(){
   api('admin/custom-tasks','GET',null,ah()).then(function(tasks){
-    $('abody').innerHTML='<h3>অপেক্ষমাণ প্রমোশন টাস্কসমূহ</h3>' +
+    var abodyEl = $('abody');
+    if(abodyEl) abodyEl.innerHTML='<h3>অপেক্ষমাণ প্রমোশন টাস্কসমূহ</h3>' +
     (tasks.length ? tasks.map(function(t, i){
       return '<div class="th"><div class="hd"><span>'+esc(t.title)+' ('+esc(t.platform)+')</span><span style="color:var(--gold)">Budget: '+t.totalBudget+' BDT</span></div><div style="font-size:13px">Link: <a href="'+esc(t.link)+'" target="_blank">'+esc(t.link)+'</a><br>Reward/Worker: '+t.reward+' BDT | Target: '+t.targetWorkers+'</div><div class="gap"><button class="btn s g" onclick="decCTask(\''+t._id+'\',1)">Approve</button><button class="btn s r" onclick="decCTask(\''+t._id+'\',0)">Reject</button></div></div>';
     }).join('') : '<div class="row">কোনো পেন্ডিং প্রমোশন টাস্ক নেই।</div>');
@@ -1221,15 +1240,39 @@ function decCTask(id, ok){
   api('admin/custom-tasks/'+id,'POST',{ok:!!ok},ah()).then(aCTask).catch(aErr);
 }
 
-function repI(i){var t=$('rp'+i).value.trim();if(!t)return;api('admin/reply','POST',{uid:AD.th[i].uid,text:t},ah()).then(aSp).catch(aErr)}
+function repI(i){
+  var rpEl = $('rp'+i);
+  if(!rpEl) return;
+  var t=rpEl.value.trim();
+  if(!t)return;
+  api('admin/reply','POST',{uid:AD.th[i].uid,text:t},ah()).then(aSp).catch(aErr)
+}
 function aSp(){api('admin/support','GET',null,ah()).then(function(d){AD.th=d;
- $('abody').innerHTML=d.length?d.map(function(t,i){return '<div class="th"><div class="hd"><span>'+esc(t.name)+'</span></div><div class="chat" style="max-height:30vh">'+t.msgs.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join('')+'</div><textarea id="rp'+i+'" rows="2" maxlength="500" placeholder="উত্তর লিখুন"></textarea><button class="btn s" style="margin-top:8px" onclick="repI('+i+')">Send</button></div>'}).join(''):'<div class="row">কোনো মেসেজ নেই</div>'}).catch(aErr)}
+ var abodyEl = $('abody');
+ if(abodyEl) abodyEl.innerHTML=d.length?d.map(function(t,i){return '<div class="th"><div class="hd"><span>'+esc(t.name)+'</span></div><div class="chat" style="max-height:30vh">'+t.msgs.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join('')+'</div><textarea id="rp'+i+'" rows="2" maxlength="500" placeholder="উত্তর লিখুন"></textarea><button class="btn s" style="margin-top:8px" onclick="repI('+i+')">Send</button></div>'}).join(''):'<div class="row">কোনো মেসেজ নেই</div>'}).catch(aErr)}
 function aUs(){api('admin/users','GET',null,ah()).then(function(d){
- $('abody').innerHTML='<h3>অ্যাক্টিভ ইউজার</h3>'+(d.active.map(function(u){return '<div class="row"><div>'+esc(u.name)+' ('+esc(u.role)+')<small>'+esc(u.phone)+'</small></div></div>'}).join('')||'<div class="row">কেউ নেই</div>')}).catch(aErr)}
+ var abodyEl = $('abody');
+ if(abodyEl) abodyEl.innerHTML='<h3>অ্যাক্টিভ ইউজার</h3>'+(d.active.map(function(u){return '<div class="row"><div>'+esc(u.name)+' ('+esc(u.role)+')<small>'+esc(u.phone)+'</small></div></div>'}).join('')||'<div class="row">কেউ নেই</div>')}).catch(aErr)}
 
-document.addEventListener('DOMContentLoaded',function(){$('logoA').innerHTML=logo(88);$('logoT').innerHTML=logo(40);initG();
- if(REF)mode('reg');
- if(T)api('me').then(enter).catch(function(){$('auth').style.display='block'});else $('auth').style.display='block'});
+document.addEventListener('DOMContentLoaded',function(){
+  var la = $('logoA'); if(la) la.innerHTML = logo(88);
+  var lt = $('logoT'); if(lt) lt.innerHTML = logo(40);
+  initG();
+  if(REF) mode('reg');
+  if(T) {
+    api('me').then(function(m){
+      enter(m);
+    }).catch(function(){
+      localStorage.removeItem('t');
+      T = null;
+      var authEl = $('auth');
+      if(authEl) authEl.style.display = 'block';
+    });
+  } else {
+    var authEl = $('auth');
+    if(authEl) authEl.style.display = 'block';
+  }
+});
 </script></body></html>
 `;
 
