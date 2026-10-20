@@ -1,4 +1,4 @@
-const express = require('express');
+Const express = require('express');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 
@@ -220,7 +220,6 @@ async function fetchOffers(uid, ctx, dbg) {
   ctx = ctx || { device: '', country: '' };
   let combinedOffers = [];
 
-  // Custom Approved Employer Tasks
   const approvedCustom = await CustomTask.find({ status: 'approved' });
   const mappedCustom = approvedCustom.map(t => {
     let iconUrl = 'https://cdn-icons-png.flaticon.com/512/1041/1041888.png';
@@ -315,7 +314,6 @@ app.post('/api/offers/:id/start', auth, h(async (q, s) => {
   s.json({ url: o.clickUrl });
 }));
 
-// Employer Task Submission API
 app.post('/api/employer/task', auth, h(async (q, s) => {
   if (q.user.role !== 'employer') return bad(s, 'Only employers can post tasks.');
   const { platform, title, link, reward, targetWorkers } = q.body || {};
@@ -336,27 +334,26 @@ app.get('/api/employer/tasks', auth, h(async (q, s) => {
   s.json(await CustomTask.find({ uid: q.user.id }).sort({ at: -1 }));
 }));
 
-// Ad Watch Reward API
 app.post('/api/watch-ad', auth, h(async (q, s) => {
   const now = Date.now();
   if (q.user.lastAdWatch && now - q.user.lastAdWatch < 30000) {
     return bad(s, 'Please wait 30 seconds before watching another ad.');
   }
   const adReward = 0.50;
-  const u = await User.findOneAndUpdate({ _id: q.user.id }, { $set: { lastAdWatch: now },$inc: { balance: adReward, earned: adReward } }, { new: true });
+  const u = await User.findOneAndUpdate({ _id: q.user.id }, { $set: { lastAdWatch: now }, $inc: { balance: adReward, earned: adReward } }, { new: true });
   s.json({ reward: adReward, me: me(u) });
 }));
 
 app.get('/api/timewall', auth, (q, s) => s.json({ url: TW_URL ? TW_URL.replace(/\{uid\}/g, encodeURIComponent(q.user.id)) : '' }));
 
 app.post('/api/daily', auth, h(async (q, s) => {
-  const r = await User.findOneAndUpdate({ _id: q.user.id, lastDaily: { $lte: Date.now() - 864e5 } }, { $set: { lastDaily: Date.now() },$inc: { balance: DAILY, earned: DAILY } }, { new: true });
+  const r = await User.findOneAndUpdate({ _id: q.user.id, lastDaily: { $lte: Date.now() - 864e5 } }, { $set: { lastDaily: Date.now() }, $inc: { balance: DAILY, earned: DAILY } }, { new: true });
   if (!r) return bad(s, 'You already claimed today. Come back in 24 hours.');
   s.json(me(r));
 }));
 
 app.post('/api/checkin', auth, h(async (q, s) => {
-  const r = await User.findOneAndUpdate({ _id: q.user.id, lastCheckin: { $ne: today() } }, { $set: { lastCheckin: today() },$inc: { balance: CHECKIN, earned: CHECKIN } }, { new: true });
+  const r = await User.findOneAndUpdate({ _id: q.user.id, lastCheckin: { $ne: today() } }, { $set: { lastCheckin: today() }, $inc: { balance: CHECKIN, earned: CHECKIN } }, { new: true });
   if (!r) return bad(s, 'You already checked in today.');
   s.json(me(r));
 }));
@@ -365,7 +362,7 @@ app.post('/api/spin', auth, h(async (q, s) => {
   const tot = SPIN.reduce((a, x) => a + x[1], 0);
   let r = crypto.randomInt(tot), prize = SPIN[0][0];
   for (const x of SPIN) { if (r < x[1]) { prize = x[0]; break; } r -= x[1]; }
-  const u = await User.findOneAndUpdate({ _id: q.user.id, $or: [{ lastSpin: { $exists: false } }, { lastSpin: {$lte: Date.now() - 864e5 } }] }, { $set: { lastSpin: Date.now() },$inc: { balance: prize, earned: prize } }, { new: true });
+  const u = await User.findOneAndUpdate({ _id: q.user.id, $or: [{ lastSpin: { $exists: false } }, { lastSpin: {$lte: Date.now() - 864e5 } }] }, { $set: { lastSpin: Date.now() }, $inc: { balance: prize, earned: prize } }, { new: true });
   if (!u) return bad(s, 'You already spun today. Come back in 24 hours.');
   s.json({ prize, me: me(u) });
 }));
@@ -404,7 +401,7 @@ app.post('/api/withdraw', auth, h(async (q, s) => {
   if (!(a >= MIN_WD && a <= MAX_WD)) return bad(s, 'Withdraw amount must be between ' + MIN_WD + ' and ' + MAX_WD + '.');
   if (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
   if (!/^01\d{9}$/.test(String(phone || ''))) return bad(s, 'Enter a valid 11-digit number.');
-  const r = await User.findOneAndUpdate({ _id: q.user.id, balance: { $gte: a } }, {$inc: { balance: -a } }, { new: true });
+  const r = await User.findOneAndUpdate({ _id: q.user.id, balance: { $gte: a } }, { $inc: { balance: -a } }, { new: true });
   if (!r) return bad(s, 'Not enough balance.');
   await Wd.create({ uid: q.user.id, name: q.user.name, amount: a, method, phone });
   s.json(me(r));
@@ -458,7 +455,6 @@ app.post('/api/support', auth, h(async (q, s) => {
   s.json({ ok: true });
 }));
 
-// Admin Endpoints
 app.get('/api/admin/data', admin, h(async (q, s) => {
   await expire();
   const start = dayStart();
@@ -587,7 +583,6 @@ const PAGE = `<!DOCTYPE html>
 body{background:var(--bg);color:var(--tx);display:flex;justify-content:center;min-height:100vh;padding:8px}
 .app{width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:26px;height:96vh;display:flex;flex-direction:column;overflow:hidden;position:relative}
 
-/* Fixed Always Visible App Install Banner */
 .pwa-banner{display:flex;background:linear-gradient(90deg,#fbbf24,#f59e0b);color:#000;padding:12px 16px;border-radius:14px;align-items:center;justify-content:space-between;margin:10px 14px 0 14px;font-weight:700;font-size:13.5px;box-shadow:0 4px 12px rgba(251,191,36,0.3);position:relative;z-index:10}
 .pwa-banner button{background:#000;color:#fff;border:0;padding:7px 14px;border-radius:10px;font-size:12px;cursor:pointer;font-weight:bold}
 
@@ -701,7 +696,6 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 @keyframes rot{to{transform:rotate(360deg)}}
 @keyframes fl{50%{transform:translateY(-9px) rotate(4deg)}}
 
-/* Footer Styling */
 .ft{margin-top:6px;border-radius:22px;padding:18px 16px;background:linear-gradient(180deg,#0d1a2e,#070d1a);border:1px solid rgba(251,191,36,.35);box-shadow:0 10px 24px rgba(0,0,0,.5)}
 .ftl{display:flex;align-items:center;gap:12px;margin-bottom:10px}.ftl b{font-size:16px;color:var(--gold)}.ftl small{display:block;font-size:11px;color:var(--mu)}
 .fd{font-size:12px;line-height:1.75;color:#94a3b8;margin-bottom:14px}
@@ -720,7 +714,6 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .fr a{color:#7dd3fc;text-decoration:none}
 .fc{font-size:10.5px;color:#64748b;text-align:center;margin-top:12px;border-top:1px solid #1e293b;padding-top:10px}
 
-/* E-Commerce Employer Mall Styles */
 .shop-banner{background:linear-gradient(135deg,#1e1b4b,#312e81);border:1px solid var(--gold);border-radius:18px;padding:16px;text-align:center;margin-bottom:14px;box-shadow:0 6px 16px rgba(251,191,36,0.2)}
 .shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .ecom-card{background:#131d38;border:1px solid var(--line);border-radius:16px;padding:12px;text-align:center;position:relative;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 4px 10px rgba(0,0,0,0.3)}
@@ -760,7 +753,6 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 <input type="file" id="avf" accept="image/*" style="display:none" onchange="avUp(this)">
 <nav id="nav"></nav>
 
-<!-- Always Visible App Install Banner -->
 <div id="pwaBanner" class="pwa-banner">
   <span>📱 আপনার ফোনে অ্যাপটি ইনস্টল করুন</span>
   <button onclick="installPWA()">Install</button>
@@ -831,14 +823,20 @@ function getTabs(){
 }
 
 function enter(m){
-  ME=m; 
+  ME = m; 
   var authEl = $('auth');
-  if(authEl) authEl.style.display='none';
+  if(authEl) authEl.style.display = 'none';
+  
   var tbs = getTabs();
   var navEl = $('nav');
-  if(navEl) navEl.innerHTML=tbs.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\''+t[0]+'\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
+  if(navEl) {
+    navEl.innerHTML = tbs.map(function(t){
+      return '<div id="n_' + t[0] + '" onclick="go(\'' + t[0] + '\')"><i>' + t[1] + '</i>' + t[2] + '</div>';
+    }).join('');
+  }
+  
   head();
-  go(ME.role==='employer'?'emp':'home');
+  go(ME.role === 'employer' ? 'emp' : 'home');
   startGlobalSync();
 }
 
@@ -847,8 +845,8 @@ function head(){
   var hName = $('hName'), hBal = $('hBal'), hRs = $('hRsCoins'), avT = $('avT');
   if(hName) hName.textContent = ME.name + (ME.role === 'employer' ? ' (Employer)' : '');
   if(hBal) hBal.textContent = money(ME.balance);
-  if(hRs) hRs.textContent = 'RS Coins: '+formatCompact(ME.rsCoins||0);
-  if(avT) avT.innerHTML = ME.av ? '<img src="'+esc(ME.av)+'" alt="">' : '📷';
+  if(hRs) hRs.textContent = 'RS Coins: ' + formatCompact(ME.rsCoins || 0);
+  if(avT) avT.innerHTML = ME.av ? '<img src="' + esc(ME.av) + '" alt="">' : '📷';
 }
 
 function startGlobalSync(){
@@ -882,7 +880,6 @@ var HS=[
  ['s3','💸 উত্তোলন','সহজে টাকা তুলুন','Account থেকে Withdraw চেপে bKash বা Nagad নাম্বার দিন। উত্তোলন ৩০০ থেকে ৫০০০ টাকা পর্যন্ত করা যায়। রিকোয়েস্ট যাচাই করে আমরা নিজে টাকা পাঠাই।','💸','🏦','✅']];
 function hsGo(i){HSI=i;var s=document.querySelectorAll('.sl'),d=document.querySelectorAll('.dots i');for(var k=0;k<s.length;k++){s[k].className='sl '+HS[k][0]+(k===i?' on':'');d[k].className=k===i?'on':''}}
 
-/* Full Complete Footer Component */
 function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
  var fb=ico('#1877f2','<path d="M13.2 19v-6.2h2.1l.4-2.6h-2.5V8.6c0-.8.3-1.3 1.4-1.3h1.2V5.1c-.2 0-1-.1-1.9-.1-1.9 0-3.2 1.2-3.2 3.3v1.9H8.6v2.6h2.1V19z" fill="#fff"/>');
  var tg=ico('#29a9eb','<path d="M18.6 6.2L5.4 11.3c-.9.4-.9.9-.2 1.1l3.3 1 1.3 4c.2.5.1.7.7.7.4 0 .6-.2.8-.4l1.6-1.6 3.3 2.4c.6.3 1 .2 1.2-.6l2-9.5c.2-.9-.3-1.3-.8-1 z" fill="#fff"/>');
@@ -901,21 +898,37 @@ function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
  '<div class="fc">© '+esc(c.y)+' '+esc(c.n)+'. সর্বস্বত্ব সংরক্ষিত।</div></div>'}
 
 function vHome(){
-  var ok=Date.now()-ME.lastDaily>=864e5,sp=Date.now()-(ME.lastSpin||0)>=864e5;HSI=0;
-  var sl=HS.map(function(x,i){return '<div class="sl '+x[0]+(i===0?' on':'')+'"><span class="tag">'+x[1]+'</span><h4>'+x[2]+'</h4><p>'+x[3]+'</p><span class="em">'+x[4]+'</span></div>'}).join('');
-  var dt=HS.map(function(x,i){return '<i class="'+(i===0?'on':'')+'" onclick="hsGo('+i+')"></i>'}).join('');
-  
-  $('main').innerHTML='<div class="mq"><span>🌙 RS Growth Matrix-এ স্বাগতম! আপনার নামাজের কথা মনে আছে তো? 🤲 নামাজ পড়ুন, তারপর কাজে মন দিন। ✨ আমাদের এই সাইটে আপনি নিশ্চিন্তে সহজ টাস্ক ও অ্যাড দেখে আয় করতে পারেন। 💬</span></div>'+
-  '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
-  '<div class="hs">'+sl+'</div><div class="dots">'+dt+'</div>'+
-  
-  '<div class="bo" style="margin-bottom:14px;padding:4px"><div class="bi lk" style="flex-direction:column;text-align:center;padding:18px"><span class="ic" style="font-size:52px">🎡</span><div><b style="font-size:16px;color:var(--gold);margin-top:4px">Grand Lucky Spin & Rewards!</b><small style="font-size:11.5px">চাকা ঘুরিয়ে ক্যাশ ও কয়েন রিওয়ার্ড (৳১, ৳২, ৳৩, ৳৫) জিতে নিন প্রতি ২৪ ঘণ্টায়!</small></div>'+
-  '<button class="btn'+(sp?'':' dn')+'" style="margin-top:12px;width:100%" onclick="spinOpen()">'+(sp?'Spin Wheel Now':'Spin Completed ✅')+'</button></div></div>'+
+  var mainEl = $('main');
+  if(!mainEl) return;
 
-  '<h3>আজকের বোনাস</h3><div class="bn">'+
-  '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT · প্রতি ২৪ ঘণ্টায় একবার</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\'daily\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
-  '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT · প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\'checkin\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
-  TIMER=setInterval(function(){if(!document.querySelector('.hs')){clearInterval(TIMER);return}hsGo((HSI+1)%HS.length)},6000)
+  var ok = Date.now() - (ME.lastDaily || 0) >= 864e5;
+  var sp = Date.now() - (ME.lastSpin || 0) >= 864e5;
+  HSI = 0;
+
+  var sl = HS.map(function(x, i){
+    return '<div class="sl ' + x[0] + (i === 0 ? ' on' : '') + '"><span class="tag">' + x[1] + '</span><h4>' + x[2] + '</h4><p>' + x[3] + '</p><span class="em">' + x[4] + '</span></div>';
+  }).join('');
+  
+  var dt = HS.map(function(x, i){
+    return '<i class="' + (i === 0 ? 'on' : '') + '" onclick="hsGo(' + i + ')"></i>';
+  }).join('');
+  
+  mainEl.innerHTML = '<div class="mq"><span>🌙 RS Growth Matrix-এ স্বাগতম! আপনার নামাজের কথা মনে আছে তো? 🤲 নামাজ পড়ুন, তারপর কাজে মন দিন। ✨</span></div>' +
+  '<div class="grid"><div class="stat"><b>' + money(ME.balance) + '</b><small>Balance</small></div><div class="stat"><b>' + money(ME.earned) + '</b><small>Total earned</small></div></div>' +
+  '<div class="hs">' + sl + '</div><div class="dots">' + dt + '</div>' +
+  
+  '<div class="bo" style="margin-bottom:14px;padding:4px"><div class="bi lk" style="flex-direction:column;text-align:center;padding:18px"><span class="ic" style="font-size:52px">🎡</span><div><b style="font-size:16px;color:var(--gold);margin-top:4px">Grand Lucky Spin & Rewards!</b><small style="font-size:11.5px">চাকা ঘুরিয়ে ক্যাশ ও কয়েন রিওয়ার্ড জিতে নিন প্রতি ২৪ ঘণ্টায়!</small></div>' +
+  '<button class="btn' + (sp ? '' : ' dn') + '" style="margin-top:12px;width:100%" onclick="spinOpen()">' + (sp ? 'Spin Wheel Now' : 'Spin Completed ✅') + '</button></div></div>' +
+
+  '<h3>আজকের বোনাস</h3><div class="bn">' +
+  '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+' + (ME.d || 2) + ' BDT · প্রতি ২৪ ঘণ্টায় একবার</small><button class="btn' + (ok ? '' : ' dn') + '" onclick="act(\'daily\')">' + (ok ? 'Claim' : 'Claimed ✅') + '</button></div></div>' +
+  '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+' + (ME.c || 4) + ' BDT · প্রতিদিন একবার</small><button class="btn' + (ME.checkedIn ? ' dn' : '') + '" onclick="act(\'checkin\')">' + (ME.checkedIn ? 'Done ✅' : 'Check in') + '</button></div></div></div>' + foot();
+
+  if(window.TIMER) clearInterval(window.TIMER);
+  window.TIMER = setInterval(function(){
+    if(!document.querySelector('.hs')){ clearInterval(window.TIMER); return; }
+    hsGo((HSI + 1) % HS.length);
+  }, 6000);
 }
 function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added to your balance.')}).catch(function(e){toast(e.message)})}
 
@@ -938,7 +951,6 @@ function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style
  .catch(function(e){SPUN=false;toast(e.message);closeSpin()})}
 function closeSpin(){closeM();if(TAB==='home')vHome()}
 
-// E-Commerce Style Promotion Mall for Employer Page
 function vEmp(){
   api('employer/tasks').then(function(tasks){
     var products = [
@@ -1121,7 +1133,6 @@ function loadSupportMsgs(){
 }
 function sendS(){var stEl = $('st');if(!stEl) return; api('support','POST',{text:stEl.value}).then(function(){stEl.value='';loadSupportMsgs()}).catch(function(e){toast(e.message)})}
 
-/* Account Page with Full History Restoration */
 function vAcc(){
   if(window.SUP_TIMER) clearInterval(window.SUP_TIMER);
   var isEmp = ME.role === 'employer';
@@ -1254,7 +1265,7 @@ function aUs(){api('admin/users','GET',null,ah()).then(function(d){
  var abodyEl = $('abody');
  if(abodyEl) abodyEl.innerHTML='<h3>অ্যাক্টিভ ইউজার</h3>'+(d.active.map(function(u){return '<div class="row"><div>'+esc(u.name)+' ('+esc(u.role)+')<small>'+esc(u.phone)+'</small></div></div>'}).join('')||'<div class="row">কেউ নেই</div>')}).catch(aErr)}
 
-document.addEventListener('DOMContentLoaded',function(){
+document.addEventListener('DOMContentLoaded', function(){
   var la = $('logoA'); if(la) la.innerHTML = logo(88);
   var lt = $('logoT'); if(lt) lt.innerHTML = logo(40);
   initG();
