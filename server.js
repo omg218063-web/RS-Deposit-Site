@@ -343,20 +343,20 @@ app.post('/api/watch-ad', auth, h(async (q, s) => {
     return bad(s, 'Please wait 30 seconds before watching another ad.');
   }
   const adReward = 0.50;
-  const u = await User.findOneAndUpdate({ _id: q.user.id }, { $set: { lastAdWatch: now }, $inc: { balance: adReward, earned: adReward } }, { new: true });
+  const u = await User.findOneAndUpdate({ _id: q.user.id }, { $set: { lastAdWatch: now },$inc: { balance: adReward, earned: adReward } }, { new: true });
   s.json({ reward: adReward, me: me(u) });
 }));
 
 app.get('/api/timewall', auth, (q, s) => s.json({ url: TW_URL ? TW_URL.replace(/\{uid\}/g, encodeURIComponent(q.user.id)) : '' }));
 
 app.post('/api/daily', auth, h(async (q, s) => {
-  const r = await User.findOneAndUpdate({ _id: q.user.id, lastDaily: { $lte: Date.now() - 864e5 } }, { $set: { lastDaily: Date.now() }, $inc: { balance: DAILY, earned: DAILY } }, { new: true });
+  const r = await User.findOneAndUpdate({ _id: q.user.id, lastDaily: { $lte: Date.now() - 864e5 } }, { $set: { lastDaily: Date.now() },$inc: { balance: DAILY, earned: DAILY } }, { new: true });
   if (!r) return bad(s, 'You already claimed today. Come back in 24 hours.');
   s.json(me(r));
 }));
 
 app.post('/api/checkin', auth, h(async (q, s) => {
-  const r = await User.findOneAndUpdate({ _id: q.user.id, lastCheckin: { $ne: today() } }, { $set: { lastCheckin: today() }, $inc: { balance: CHECKIN, earned: CHECKIN } }, { new: true });
+  const r = await User.findOneAndUpdate({ _id: q.user.id, lastCheckin: { $ne: today() } }, { $set: { lastCheckin: today() },$inc: { balance: CHECKIN, earned: CHECKIN } }, { new: true });
   if (!r) return bad(s, 'You already checked in today.');
   s.json(me(r));
 }));
@@ -365,7 +365,7 @@ app.post('/api/spin', auth, h(async (q, s) => {
   const tot = SPIN.reduce((a, x) => a + x[1], 0);
   let r = crypto.randomInt(tot), prize = SPIN[0][0];
   for (const x of SPIN) { if (r < x[1]) { prize = x[0]; break; } r -= x[1]; }
-  const u = await User.findOneAndUpdate({ _id: q.user.id, $or: [{ lastSpin: { $exists: false } }, { lastSpin: {$lte: Date.now() - 864e5 } }] }, { $set: { lastSpin: Date.now() }, $inc: { balance: prize, earned: prize } }, { new: true });
+  const u = await User.findOneAndUpdate({ _id: q.user.id, $or: [{ lastSpin: { $exists: false } }, { lastSpin: {$lte: Date.now() - 864e5 } }] }, { $set: { lastSpin: Date.now() },$inc: { balance: prize, earned: prize } }, { new: true });
   if (!u) return bad(s, 'You already spun today. Come back in 24 hours.');
   s.json({ prize, me: me(u) });
 }));
@@ -404,7 +404,7 @@ app.post('/api/withdraw', auth, h(async (q, s) => {
   if (!(a >= MIN_WD && a <= MAX_WD)) return bad(s, 'Withdraw amount must be between ' + MIN_WD + ' and ' + MAX_WD + '.');
   if (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
   if (!/^01\d{9}$/.test(String(phone || ''))) return bad(s, 'Enter a valid 11-digit number.');
-  const r = await User.findOneAndUpdate({ _id: q.user.id, balance: { $gte: a } }, { $inc: { balance: -a } }, { new: true });
+  const r = await User.findOneAndUpdate({ _id: q.user.id, balance: { $gte: a } }, {$inc: { balance: -a } }, { new: true });
   if (!r) return bad(s, 'Not enough balance.');
   await Wd.create({ uid: q.user.id, name: q.user.name, amount: a, method, phone });
   s.json(me(r));
@@ -833,7 +833,7 @@ function getTabs(){
 function enter(m){
   ME=m; $('auth').style.display='none';
   var tbs = getTabs();
-  $('nav').innerHTML=tbs.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
+  $('nav').innerHTML=tbs.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\''+t[0]+'\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
   head();
   go(ME.role==='employer'?'emp':'home');
   startGlobalSync();
@@ -884,8 +884,8 @@ function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
  var wa=ico('#25d366','<path d="M12 5.2a6.8 6.8 0 0 0-5.8 10.3L5.2 18.8l3.4-.9A6.8 6.8 0 1 0 12 5.2z" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M9.6 9.3c.2 2 2 3.8 4 4.1l.9-.9-1.3-.9-.6.5c-.7-.3-1.4-1-1.7-1.7l.5-.6-.9-1.3z" fill="#fff"/>');
  return '<div class="ft"><div class="ftl">'+logo(46)+'<div><b>'+esc(c.n)+'</b><small>টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম</small></div></div>'+
  '<div class="fd">'+esc(c.d||'')+'</div>'+
- '<div class="fcols"><h5>প্ল্যাটফর্ম</h5><a onclick="go(\\'home\\')">Home</a><a onclick="go(\\'tasks\\')">Tasks & Ads</a><a onclick="go(\\'pkg\\')">Package</a><a onclick="go(\\'rank\\')">Ranking</a><a onclick="go(\\'ref\\')">Refer</a></div>'+
- '<div><h5>সহায়তা</h5><a onclick="go(\\'help\\')">Support</a><a onclick="go(\\'acc\\')">Account ও Withdraw</a><a onclick="go(\\'book\\')">ইসলামিক বই</a></div></div>'+
+ '<div class="fcols"><h5>প্ল্যাটফর্ম</h5><a onclick="go(\'home\')">Home</a><a onclick="go(\'tasks\')">Tasks & Ads</a><a onclick="go(\'pkg\')">Package</a><a onclick="go(\'rank\')">Ranking</a><a onclick="go(\'ref\')">Refer</a></div>'+
+ '<div><h5>সহায়তা</h5><a onclick="go(\'help\')">Support</a><a onclick="go(\'acc\')">Account ও Withdraw</a><a onclick="go(\'book\')">ইসলামিক বই</a></div></div>'+
  '<div class="fsoc"><a href="'+esc(c.fb)+'" target="_blank" rel="noopener" aria-label="Facebook">'+fb+'</a><a href="https://t.me/'+esc(c.tg)+'" target="_blank" rel="noopener" aria-label="Telegram">'+tg+'</a><a href="https://wa.me/'+esc(c.wa)+'" target="_blank" rel="noopener" aria-label="WhatsApp">'+wa+'</a></div>'+
  '<div class="fage"><span class="bd">'+A+'+</span><div>'+A+' বছরের নিচে কারও এই অ্যাকাউন্টে প্রবেশ করা নিষেধ। অভিভাবকগণ সন্তানদের দিকে নজর রাখুন।</div></div>'+
  '<div class="fh">পেমেন্ট মাধ্যম</div><div class="fchips"><span class="fchip">bKash</span><span class="fchip">Nagad</span></div>'+
@@ -908,8 +908,8 @@ function vHome(){
   '<button class="btn'+(sp?'':' dn')+'" style="margin-top:12px;width:100%" onclick="spinOpen()">'+(sp?'Spin Wheel Now':'Spin Completed ✅')+'</button></div></div>'+
 
   '<h3>আজকের বোনাস</h3><div class="bn">'+
-  '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT · প্রতি ২৪ ঘণ্টায় একবার</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
-  '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT · প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
+  '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT · প্রতি ২৪ ঘণ্টায় একবার</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\'daily\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
+  '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT · প্রতিদিন একবার</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\'checkin\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
   TIMER=setInterval(function(){if(!document.querySelector('.hs')){clearInterval(TIMER);return}hsGo((HSI+1)%HS.length)},6000)
 }
 function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added to your balance.')}).catch(function(e){toast(e.message)})}
@@ -952,7 +952,7 @@ function vEmp(){
       '<img src="'+p.img+'" alt="">' +
       '<h4>'+p.name+'</h4>' +
       '<div class="price">'+p.price+'</div>' +
-      '<button class="btn s g" onclick="openOrderForm(\\''+p.id+'\\',\\''+p.name+'\\')">Buy Service</button>' +
+      '<button class="btn s g" onclick="openOrderForm(\''+p.id+'\',\''+p.name+'\')">Buy Service</button>' +
       '</div>';
     }).join('') +
     '</div>' +
@@ -996,7 +996,7 @@ function confirmOrder(){
 
 function vTasks(){
   $('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>📋</div><div><b>Tasks & Watch Ads Dashboard</b><small>নিচের ট্যাব থেকে টাস্ক কিংবা অ্যাড দেখে ইনকাম বেছে নিন।</small></div></div>' +
-  '<div class="seg" style="margin-bottom:14px"><div id="subTask" class="on" onclick="switchTaskSub(\\'tasks\\')">📋 Offerwall Tasks</div><div id="subAd" onclick="switchTaskSub(\\'ads\\')">📺 Watch Ads (অ্যাড দেখে আয়)</div></div>' +
+  '<div class="seg" style="margin-bottom:14px"><div id="subTask" class="on" onclick="switchTaskSub(\'tasks\')">📋 Offerwall Tasks</div><div id="subAd" onclick="switchTaskSub(\'ads\')">📺 Watch Ads (অ্যাড দেখে আয়)</div></div>' +
   '<div id="taskSubContent"></div>';
   switchTaskSub('tasks');
 }
@@ -1073,7 +1073,7 @@ pkgs.map(function(x){
   '<b style="color:var(--gold);font-size:13px;display:block;margin-bottom:4px">'+x.d+'</b>' +
   '<div style="font-size:11px;color:var(--mu)">মূল্য: <b>'+x.p+' BDT</b></div>' +
   '<div style="font-size:12px;color:var(--grn);margin:4px 0 8px">মিনিটে: <b>'+formatCompact(x.c)+' RS Coins</b></div>' +
-  '<button class="btn s g" style="width:100%" onclick="go(\\'acc\\');depForm('+x.p+',\\''+x.d+'\\')">Buy Package</button>' +
+  '<button class="btn s g" style="width:100%" onclick="go(\'acc\');depForm('+x.p+',\''+x.d+'\')">Buy Package</button>' +
   '</div>';
 }).join('') + '</div>';
 }
@@ -1155,7 +1155,7 @@ function depForm(presetAmount, pkgName){
  '<label>Amount (BDT)</label><input id="da" type="number" value="'+(presetAmount||'')+'">' +
  '<label>Transaction ID (TrxID - Min 10 chars)</label><input id="dtx" placeholder="Enter valid TrxID">' +
  '<label>Last 3 Digits of Sender Number</label><input id="dlast" maxlength="3" placeholder="e.g. 123">' +
- '<button class="btn g" onclick="doDep(\\''+(pkgName||'Custom Deposit')+'\\')">Submit Deposit</button>' +
+ '<button class="btn g" onclick="doDep(\''+(pkgName||'Custom Deposit')+'\')">Submit Deposit</button>' +
  '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>');
 }
 
@@ -1174,8 +1174,8 @@ var DUA=[
 ["৩. আত্তাহিয়্যাতু","التَّحِيَّاتُ لِلَّهِ","আত্তাহিয়্যাতু লিল্লাহি...","সমস্ত সম্মান আল্লাহর জন্য।"]];
 var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
 var HD=[["কাজ নিয়তের ওপর নির্ভরশীল।","সহিহ বুখারি ১"]];
-function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\\''+p+'\\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
-function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\\''+p+'\\')">&lsaquo; ফিরে যান</button>'}
+function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\''+p+'\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
+function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\''+p+'\')">&lsaquo; ফিরে যান</button>'}
 function vBook(){bk('menu')}
 function nmF(){var q=($('nq').value||'').trim().toLowerCase(),a=NML.filter(function(x){return !q||x.toLowerCase().indexOf(q)>=0});
  $('nl').innerHTML='<h3>'+a.length+'টি নাম</h3>'+(a.length?a.map(function(x){var p=x.split('|');return '<div class="bkc nm"><div><b>'+esc(p[0])+'</b><small>'+esc(p[2]||'')+'</small></div><div class="ar2">'+esc(p[1]||'')+'</div></div>'}).join(''):'<div class="row">কোনো নাম মেলেনি</div>')}
@@ -1194,7 +1194,7 @@ function bk(p){var h='';
 var ATABS=[['ov','📊','ওভারভিউ'],['wd','💸','উত্তোলন'],['dep','💳','ডিপোজিট'],['ctask','📢','প্রমোশন'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ']];
 function ah(){return{'x-admin-pass':ADM}}
 function admOpen(){var p=prompt('Admin password');if(!p)return;ADM=p;$('adm').className='adm on';
- $('anav').innerHTML=ATABS.map(function(t){return '<div id="a_'+t[0]+'" onclick="admGo(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');admGo('ov')}
+ $('anav').innerHTML=ATABS.map(function(t){return '<div id="a_'+t[0]+'" onclick="admGo(\''+t[0]+'\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');admGo('ov')}
 function admClose(){$('adm').className='adm'}
 function aErr(e){if(e.message==='Wrong admin password.'){toast(e.message);admClose()}else $('abody').innerHTML='<div class="row">'+esc(e.message)+'</div>'}
 function admGo(t){ATABS.forEach(function(x){$('a_'+x[0]).className=x[0]===t?'on':''});$('abody').innerHTML='<div class="row">Loading...</div>';
@@ -1213,7 +1213,7 @@ function aCTask(){
   api('admin/custom-tasks','GET',null,ah()).then(function(tasks){
     $('abody').innerHTML='<h3>অপেক্ষমাণ প্রমোশন টাস্কসমূহ</h3>' +
     (tasks.length ? tasks.map(function(t, i){
-      return '<div class="th"><div class="hd"><span>'+esc(t.title)+' ('+esc(t.platform)+')</span><span style="color:var(--gold)">Budget: '+t.totalBudget+' BDT</span></div><div style="font-size:13px">Link: <a href="'+esc(t.link)+'" target="_blank">'+esc(t.link)+'</a><br>Reward/Worker: '+t.reward+' BDT | Target: '+t.targetWorkers+'</div><div class="gap"><button class="btn s g" onclick="decCTask(\\''+t._id+'\\',1)">Approve</button><button class="btn s r" onclick="decCTask(\\''+t._id+'\\',0)">Reject</button></div></div>';
+      return '<div class="th"><div class="hd"><span>'+esc(t.title)+' ('+esc(t.platform)+')</span><span style="color:var(--gold)">Budget: '+t.totalBudget+' BDT</span></div><div style="font-size:13px">Link: <a href="'+esc(t.link)+'" target="_blank">'+esc(t.link)+'</a><br>Reward/Worker: '+t.reward+' BDT | Target: '+t.targetWorkers+'</div><div class="gap"><button class="btn s g" onclick="decCTask(\''+t._id+'\',1)">Approve</button><button class="btn s r" onclick="decCTask(\''+t._id+'\',0)">Reject</button></div></div>';
     }).join('') : '<div class="row">কোনো পেন্ডিং প্রমোশন টাস্ক নেই।</div>');
   }).catch(aErr);
 }
@@ -1231,3 +1231,8 @@ document.addEventListener('DOMContentLoaded',function(){$('logoA').innerHTML=log
  if(REF)mode('reg');
  if(T)api('me').then(enter).catch(function(){$('auth').style.display='block'});else $('auth').style.display='block'});
 </script></body></html>
+`;
+
+app.get('*', (req, res) => res.send(PAGE));
+
+app.listen(PORT, () => console.log('Server running on port ' + PORT));
