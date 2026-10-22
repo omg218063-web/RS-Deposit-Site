@@ -69,10 +69,9 @@ const Deposit = mongoose.model('Deposit', new mongoose.Schema({ uid: String, nam
 const Msg = mongoose.model('Msg', new mongoose.Schema({ uid: String, name: String, from: String, text: String, at: { type: Date, default: Date.now } }));
 const CustomTask = mongoose.model('CustomTask', new mongoose.Schema({ uid: String, platform: String, title: String, link: String, reward: Number, targetWorkers: Number, totalBudget: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
 
-// Dynamic Promo Packages Schema for Admin Control & E-commerce Display
 const PromoPackage = mongoose.model('PromoPackage', new mongoose.Schema({
   title: String,
-  category: String, // e.g., Facebook, YouTube, Telegram
+  category: String,
   followers: Number,
   price: Number,
   description: String,
@@ -221,7 +220,6 @@ async function fetchOffers(uid, ctx, dbg) {
   ctx = ctx || { device: '', country: '' };
   let combinedOffers = [];
 
-  // Custom Approved Employer Tasks
   const approvedCustom = await CustomTask.find({ status: 'approved' });
   const mappedCustom = approvedCustom.map(t => {
     let iconUrl = 'https://cdn-icons-png.flaticon.com/512/1041/1041888.png';
@@ -316,11 +314,9 @@ app.post('/api/offers/:id/start', auth, h(async (q, s) => {
   s.json({ url: o.clickUrl });
 }));
 
-// Public/Employer API to get Promo Packages (E-commerce Style)
 app.get('/api/promo-packages', auth, h(async (q, s) => {
   let pkgs = await PromoPackage.find({ active: true });
   if (!pkgs.length) {
-    // Seed default e-commerce style promo packages if none exist
     const defaultPkgs = [
       { title: '200 Facebook Followers', category: 'Facebook', followers: 200, price: 80, description: 'আপনার ফেসবুক পেজ বা আইডিতে ইনস্ট্যান্ট রিয়েল ফলোয়ার নিন।', icon: 'https://cdn-icons-png.flaticon.com/512/124/124010.png' },
       { title: '1,000 YouTube Subscribers', category: 'YouTube', followers: 1000, price: 650, description: 'আপনার ইউটিউব চ্যানেলে গ্রোথ ও সাবস্ক্রাইবার বৃদ্ধি করুন।', icon: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png' },
@@ -333,7 +329,6 @@ app.get('/api/promo-packages', auth, h(async (q, s) => {
   s.json(pkgs);
 }));
 
-// Employer Task & Package Purchase Submission API
 app.post('/api/employer/task', auth, h(async (q, s) => {
   if (q.user.role !== 'employer') return bad(s, 'Only employers can post tasks.');
   const { platform, title, link, reward, targetWorkers, packageId } = q.body || {};
@@ -478,7 +473,6 @@ app.post('/api/support', auth, h(async (q, s) => {
   s.json({ ok: true });
 }));
 
-// Admin APIs for Employer Packages Management
 app.get('/api/admin/promo-packages', admin, h(async (q, s) => {
   s.json(await PromoPackage.find({}));
 }));
@@ -615,6 +609,7 @@ body{background:var(--bg);color:var(--tx);display:flex;justify-content:center;mi
 .app{width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:26px;height:96vh;display:flex;flex-direction:column;overflow:hidden;position:relative}
 .pwa-banner{display:flex;background:linear-gradient(90deg,#fbbf24,#f59e0b);color:#000;padding:12px 16px;border-radius:14px;align-items:center;justify-content:space-between;margin:10px 14px 0 14px;font-weight:700;font-size:13.5px;box-shadow:0 4px 12px rgba(251,191,36,0.3);position:relative;z-index:10}
 .pwa-banner button{background:#000;color:#fff;border:0;padding:7px 14px;border-radius:10px;font-size:12px;cursor:pointer;font-weight:bold}
+#landing{position:absolute;inset:0;z-index:60;background:#060913;overflow-y:auto;padding:16px;text-align:left}
 #auth{position:absolute;inset:0;z-index:50;background:radial-gradient(circle at top,#1e1b4b,#060913 70%);padding:22px;overflow-y:auto;text-align:center;display:none}
 .card{background:rgba(15,23,42,.92);border:1px solid rgba(251,191,36,.3);border-radius:18px;padding:16px;text-align:left}
 .brand{font-family:Georgia,serif;font-size:24px;font-weight:700;color:var(--gold);margin:6px 0 2px;letter-spacing:.5px}
@@ -650,8 +645,6 @@ h3{font-size:13px;color:var(--mu);margin:4px 0 10px}
 .pod b{display:block;color:var(--gold);font-size:14px;margin-top:4px}
 .chip{font-size:10px;padding:3px 8px;border-radius:10px;background:#1e293b;color:var(--gold)}
 .chip.approved,.chip.paid,.chip.Success{color:var(--grn)}.chip.rejected,.chip.cancelled{color:var(--red)}
-.share{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.share a,.share button{display:block;text-align:center;background:#1e293b;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:12px;color:var(--tx);text-decoration:none;cursor:pointer}
 .chat{max-height:40vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .m{padding:8px 12px;border-radius:12px;font-size:13px;max-width:85%}.m.user{background:#1e293b;align-self:flex-end}.m.support{background:#172554;color:var(--blu);align-self:flex-start}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:130;align-items:center;justify-content:center;padding:14px}
@@ -743,6 +736,41 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .fc{font-size:10.5px;color:#64748b;text-align:center;margin-top:12px;border-top:1px solid #1e293b;padding-top:10px}
 </style></head><body>
 <div class="app">
+<div id="landing">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:10px"><div id="logoL"></div><b style="color:var(--gold);font-size:16px">RS Growth Matrix</b></div>
+    <span style="font-size:12px;background:rgba(251,191,36,.15);color:var(--gold);padding:4px 10px;border-radius:20px;border:1px solid rgba(251,191,36,.3)">EN ▾</span>
+  </div>
+  <div style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border:1px solid rgba(251,191,36,.3);border-radius:20px;padding:16px;margin-bottom:14px;position:relative;overflow:hidden">
+    <div style="font-size:11px;color:var(--gold);font-weight:700;margin-bottom:6px">⚡ Work Smart • Earn More</div>
+    <h1 style="font-size:22px;color:#fff;margin-bottom:8px;line-height:1.3">Small Tasks Big Opportunities</h1>
+    <p style="font-size:12px;color:var(--mu);line-height:1.6;margin-bottom:14px">RS Growth Matrix is a trusted microjob platform where you can complete simple tasks, earn real money and build your financial freedom.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center">
+      <div style="background:#0b1224;padding:8px 4px;border-radius:12px;border:1px solid var(--line)"><span style="font-size:18px">📋</span><small style="display:block;font-size:9px;color:var(--mu);margin-top:2px">Tasks</small></div>
+      <div style="background:#0b1224;padding:8px 4px;border-radius:12px;border:1px solid var(--line)"><span style="font-size:18px">🎁</span><small style="display:block;font-size:9px;color:var(--mu);margin-top:2px">Rewards</small></div>
+      <div style="background:#0b1224;padding:8px 4px;border-radius:12px;border:1px solid var(--line)"><span style="font-size:18px">🛡️</span><small style="display:block;font-size:9px;color:var(--mu);margin-top:2px">Secure</small></div>
+      <div style="background:#0b1224;padding:8px 4px;border-radius:12px;border:1px solid var(--line)"><span style="font-size:18px">👥</span><small style="display:block;font-size:9px;color:var(--mu);margin-top:2px">Community</small></div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;text-align:center">
+    <div class="stat"><b style="font-size:13px">52K+</b><small style="font-size:9.5px">Active Users</small></div>
+    <div class="stat"><b style="font-size:13px">1.2M+</b><small style="font-size:9.5px">Tasks Done</small></div>
+    <div class="stat"><b style="font-size:13px">৳8.5M+</b><small style="font-size:9.5px">Earnings</small></div>
+    <div class="stat"><b style="font-size:13px">4.8/5</b><small style="font-size:9.5px">Rating</small></div>
+  </div>
+  <button class="btn" style="padding:14px;font-size:15px;margin-bottom:10px;box-shadow:0 4px 15px rgba(251,191,36,.3)" onclick="openAuth()">🚀 Get Started</button>
+  <div style="text-align:center;font-size:11px;color:var(--mu);margin-bottom:14px">Join now and start earning today!</div>
+  <div style="background:linear-gradient(135deg,#2b1f04,#141c2e);border:1px solid rgba(251,191,36,.4);border-radius:16px;padding:12px;display:flex;align-items:center;gap:12px;margin-bottom:14px">
+    <span style="font-size:28px">🎁</span>
+    <div><b style="color:var(--gold);font-size:13px;display:block">Complete More Tasks Get Bigger Rewards!</b><small style="color:var(--mu);font-size:11px">Earn from surveys, offers, games, videos and more...</small></div>
+  </div>
+  <div style="display:flex;justify-content:space-around;padding:10px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:11px;color:var(--mu);text-align:center">
+    <div>🛡️ 100% Safe & Secure</div>
+    <div>🎧 Fast Support</div>
+    <div>⚡ Instant Withdrawals</div>
+  </div>
+  <div style="text-align:center;font-size:10px;color:var(--mu);margin-top:14px">YOUR GROWTH • OUR MISSION</div>
+</div>
 <div id="auth">
   <div id="logoA"></div><div class="brand">RS Growth Matrix</div><div class="sub">Complete tasks, watch ads & earn rewards.</div>
   <div class="card">
@@ -809,7 +837,8 @@ function mosque(w){var g='mg'+(LC++);return '<svg width="'+w+'" viewBox="0 0 200
 function hb(c,e,t,s){return '<div class="hbn hb-'+c+'"><span class="e">'+e+'</span><div><b>'+t+'</b><small>'+s+'</small></div></div>'}
 function api(p,m,b,hd){hd=hd||{};hd['Content-Type']='application/json';if(T)hd.Authorization='Bearer '+T;
  return fetch('/api/'+p,{method:m||'GET',headers:hd,body:b?JSON.stringify(b):undefined}).then(function(r){return r.json().then(function(d){if(r.status===401&&T){out();throw new Error(d.error)}if(!r.ok)throw new Error(d.error||'Error');return d})})}
-function out(){localStorage.removeItem('t');T=null;ME=null;admClose();$('auth').style.display='block'}
+function out(){localStorage.removeItem('t');T=null;ME=null;admClose();$('landing').style.display='block'}
+function openAuth(){$('landing').style.display='none';$('auth').style.display='block'}
 function mode(m){$('tReg').className=m==='reg'?'on':'';$('tLog').className=m==='log'?'on':'';$('fReg').style.display=m==='reg'?'block':'none';$('fLog').style.display=m==='log'?'block':'none';$('aErr').textContent=''}
 function done(d){T=d.token;localStorage.setItem('t',T);localStorage.removeItem('ref');enter(d.me)}
 function fail(e){$('aErr').textContent=e.message}
@@ -829,6 +858,7 @@ function getTabs() {
 
 function enter(m){
   ME=m;
+  $('landing').style.display='none';
   $('auth').style.display='none';
   var tbs = getTabs();
   $('nav').innerHTML=tbs.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
@@ -907,7 +937,7 @@ function wheelSvg(){
   return h+'<circle cx="100" cy="100" r="16" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/><text x="100" y="104" text-anchor="middle" font-size="11">⭐</text></svg>';
 }
 function spinOpen(){SPUN=false;var ok=Date.now()-(ME.lastSpin||0)>=864e5;
- modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Grand Lucky Wheel</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন':'আজকের স্পিন শেষ।')+'</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin Now</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeSpin()">Close</button>')}
+ modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Grand Lucky Wheel</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন':'আজকের স্পিন শেষ।')+'</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin Now</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
 function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style.opacity='.5';
  api('spin','POST').then(function(r){var c=[];for(var k=0;k<SEG.length;k++)if(SEG[k][0]===r.prize)c.push(k);var i=c[Math.floor(Math.random()*c.length)]||0;
   ROT=Math.ceil(ROT/360)*360+1800-(i*(360/10));$('whs').style.transform='rotate('+ROT+'deg)';
@@ -915,7 +945,6 @@ function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style
  .catch(function(e){SPUN=false;toast(e.message);closeSpin()})}
 function closeSpin(){closeM();if(TAB==='home')vHome()}
 
-// Employer E-Commerce Shop & Package View
 function vEmp(){
   api('promo-packages').then(packages => {
     $('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>🛍️</div><div><b>Promote Shop (ই-কমার্স স্টাইল)</b><small>আপনার সোশ্যাল মিডিয়া প্রমোট করতে পছন্দের প্যাকেজটি সিলেক্ট করুন।</small></div></div>' +
@@ -1221,9 +1250,9 @@ function aSp(){api('admin/support','GET',null,ah()).then(function(d){AD.th=d;
 function aUs(){api('admin/users','GET',null,ah()).then(function(d){
  $('abody').innerHTML='<h3>অ্যাক্টিভ ইউজার</h3>'+(d.active.map(function(u){return '<div class="row"><div>'+esc(u.name)+' ('+esc(u.role)+')<small>'+esc(u.phone)+'</small></div></div>'}).join('')||'<div class="row">কেউ নেই</div>')}).catch(aErr)}
 
-document.addEventListener('DOMContentLoaded',function(){$('logoA').innerHTML=logo(88);$('logoT').innerHTML=logo(40);initG();
- if(REF)mode('reg');
- if(T)api('me').then(enter).catch(function(){$('auth').style.display='block'});else $('auth').style.display='block'});
+document.addEventListener('DOMContentLoaded',function(){$('logoL').innerHTML=logo(32);$('logoA').innerHTML=logo(88);$('logoT').innerHTML=logo(40);initG();
+ if(REF){$('landing').style.display='none';mode('reg');}
+ if(T)api('me').then(enter).catch(function(){$('landing').style.display='block'});else $('landing').style.display='block'});
 </script></body></html>`;
 
 app.get('/', (req, res) => res.send(PAGE.replace('__GID__', GID.replace(/[^\w.\-]/g, '')).replace(/__AGE__/g, String(MIN_AGE | 0))));
