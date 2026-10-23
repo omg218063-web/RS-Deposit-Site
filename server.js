@@ -53,7 +53,7 @@ else mongoose.connect(process.env.MONGO_URI).then(async () => {
 const User = mongoose.model('User', new mongoose.Schema({
   name: String, nameKey: { type: String, unique: true, sparse: true }, phone: String,
   email: { type: String, unique: true, sparse: true }, hash: String, salt: String,
-  role: { type: String, default: 'worker' }, // 'worker' or 'employer'
+  role: { type: String, default: 'worker' },
   balance: { type: Number, default: 0 }, earned: { type: Number, default: 0 },
   rsCoins: { type: Number, default: 0 },
   activePkg: { type: Object, default: null },
@@ -79,6 +79,16 @@ const PromoPackage = mongoose.model('PromoPackage', new mongoose.Schema({
   active: { type: Boolean, default: true }
 }));
 
+// User Coin Packages Schema for Admin & Worker Control
+const UserPackage = mongoose.model('UserPackage', new mongoose.Schema({
+  title: String,
+  price: Number,
+  coinsPerMin: Number,
+  description: String,
+  hot: { type: Boolean, default: false },
+  active: { type: Boolean, default: true }
+}));
+
 const h = fn => (q, s) => fn(q, s).catch(e => {
   console.error('ERROR', q.method, q.path, e && e.code, e && e.message);
   if (e && e.code === 11000) return s.status(400).json({ error: 'This name or phone is already registered. Try a different name.' });
@@ -91,7 +101,6 @@ const hashPw = (p, salt) => crypto.scryptSync(p, salt, 32).toString('hex');
 const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 const today = () => new Date().toISOString().slice(0, 10);
 const dayStart = () => { const o = 6 * 36e5, n = Date.now() + o; return new Date(n - (n % 864e5) - o); };
-const credit = (id, n) => User.updateOne({ _id: id }, { $inc: { balance: n, earned: n } });
 
 const partners = () => [
   ADGEM_APP_ID && ADGEM_POSTBACK_KEY ? 'AdGem' : '',
@@ -314,6 +323,26 @@ app.post('/api/offers/:id/start', auth, h(async (q, s) => {
   s.json({ url: o.clickUrl });
 }));
 
+// User Packages API
+app.get('/api/user-packages', auth, h(async (q, s) => {
+  let pkgs = await UserPackage.find({ active: true });
+  if (!pkgs.length) {
+    const defaultUserPkgs = [
+      { price: 200, coinsPerMin: 10, description: 'Basic RS Coin Package', hot: false },
+      { price: 500, coinsPerMin: 25, description: 'Bronze RS Coin Package', hot: false },
+      { price: 800, coinsPerMin: 50, description: 'Silver RS Coin Package', hot: false },
+      { price: 1200, coinsPerMin: 80, description: 'Gold RS Coin Package', hot: false },
+      { price: 1500, coinsPerMin: 110, description: 'Platinum RS Coin Package', hot: true },
+      { price: 2000, coinsPerMin: 160, description: 'Diamond RS Coin Package', hot: true },
+      { price: 2500, coinsPerMin: 220, description: 'Master RS Coin Package', hot: true },
+      { price: 3000, coinsPerMin: 300, description: 'Elite RS Coin Package', hot: true }
+    ];
+    await UserPackage.insertMany(defaultUserPkgs);
+    pkgs = await UserPackage.find({ active: true });
+  }
+  s.json(pkgs);
+}));
+
 app.get('/api/promo-packages', auth, h(async (q, s) => {
   let pkgs = await PromoPackage.find({ active: true });
   if (!pkgs.length) {
@@ -470,6 +499,21 @@ app.post('/api/support', auth, h(async (q, s) => {
   const text = String((q.body || {}).text || '').trim().slice(0, 500);
   if (!text) return bad(s, 'Write your message first.');
   await Msg.create({ uid: q.user.id, name: q.user.name, from: 'user', text });
+  s.json({ ok: true });
+}));
+
+// Admin APIs for Packages Control
+app.get('/api/admin/user-packages', admin, h(async (q, s) => {
+  s.json(await UserPackage.find({}));
+}));
+app.post('/api/admin/user-packages', admin, h(async (q, s) => {
+  const { title, price, coinsPerMin, description, hot } = q.body || {};
+  if (!price || !coinsPerMin) return bad(s, 'Price and coins per min are required.');
+  await UserPackage.create({ title: title || 'RS Coin Package', price: Number(price), coinsPerMin: Number(coinsPerMin), description: description || '', hot: !!hot });
+  s.json({ ok: true });
+}));
+app.post('/api/admin/user-packages/delete/:id', admin, h(async (q, s) => {
+  await UserPackage.findByIdAndDelete(q.params.id);
   s.json({ ok: true });
 }));
 
@@ -753,9 +797,9 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
     </div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;text-align:center">
-    <div class="stat"><b style="font-size:13px">52K+</b><small style="font-size:9.5px">Active Users</small></div>
-    <div class="stat"><b style="font-size:13px">1.2M+</b><small style="font-size:9.5px">Tasks Done</small></div>
-    <div class="stat"><b style="font-size:13px">৳8.5M+</b><small style="font-size:9.5px">Earnings</small></div>
+    <div class="stat"><b style="font-size:13px" id="stUsers">52K+</b><small style="font-size:9.5px">Active Users</small></div>
+    <div class="stat"><b style="font-size:13px" id="stTasks">1.2M+</b><small style="font-size:9.5px">Tasks Done</small></div>
+    <div class="stat"><b style="font-size:13px" id="stEarn">৳8.5M+</b><small style="font-size:9.5px">Earnings</small></div>
     <div class="stat"><b style="font-size:13px">4.8/5</b><small style="font-size:9.5px">Rating</small></div>
   </div>
   <button class="btn" style="padding:14px;font-size:15px;margin-bottom:10px;box-shadow:0 4px 15px rgba(251,191,36,.3)" onclick="openAuth()">🚀 Get Started</button>
@@ -822,6 +866,21 @@ function installPWA() {
     modal('<h3 style="color:var(--gold)">📱 অ্যাপ ইনস্টল করার নিয়ম</h3><div class="tdw">আপনার ব্রাউজারের ডানপাশের <b>৩-ডট (⋮) মেনুতে</b> ক্লিক করে <b>Add to Home screen</b> বা <b>Install app</b> অপশনটিতে চাপ দিন।</div><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">বুঝেছি</button>');
   }
 }
+
+// Self-ping to prevent Render sleep
+setInterval(function() {
+  fetch('/ping').catch(function() {});
+}, 300000);
+
+// Live Increment Demo Stats
+setInterval(function() {
+  var u = document.getElementById('stUsers');
+  var t = document.getElementById('stTasks');
+  var e = document.getElementById('stEarn');
+  if(u) u.textContent = (52 + Math.floor(Math.random()*3)) + 'K+';
+  if(t) t.textContent = (1.2 + Math.random()*0.1).toFixed(1) + 'M+';
+  if(e) e.textContent = '৳' + (8.5 + Math.random()*0.2).toFixed(1) + 'M+';
+}, 4000);
 
 var GID='__GID__',T=localStorage.getItem('t'),ME=null,ADM='',TAB='home',TIMER=null,AD={},HSI=0,LC=0,ROT=0,SPUN=false,NML=[],TWU='';
 var SEG=[[1, 40], [2, 30], [3, 20], [5, 10]];
@@ -1058,29 +1117,22 @@ function startO(i){api('offers/'+encodeURIComponent(OF[i].id)+'/start','POST').t
 function modal(h){$('mBody').innerHTML=h;$('modal').style.display='flex'}
 function closeM(){$('modal').style.display='none'}
 
-function vPkg(){var pkgs=[
- {p:200,c:10,d:'Basic RS Coin Package', hot:false},
- {p:500,c:25,d:'Bronze RS Coin Package', hot:false},
- {p:800,c:50,d:'Silver RS Coin Package', hot:false},
- {p:1200,c:80,d:'Gold RS Coin Package', hot:false},
- {p:1500,c:110,d:'Platinum RS Coin Package', hot:true},
- {p:2000,c:160,d:'Diamond RS Coin Package', hot:true},
- {p:2500,c:220,d:'Master RS Coin Package', hot:true},
- {p:3000,c:300,d:'Elite RS Coin Package', hot:true}
-];
-var isBought = ME.activePkg && ME.activePkg.expiresAt > Date.now();
-$('main').innerHTML=hb('ref','📦','RS Coin Packages','৳২০০ থেকে ৳৩০০০ টাকার মধ্যে প্যাকেজ কিনুন। ৩০ দিনের জন্য আনলক হবে।') +
-(isBought ? '<div class="row" style="border-color:var(--grn);margin-bottom:12px"><div><b>আপনার একটি প্যাকেজ সক্রিয় আছে!</b></div></div>' : '') +
-'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
-pkgs.map(function(x){
-  return '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:2px solid '+(x.hot?'var(--red)':'rgba(251,191,36,0.4)')+';border-radius:16px;padding:12px;text-align:center">' +
-  (x.hot?'<div style="position:absolute;top:-8px;left:-8px;background:var(--red);color:#fff;font-size:9px;font-weight:bold;padding:2px 6px;border-radius:6px">🔥 HOT</div>':'') +
-  '<b style="color:var(--gold);font-size:13px;display:block;margin-bottom:4px">'+x.d+'</b>' +
-  '<div style="font-size:11px;color:var(--mu)">মূল্য: <b>'+x.p+' BDT</b></div>' +
-  '<div style="font-size:12px;color:var(--grn);margin:4px 0 8px">মিনিটে: <b>'+formatCompact(x.c)+' RS Coins</b></div>' +
-  '<button class="btn s g" style="width:100%" onclick="go(\\'acc\\');depForm('+x.p+',\\''+x.d+'\\')">Buy Package</button>' +
-  '</div>';
-}).join('') + '</div>';
+function vPkg(){
+  api('user-packages').then(function(pkgs){
+    var isBought = ME.activePkg && ME.activePkg.expiresAt > Date.now();
+    $('main').innerHTML=hb('ref','📦','RS Coin Packages','৳২০০ থেকে ৳৩০০০ টাকার মধ্যে প্যাকেজ কিনুন। ৩০ দিনের জন্য আনলক হবে।') +
+    (isBought ? '<div class="row" style="border-color:var(--grn);margin-bottom:12px"><div><b>আপনার একটি প্যাকেজ সক্রিয় আছে!</b></div></div>' : '') +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
+    (pkgs.length ? pkgs.map(function(x){
+      return '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:2px solid '+(x.hot?'var(--red)':'rgba(251,191,36,0.4)')+';border-radius:16px;padding:12px;text-align:center;position:relative">' +
+      (x.hot?'<div style="position:absolute;top:-8px;left:-8px;background:var(--red);color:#fff;font-size:9px;font-weight:bold;padding:2px 6px;border-radius:6px">🔥 HOT</div>':'') +
+      '<b style="color:var(--gold);font-size:13px;display:block;margin-bottom:4px">'+esc(x.description)+'</b>' +
+      '<div style="font-size:11px;color:var(--mu)">মূল্য: <b>'+x.price+' BDT</b></div>' +
+      '<div style="font-size:12px;color:var(--grn);margin:4px 0 8px">মিনিটে: <b>'+formatCompact(x.coinsPerMin)+' RS Coins</b></div>' +
+      '<button class="btn s g" style="width:100%" onclick="go(\\'acc\\');depForm('+x.price+',\\''+esc(x.description)+'\\')">Buy Package</button>' +
+      '</div>';
+    }).join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>') + '</div>';
+  }).catch(function(e){$('main').innerHTML='<div class="row">'+e.message+'</div>'});
 }
 
 function vRank(){
@@ -1203,19 +1255,45 @@ function aDep(){api('admin/dep-list','GET',null,ah()).then(function(d){AD.deps=d
  $('abody').innerHTML='<h3>অপেক্ষমাণ ডিপোজিট</h3>'+(d.pending.map(function(dep,i){return '<div class="th"><div class="hd"><span>'+esc(dep.name)+'</span><span style="color:var(--gold)">'+money(dep.amount)+'</span></div><div style="font-size:13px">'+esc(dep.method)+': <b>'+esc(dep.txid)+'</b></div><div class="gap"><button class="btn s g" onclick="decDep('+i+',1)">Approve</button><button class="btn s r" onclick="decDep('+i+',0)">Reject</button></div></div>'}).join('')||'<div class="row">নেই</div>')}).catch(aErr)}
 
 function aShopCtrl(){
-  api('admin/promo-packages','GET',null,ah()).then(function(pkgs){
-    $('abody').innerHTML='<h3>🛍️ এমপ্লয়ার শপ প্যাকেজ কন্ট্রোল</h3>' +
-    '<div class="card" style="margin-bottom:12px">' +
-    '<label>প্যাকেজের নাম</label><input id="apTitle" placeholder="যেমন: 500 Followers">' +
-    '<label>ক্যাটাগরি</label><input id="apCat" placeholder="Facebook / YouTube">' +
-    '<label>পরিমাণ (Followers/Subscribers)</label><input id="apFol" type="number" placeholder="500">' +
-    '<label>মূল্য (BDT)</label><input id="apPrice" type="number" placeholder="150">' +
-    '<label>বিবরণ</label><input id="apDesc" placeholder="ছোট বিবরণ">' +
-    '<button class="btn g" onclick="addPromoPkg()">নতুন প্যাকেজ যোগ করুন</button>' +
-    '</div>' +
-    '<h3>বিদ্যমান প্যাকেজসমূহ</h3>' +
-    (pkgs.length ? pkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.title)+'</span><span style="color:var(--gold)">৳'+p.price+'</span></div><small>Category: '+esc(p.category)+' | Followers: '+p.followers+'</small><button class="btn s r" style="margin-top:6px" onclick="delPromoPkg(\\''+p._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>');
+  api('admin/user-packages','GET',null,ah()).then(function(userPkgs){
+    api('admin/promo-packages','GET',null,ah()).then(function(promoPkgs){
+      $('abody').innerHTML='<h3>📦 ইউজার কয়েন প্যাকেজ কন্ট্রোল</h3>' +
+      '<div class="card" style="margin-bottom:12px">' +
+      '<label>প্যাকেজ বিবরণ / নাম</label><input id="upDesc" placeholder="যেমন: Basic RS Coin Package">' +
+      '<label>মূল্য (BDT)</label><input id="upPrice" type="number" placeholder="200">' +
+      '<label>প্রতি মিনিটে কয়েন</label><input id="upCoins" type="number" placeholder="10">' +
+      '<label>হট অফার (true/false)</label><input id="upHot" placeholder="false">' +
+      '<button class="btn g" onclick="addUserPkg()">ইউজার প্যাকেজ যোগ করুন</button>' +
+      '</div>' +
+      '<h3>বিদ্যমান ইউজার প্যাকেজসমূহ</h3>' +
+      (userPkgs.length ? userPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.description)+'</span><span style="color:var(--gold)">৳'+p.price+'</span></div><small>Coins/Min: '+p.coinsPerMin+' | Hot: '+p.hot+'</small><button class="btn s r" style="margin-top:6px" onclick="delUserPkg(\\''+p._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>') +
+      '<hr style="border-color:var(--line);margin:16px 0">' +
+      '<h3>🛍️ এমপ্লয়ার প্রমোশন প্যাকেজ কন্ট্রোল</h3>' +
+      '<div class="card" style="margin-bottom:12px">' +
+      '<label>প্যাকেজের নাম</label><input id="apTitle" placeholder="যেমন: 500 Followers">' +
+      '<label>ক্যাটাগরি</label><input id="apCat" placeholder="Facebook / YouTube">' +
+      '<label>পরিমাণ (Followers/Subscribers)</label><input id="apFol" type="number" placeholder="500">' +
+      '<label>মূল্য (BDT)</label><input id="apPrice" type="number" placeholder="150">' +
+      '<label>বিবরণ</label><input id="apDesc" placeholder="ছোট বিবরণ">' +
+      '<button class="btn g" onclick="addPromoPkg()">প্রমোশন প্যাকেজ যোগ করুন</button>' +
+      '</div>' +
+      '<h3>বিদ্যমান প্রমোশন প্যাকেজসমূহ</h3>' +
+      (promoPkgs.length ? promoPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.title)+'</span><span style="color:var(--gold)">৳'+p.price+'</span></div><small>Category: '+esc(p.category)+' | Followers: '+p.followers+'</small><button class="btn s r" style="margin-top:6px" onclick="delPromoPkg(\\''+p._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>');
+    }).catch(aErr);
   }).catch(aErr);
+}
+
+function addUserPkg(){
+  api('admin/user-packages','POST',{
+    description: $('upDesc').value,
+    price: $('upPrice').value,
+    coinsPerMin: $('upCoins').value,
+    hot: $('upHot').value === 'true'
+  }, ah()).then(() => { toast('ইউজার প্যাকেজ যোগ হয়েছে!'); aShopCtrl(); }).catch(aErr);
+}
+
+function delUserPkg(id){
+  api('admin/user-packages/delete/'+id,'POST',null,ah()).then(() => { toast('প্যাকেজ ডিলিট হয়েছে!'); aShopCtrl(); }).catch(aErr);
 }
 
 function addPromoPkg(){
@@ -1225,7 +1303,7 @@ function addPromoPkg(){
     followers: $('apFol').value,
     price: $('apPrice').value,
     description: $('apDesc').value
-  }, ah()).then(() => { toast('প্যাকেজ যোগ হয়েছে!'); aShopCtrl(); }).catch(aErr);
+  }, ah()).then(() => { toast('প্রমোশন প্যাকেজ যোগ হয়েছে!'); aShopCtrl(); }).catch(aErr);
 }
 
 function delPromoPkg(id){
