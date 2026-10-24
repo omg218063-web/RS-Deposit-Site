@@ -543,7 +543,6 @@ app.post('/api/support', auth, h(async (q, s) => {
   s.json({ ok: true });
 }));
 
-// Admin APIs for Packages & Sliders Control
 app.get('/api/admin/user-packages', admin, h(async (q, s) => {
   s.json(await UserPackage.find({}));
 }));
