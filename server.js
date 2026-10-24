@@ -29,7 +29,7 @@ const MIN_AGE = 18;
 const CO = {
   n: 'RS Growth Matrix', e: 'omg218063@gmail.com', p: '01764024069', y: 2026,
   tg: 'rkrana33', wa: '8801764024069', fb: 'https://www.facebook.com/share/1CAK8sYqDw/', age: MIN_AGE,
-  d: 'RS Growth Matrix একটি টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম। এখানে সহজ টাস্ক, দৈনিক বোনাস, অ্যাড দেখে ইনকাম ও লাকি ড্রয়ের মাধ্যমে ব্যালেন্স জমিয়ে bKash বা Nagad-এ উত্তোলন করা যায়। এছাড়া আমাদের কোলাবোরেশন পার্টনার **আর এস গ্যালারি শপ (RS Gallery Shop)** থেকে আপনার জমানো ইনকামের টাকা দিয়ে খুব সহজেই দেশি-বিদেশি আকর্ষণীয় কাপড়চোপড় ও ফ্যাশন আইটেম কেনাকাটা করতে পারবেন।'
+  d: 'RS Growth Matrix একটি টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম। এখানে সহজ টাস্ক, দৈনিক বোনাস, অ্যাড দেখে ইনকাম ও লাকি ড্রয়ের মাধ্যমে ব্যালেন্স জমিয়ে bKash বা Nagad-এ উত্তোলন করা যায়। এছাড়া আমাদের কোলাবোরেশন পার্টনার আর এস গ্যালারি শপ (RS Gallery Shop) থেকে আপনার জমানো ইনকামের টাকা দিয়ে খুব সহজেই দেশি-বিদেশি আকর্ষণীয় কাপড়চোপড় ও ফ্যাশন আইটেম কেনাকাটা করতে পারবেন।'
 };
 
 const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
@@ -39,7 +39,7 @@ const MAX_USD = 5;
 const COUNTRY_FILTER = true;
 const TARGETS = ['BD', 'IN', 'PK', 'NP'];
 const BLOCK_CATS = ['signup', 'signups', 'deposit', 'deposits', 'creditcard', 'creditcards', 'oneclick', 'multireward', 'freetrial', 'freetrials', 'shopping', 'extension', 'extensions'];
-app.use(express.json({ limit: '100kb' }));
+app.use(express.json({ limit: '10mb' }));
 
 let NAMES = { boys: [], girls: [] };
 try { NAMES = require('./names.js'); } catch (e) { console.error('names.js not found:', e.message); }
@@ -88,12 +88,12 @@ const UserPackage = mongoose.model('UserPackage', new mongoose.Schema({
   active: { type: Boolean, default: true }
 }));
 
-// Hero Slider Settings Model for Admin Control
 const SliderSetting = mongoose.model('SliderSetting', new mongoose.Schema({
   title: String,
   subtitle: String,
   description: String,
   link: String,
+  bgImage: { type: String, default: '' },
   bgClass: { type: String, default: 's0' },
   emoji: { type: String, default: '🕌' },
   timerSeconds: { type: Number, default: 6 },
@@ -216,14 +216,13 @@ app.get('/api/me', auth, h(async (q, s) => {
 
 app.post('/api/avatar', auth, h(async (q, s) => {
   const img = String((q.body || {}).img || '');
-  if (img.length > 30000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(img)) return bad(s, 'Photo is invalid or too large.');
+  if (img.length > 500000) return bad(s, 'Photo is too large.');
   await User.updateOne({ _id: q.user.id }, { avatar: img });
   s.json({ av: img });
 }));
 
 app.get('/api/names/:t', auth, (q, s) => s.json(q.params.t === 'girls' ? NAMES.girls : NAMES.boys));
 
-// Get active slider settings for frontend
 app.get('/api/sliders', auth, h(async (q, s) => {
   let sliders = await SliderSetting.find({ active: true });
   if (!sliders.length) {
@@ -559,13 +558,12 @@ app.post('/api/admin/promo-packages/delete/:id', admin, h(async (q, s) => {
   s.json({ ok: true });
 }));
 
-// Admin Slider Controls
 app.get('/api/admin/sliders', admin, h(async (q, s) => {
   s.json(await SliderSetting.find({}));
 }));
 app.post('/api/admin/sliders', admin, h(async (q, s) => {
-  const { title, subtitle, description, link, bgClass, emoji, timerSeconds } = q.body || {};
-  await SliderSetting.create({ title, subtitle, description, link, bgClass: bgClass || 's0', emoji: emoji || '🌟', timerSeconds: Number(timerSeconds) || 6 });
+  const { title, subtitle, description, link, bgImage, bgClass, emoji, timerSeconds } = q.body || {};
+  await SliderSetting.create({ title, subtitle, description, link, bgImage: bgImage || '', bgClass: bgClass || 's0', emoji: emoji || '🌟', timerSeconds: Number(timerSeconds) || 6 });
   s.json({ ok: true });
 }));
 app.post('/api/admin/sliders/delete/:id', admin, h(async (q, s) => {
@@ -730,7 +728,7 @@ h3{font-size:13px;color:var(--mu);margin:4px 0 10px}
 .pod .p1{border-color:var(--gold);padding-bottom:26px;background:linear-gradient(180deg,rgba(251,191,36,.18),#131d38)}
 .pod b{display:block;color:var(--gold);font-size:14px;margin-top:4px}
 .chip{font-size:10px;padding:3px 8px;border-radius:10px;background:#1e293b;color:var(--gold)}
-.chip.approved,.chip.paid,.chip.Success{color:var(--grn)}.chip.rejected,.chip.cancelled{color:var(--red)}
+.chip.approved,.chip.paid,.chip.Success{color:var(--grn)}.chip.rejected,.chip.cancelled{color:var(--red)}.chip.pending{color:var(--gold)}
 .chat{max-height:40vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .m{padding:8px 12px;border-radius:12px;font-size:13px;max-width:85%}.m.user{background:#1e293b;align-self:flex-end}.m.support{background:#172554;color:var(--blu);align-self:flex-start}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:130;align-items:center;justify-content:center;padding:14px}
@@ -760,12 +758,12 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .th{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
 .th .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:700}
 .gap{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-.hs{position:relative;height:200px;border-radius:24px;overflow:hidden;margin-bottom:10px;border:1px solid rgba(251,191,36,.45);cursor:pointer}
-.sl{position:absolute;inset:0;padding:18px 16px;opacity:0;transform:scale(.96);transition:opacity .7s,transform .7s;display:flex;flex-direction:column;justify-content:center;pointer-events:none}
+.hs{position:relative;height:200px;border-radius:24px;overflow:hidden;margin-bottom:10px;border:1px solid rgba(251,191,36,.45);cursor:pointer;background-size:cover;background-position:center}
+.sl{position:absolute;inset:0;padding:18px 16px;opacity:0;transform:scale(.96);transition:opacity .7s,transform .7s;display:flex;flex-direction:column;justify-content:center;pointer-events:none;background-size:cover;background-position:center}
 .sl.on{opacity:1;transform:none;pointer-events:auto}
-.sl .tag{display:inline-block;align-self:flex-start;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.35);color:#fde68a;margin-bottom:8px}
-.sl h4{font-size:18px;color:#fff;margin-bottom:6px;max-width:72%}
-.sl p{font-size:12.5px;line-height:1.65;color:#f1f5f9;max-width:74%}
+.sl .tag{display:inline-block;align-self:flex-start;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.5);color:#fde68a;margin-bottom:8px}
+.sl h4{font-size:18px;color:#fff;margin-bottom:6px;max-width:72%;text-shadow:0 2px 4px rgba(0,0,0,.8)}
+.sl p{font-size:12.5px;line-height:1.65;color:#f1f5f9;max-width:74%;text-shadow:0 2px 4px rgba(0,0,0,.8)}
 .sl .em{position:absolute;right:8px;bottom:6px;font-size:76px}
 .s0{background:linear-gradient(135deg,#0f3d2e,#14532d 55%,#052e1a)}
 .s1{background:linear-gradient(135deg,#1e1b4b,#312e81 55%,#0f172a)}
@@ -820,6 +818,7 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .fr{display:flex;align-items:center;gap:10px;font-size:12.5px;color:#cbd5e1;padding:7px 0;border-top:1px solid #1e293b}
 .fr a{color:#7dd3fc;text-decoration:none}
 .fc{font-size:10.5px;color:#64748b;text-align:center;margin-top:12px;border-top:1px solid #1e293b;padding-top:10px}
+.img-upload-btn{display:flex;align-items:center;justify-content:center;gap:6px;background:#1e293b;border:1px dashed var(--gold);color:var(--gold);padding:10px;border-radius:10px;cursor:pointer;font-size:13px;margin-top:6px;font-weight:bold}
 </style></head><body>
 <div class="app">
 <div id="landing">
@@ -995,7 +994,10 @@ function avUp(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();
 var HS_DATA = [];
 function hsGo(i){
   HSI=i; var s=document.querySelectorAll('.sl'),d=document.querySelectorAll('.dots i');
-  for(var k=0;k<s.length;k++){if(s[k])s[k].className='sl '+(HS_DATA[k]?HS_DATA[k].bgClass:'s0')+(k===i?' on':''); if(d[k])d[k].className=k===i?'on':''}
+  for(var k=0;k<s.length;k++){
+    if(s[k]) s[k].className='sl '+(HS_DATA[k]?HS_DATA[k].bgClass:'s0')+(k===i?' on':''); 
+    if(d[k]) d[k].className=k===i?'on':''
+  }
 }
 function handleSlideClick(link){
   if(link && link !== '#'){
@@ -1020,7 +1022,8 @@ function vHome(){
     var timerSec = (sliders[0] && sliders[0].timerSeconds) ? (sliders[0].timerSeconds * 1000) : 6000;
     
     var sl = sliders.map(function(x,i){
-      return '<div class="sl '+x.bgClass+(i===0?' on':'')+'" onclick="handleSlideClick(\\''+esc(x.link)+'\\')"><span class="tag">'+esc(x.subtitle)+'</span><h4>'+esc(x.title)+'</h4><p>'+esc(x.description)+'</p><span class="em">'+x.emoji+'</span></div>';
+      var styleBg = x.bgImage ? 'background-image:linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.7)),url(\\''+esc(x.bgImage)+'\\');' : '';
+      return '<div class="sl '+x.bgClass+(i===0?' on':'')+'" style="'+styleBg+'" onclick="handleSlideClick(\\''+esc(x.link)+'\\')"><span class="tag">'+esc(x.subtitle)+'</span><h4>'+esc(x.title)+'</h4><p>'+esc(x.description)+'</p><span class="em">'+x.emoji+'</span></div>';
     }).join('');
     var dt = sliders.map(function(x,i){
       return '<i class="'+(i===0?'on':'')+'" onclick="hsGo('+i+')"></i>';
@@ -1074,7 +1077,7 @@ function vEmp(){
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
     (packages.length ? packages.map(p => {
       return '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:1px solid rgba(251,191,36,0.4);border-radius:16px;padding:12px;display:flex;flex-direction:column;justify-content:space-between">' +
-      '<div><img src="'+esc(p.icon)+'" width="36" height="36" style="border-radius:8px;margin-bottom:6px" alt="">' +
+      '<div><img src="'+esc(p.icon)+'" width="36" height="36" style="border-radius:8px;margin-bottom:6px;object-fit:cover" alt="">' +
       '<b style="color:#fff;font-size:13px;display:block;margin-bottom:2px">'+esc(p.title)+'</b>' +
       '<small style="color:var(--mu);display:block;font-size:10.5px;margin-bottom:6px">'+esc(p.description)+'</small></div>' +
       '<div><div style="color:var(--gold);font-weight:800;font-size:14px;margin-bottom:6px">৳'+money(p.price)+'</div>' +
@@ -1234,7 +1237,11 @@ function vHelp(){
 }
 
 function presetMsg(txt){
-  $('st').value = txt;
+  var el = $('st');
+  if(el){
+    el.value = txt;
+    sendS();
+  }
 }
 
 function loadSupportMsgs(){
@@ -1244,7 +1251,11 @@ function loadSupportMsgs(){
     c.scrollTop=c.scrollHeight;
   }).catch(function(){})
 }
-function sendS(){api('support','POST',{text:$('st').value}).then(function(){$('st').value='';loadSupportMsgs()}).catch(function(e){toast(e.message)})}
+function sendS(){
+  var txt = $('st').value.trim();
+  if(!txt) return;
+  api('support','POST',{text:txt}).then(function(){$('st').value='';loadSupportMsgs()}).catch(function(e){toast(e.message)})
+}
 
 function vAcc(){
   if(window.SUP_TIMER) clearInterval(window.SUP_TIMER);
@@ -1258,8 +1269,19 @@ function vAcc(){
   '<h3 style="margin-top:16px">Deposit History & Pending</h3><div id="dh">Loading...</div>'+
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:16px" onclick="admOpen()">Admin panel</button>';
 
-  if(!isEmp) api('withdrawals').then(function(a){var el=$('wh');if(el)el.innerHTML=a.length?a.map(function(w){return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' <span class="chip '+w.status+'">'+w.status+'</span></div></div>'}).join(''):'<div class="row">No withdrawals.</div>'});
-  api('deposits').then(function(a){var el=$('dh');if(el)el.innerHTML=a.length?a.map(function(d){return '<div class="row"><div>'+esc(d.method)+' (Trx: ...'+esc(d.lastDigits)+')<small>'+new Date(d.at).toLocaleDateString()+'</small></div><div>'+money(d.amount)+' <span class="chip '+d.status+'">'+d.status+'</span></div></div>'}).join(''):'<div class="row">No deposits.</div>'})
+  if(!isEmp) api('withdrawals').then(function(a){
+    var el=$('wh');
+    if(el) el.innerHTML=a.length?a.map(function(w){
+      return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' BDT <span class="chip '+(w.status==='pending'?'pending':w.status)+'">'+w.status+'</span></div></div>';
+    }).join(''):'<div class="row">No withdrawals.</div>';
+  });
+
+  api('deposits').then(function(a){
+    var el=$('dh');
+    if(el) el.innerHTML=a.length?a.map(function(d){
+      return '<div class="row"><div>'+esc(d.method)+' (Trx: ...'+esc(d.lastDigits)+')<small>'+new Date(d.at).toLocaleDateString()+'</small></div><div>'+money(d.amount)+' BDT <span class="chip '+(d.status==='pending'?'pending':d.status)+'">'+d.status+'</span></div></div>';
+    }).join(''):'<div class="row">No deposits.</div>';
+  });
 }
 
 function wdForm(){modal('<h3 style="color:var(--gold)">Withdraw (300 - 5000 BDT)</h3><label>Method</label><select id="wm"><option>bKash</option><option>Nagad</option></select><label>Amount</label><input id="wa" type="number"><label>Phone number</label><input id="wp" maxlength="11" value="01951639460"><button class="btn r" onclick="doWd()">Send request</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
@@ -1349,7 +1371,10 @@ function aShopCtrl(){
       '<label>ক্যাটাগরি</label><input id="apCat" placeholder="RS Gallery / Social Media">' +
       '<label>পরিমাণ/ফলোয়ার</label><input id="apFol" type="number" placeholder="500">' +
       '<label>মূল্য (BDT)</label><input id="apPrice" type="number" placeholder="150">' +
-      '<label>ছবির লিংক (Icon URL)</label><input id="apIcon" placeholder="https://...">' +
+      '<label>প্যাকেজ পিকচার আপলোড করুন (গ্যালারি থেকে)</label>' +
+      '<input type="file" id="apFile" accept="image/*" style="display:none" onchange="uploadPkgImg(this)">' +
+      '<div class="img-upload-btn" onclick="$(\\'apFile\\').click()">➕ গ্যালারি থেকে ছবি যুক্ত করুন</div>' +
+      '<input id="apIcon" placeholder="বা ছবির URL দিন" style="margin-top:6px">' +
       '<label>বিবরণ</label><input id="apDesc" placeholder="ছোট বিবরণ">' +
       '<button class="btn g" onclick="addPromoPkg()">প্রমোশন প্যাকেজ যোগ করুন</button>' +
       '</div>' +
@@ -1359,6 +1384,16 @@ function aShopCtrl(){
   }).catch(aErr);
 }
 
+function uploadPkgImg(inp){
+  var f = inp.files[0]; if(!f) return;
+  var r = new FileReader();
+  r.onload = function(){
+    $('apIcon').value = r.result;
+    toast('প্যাকেজ ছবি যুক্ত হয়েছে!');
+  };
+  r.readAsDataURL(f);
+}
+
 function aSliderCtrl(){
   api('admin/sliders','GET',null,ah()).then(function(sliders){
     $('abody').innerHTML='<h3>🖼️ হোম স্লাইডার ও ব্যানার কন্ট্রোল</h3>' +
@@ -1366,7 +1401,11 @@ function aSliderCtrl(){
     '<label>মূল শিরোনাম (Title)</label><input id="slTitle" placeholder="যেমন: নামাজের স্মরণ">' +
     '<label>উপ-শিরোনাম (Subtitle)</label><input id="slSub" placeholder="যেমন: নামাজ কি পড়েছেন?">' +
     '<label>বিবরণ (Description)</label><input id="slDesc" placeholder="বিস্তারিত লিখুন">' +
-    '<label>কোলাবোরেশন বা এক্সটার্নাল লিংক (URL)</label><input id="slLink" placeholder="https://www.facebook.com/share/..."> ' +
+    '<label>কোলাবোরেশন বা এক্সটার্নাল লিংক (URL)</label><input id="slLink" placeholder="https://www.facebook.com/share/...">' +
+    '<label>গ্যালারি থেকে ব্যাকগ্রাউন্ড ব্যানার ছবি যোগ করুন</label>' +
+    '<input type="file" id="slFile" accept="image/*" style="display:none" onchange="uploadSliderImg(this)">' +
+    '<div class="img-upload-btn" onclick="$(\\'slFile\\').click()">➕ প্লাস আইকন (গ্যালারি থেকে ছবি থিম সিলেক্ট করুন)</div>' +
+    '<input id="slBgImg" placeholder="বা সরাসরি ছবি URL" style="margin-top:6px">' +
     '<label>ইমোজি বা আইকন</label><input id="slEmoji" placeholder="🛍️">' +
     '<label>পরিবর্তন সময় (স্লাইড টাইমার সেকেন্ডে, যেমন: ৬)</label><input id="slTimer" type="number" value="6">' +
     '<button class="btn g" onclick="addSlider()">স্লাইড ব্যানার যোগ করুন</button>' +
@@ -1376,15 +1415,26 @@ function aSliderCtrl(){
   }).catch(aErr);
 }
 
+function uploadSliderImg(inp){
+  var f = inp.files[0]; if(!f) return;
+  var r = new FileReader();
+  r.onload = function(){
+    $('slBgImg').value = r.result;
+    toast('স্লাইডার ব্যাকগ্রাউন্ড ছবি থিম হিসেবে সিলেক্ট হয়েছে!');
+  };
+  r.readAsDataURL(f);
+}
+
 function addSlider(){
   api('admin/sliders','POST',{
     title: $('slTitle').value,
     subtitle: $('slSub').value,
     description: $('slDesc').value,
     link: $('slLink').value,
+    bgImage: $('slBgImg').value,
     emoji: $('slEmoji').value,
     timerSeconds: $('slTimer').value
-  }, ah()).then(() => { toast('স্লাইডার যোগ হয়েছে!'); aSliderCtrl(); }).catch(aErr);
+  }, ah()).then(() => { toast('স্লাইডার সফলভাবে যোগ হয়েছে!'); aSliderCtrl(); }).catch(aErr);
 }
 
 function delSlider(id){
