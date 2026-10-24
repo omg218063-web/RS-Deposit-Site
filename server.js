@@ -1617,7 +1617,7 @@ function aUs(){api('admin/users','GET',null,ah()).then(function(d){
 
 document.addEventListener('DOMContentLoaded',function(){$('logoL').innerHTML=logo(32);$('logoA').innerHTML=logo(88);$('logoT').innerHTML=logo(40);initG();
  if(REF){$('landing').style.display='none';mode('reg');}
- if(T)api('me').then(enter).catch(function(){$('landing').style.display='block'});else $('landing').style.display='block'});
+ if(T)api('me').then(enter).catch(function(){localStorage.removeItem('t');T=null;$('landing').style.display='block'});else $('landing').style.display='block'});
 </script></body></html>`;
 
 app.get('/', (req, res) => res.send(PAGE.replace('__GID__', GID.replace(/[^\w.\-]/g, '')).replace(/__AGE__/g, String(MIN_AGE | 0))));
