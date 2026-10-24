@@ -1,4 +1,4 @@
-const express = require('express');
+Const express = require('express');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 
@@ -29,7 +29,7 @@ const MIN_AGE = 18;
 const CO = {
   n: 'RS Growth Matrix', e: 'omg218063@gmail.com', p: '01764024069', y: 2026,
   tg: 'rkrana33', wa: '8801764024069', fb: 'https://www.facebook.com/share/1CAK8sYqDw/', age: MIN_AGE,
-  d: 'RS Growth Matrix একটি টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম। এখানে সহজ টাস্ক, দৈনিক বোনাস, অ্যাড দেখে ইনকাম ও লাকি ড্রয়ের মাধ্যমে ব্যালেন্স জমিয়ে bKash বা Nagad-এ উত্তোলন করা যায়।'
+  d: 'RS Growth Matrix একটি টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম। এখানে সহজ টাস্ক, দৈনিক বোনাস, অ্যাড দেখে ইনকাম ও লাকি ড্রয়ের মাধ্যমে ব্যালেন্স জমিয়ে bKash বা Nagad-এ উত্তোলন করা যায়। এছাড়া আমাদের কোলাবোরেশন পার্টনার **আর এস গ্যালারি শপ (RS Gallery Shop)** থেকে আপনার জমানো ইনকামের টাকা দিয়ে খুব সহজেই দেশি-বিদেশি আকর্ষণীয় কাপড়চোপড় ও ফ্যাশন আইটেম কেনাকাটা করতে পারবেন।'
 };
 
 const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
@@ -79,13 +79,24 @@ const PromoPackage = mongoose.model('PromoPackage', new mongoose.Schema({
   active: { type: Boolean, default: true }
 }));
 
-// User Coin Packages Schema for Admin & Worker Control
 const UserPackage = mongoose.model('UserPackage', new mongoose.Schema({
   title: String,
   price: Number,
   coinsPerMin: Number,
   description: String,
   hot: { type: Boolean, default: false },
+  active: { type: Boolean, default: true }
+}));
+
+// Hero Slider Settings Model for Admin Control
+const SliderSetting = mongoose.model('SliderSetting', new mongoose.Schema({
+  title: String,
+  subtitle: String,
+  description: String,
+  link: String,
+  bgClass: { type: String, default: 's0' },
+  emoji: { type: String, default: '🕌' },
+  timerSeconds: { type: Number, default: 6 },
   active: { type: Boolean, default: true }
 }));
 
@@ -105,7 +116,8 @@ const dayStart = () => { const o = 6 * 36e5, n = Date.now() + o; return new Date
 const partners = () => [
   ADGEM_APP_ID && ADGEM_POSTBACK_KEY ? 'AdGem' : '',
   CPAGRIP_USER_ID && CPAGRIP_KEY ? 'CPAGrip' : '',
-  TW_SECRET && TW_URL ? 'TimeWall.io (Australian Clearing Pty Ltd)' : ''
+  TW_SECRET && TW_URL ? 'TimeWall.io (Australian Clearing Pty Ltd)' : '',
+  'RS Gallery Shop (Official Collaboration)'
 ].filter(Boolean);
 
 const me = u => ({ name: u.name, phone: u.phone || '', email: u.email || '', av: u.avatar || '', role: u.role || 'worker', balance: u.balance, earned: u.earned, rsCoins: u.rsCoins || 0, activePkg: u.activePkg || null, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, lastAdWatch: u.lastAdWatch || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS, ct: CO, pt: partners() });
@@ -142,7 +154,7 @@ app.get('/ping', (req, res) => res.send('OK'));
 app.get('/manifest.json', (req, res) => {
   res.json({
     name: "RS Growth Matrix", short_name: "RS Matrix",
-    description: "RS Growth Matrix - Complete tasks, earn rewards, and withdraw.",
+    description: "RS Growth Matrix - Complete tasks, earn rewards, and shop at RS Gallery.",
     start_url: "/", display: "standalone", background_color: "#060913", theme_color: "#fbbf24",
     icons: [
       { src: "https://cdn-icons-png.flaticon.com/512/1041/1041888.png", sizes: "192x192", type: "image/png" },
@@ -210,6 +222,22 @@ app.post('/api/avatar', auth, h(async (q, s) => {
 }));
 
 app.get('/api/names/:t', auth, (q, s) => s.json(q.params.t === 'girls' ? NAMES.girls : NAMES.boys));
+
+// Get active slider settings for frontend
+app.get('/api/sliders', auth, h(async (q, s) => {
+  let sliders = await SliderSetting.find({ active: true });
+  if (!sliders.length) {
+    const defaultSliders = [
+      { title: 'নামাজের স্মরণ', subtitle: 'নামাজ কি পড়েছেন?', description: 'নামাজ আমাদের জীবনের সবচেয়ে বড় আমানত। কাজের ফাঁকে ওয়াক্ত হলেই নামাজ আদায় করে নিন।', link: '#', bgClass: 's0', emoji: '🕌', timerSeconds: 6 },
+      { title: 'আমাদের সাইট ও পার্টনার', subtitle: 'RS Growth Matrix & RS Gallery', description: 'টাস্ক সম্পন্ন করে ইনকাম করুন এবং আমাদের অফিশিয়াল পার্টনার আর এস গ্যালারি শপ থেকে পছন্দের পোশাক অর্ডার করুন।', link: 'https://www.facebook.com/share/1CAK8sYqDw/', bgClass: 's1', emoji: '🛍️', timerSeconds: 6 },
+      { title: 'টাস্ক ও অ্যাড আয়', subtitle: 'ডেইলি ক্যাশ রিওয়ার্ড', description: 'Tasks ট্যাবে গিয়ে টাস্ক সম্পন্ন করুন অথবা Watch Ads অপশনে গিয়ে অ্যাড দেখে ইনস্ট্যান্ট ক্যাশ আয় করুন।', link: '#', bgClass: 's2', emoji: '📱', timerSeconds: 6 },
+      { title: 'সহজে উত্তোলন', subtitle: 'বিকাশ ও নগদ পেমেন্ট', description: 'Account থেকে Withdraw চেপে bKash বা Nagad নাম্বার দিন। উত্তোলন ৩০০ থেকে ৫০০০ টাকা পর্যন্ত করা যায়।', link: '#', bgClass: 's3', emoji: '💸', timerSeconds: 6 }
+    ];
+    await SliderSetting.insertMany(defaultSliders);
+    sliders = await SliderSetting.find({ active: true });
+  }
+  s.json(sliders);
+}));
 
 const pick = (o, ks) => { for (const k of ks) if (o[k] != null && o[k] !== '') return o[k]; };
 const arrOf = v => Array.isArray(v) ? v : [];
@@ -281,7 +309,8 @@ async function fetchOffers(uid, ctx, dbg) {
     combinedOffers = [
       { id: 'custom:1', title: 'Subscribe Official YouTube Channel', icon: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png', clickUrl: 'https://www.youtube.com/@rkrana33', desc: 'আমাদের অফিসিয়াল ইউটিউব চ্যানেলে গিয়ে Subscribe করুন।', req: 'স্ক্রিনশট রাখুন।', usd: 0.10, bdt: 12, cats: [], cnt: ['BD'], dev: [] },
       { id: 'custom:2', title: 'Follow Facebook Official Page', icon: 'https://cdn-icons-png.flaticon.com/512/124/124010.png', clickUrl: 'https://www.facebook.com/share/1CAK8sYqDw/', desc: 'আমাদের ফেসবুক পেজটি লাইক ও ফলো করুন।', req: 'পেজ লাইক দিন।', usd: 0.08, bdt: 10, cats: [], cnt: ['BD'], dev: [] },
-      { id: 'custom:3', title: 'Join Official Telegram Channel', icon: 'https://cdn-icons-png.flaticon.com/512/2111/2111646.png', clickUrl: 'https://t.me/rkrana33', desc: 'আমাদের অফিসিয়াল টেলিগ্রাম চ্যানেলে জয়েন করুন।', req: 'চ্যানেলে জয়েন থাকুন।', usd: 0.08, bdt: 10, cats: [], cnt: ['BD'], dev: [] }
+      { id: 'custom:3', title: 'Join Official Telegram Channel', icon: 'https://cdn-icons-png.flaticon.com/512/2111/2111646.png', clickUrl: 'https://t.me/rkrana33', desc: 'আমাদের অফিসিয়াল টেলিগ্রাম চ্যানেলে জয়েন করুন।', req: 'চ্যানেলে জয়েন থাকুন।', usd: 0.08, bdt: 10, cats: [], cnt: ['BD'], dev: [] },
+      { id: 'custom:4', title: 'Shop at RS Gallery Shop (Collaboration)', icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041888.png', clickUrl: 'https://www.facebook.com/share/1CAK8sYqDw/', desc: 'আমাদের পার্টনার আর এস গ্যালারি শপ থেকে ইনকামের টাকা দিয়ে পোশাক কিনুন।', req: 'শপ ভিজিট করুন।', usd: 0.15, bdt: 15, cats: [], cnt: ['BD'], dev: [] }
     ];
   }
 
@@ -323,7 +352,6 @@ app.post('/api/offers/:id/start', auth, h(async (q, s) => {
   s.json({ url: o.clickUrl });
 }));
 
-// User Packages API
 app.get('/api/user-packages', auth, h(async (q, s) => {
   let pkgs = await UserPackage.find({ active: true });
   if (!pkgs.length) {
@@ -350,7 +378,7 @@ app.get('/api/promo-packages', auth, h(async (q, s) => {
       { title: '200 Facebook Followers', category: 'Facebook', followers: 200, price: 80, description: 'আপনার ফেসবুক পেজ বা আইডিতে ইনস্ট্যান্ট রিয়েল ফলোয়ার নিন।', icon: 'https://cdn-icons-png.flaticon.com/512/124/124010.png' },
       { title: '1,000 YouTube Subscribers', category: 'YouTube', followers: 1000, price: 650, description: 'আপনার ইউটিউব চ্যানেলে গ্রোথ ও সাবস্ক্রাইবার বৃদ্ধি করুন।', icon: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png' },
       { title: '5,000 Telegram Members', category: 'Telegram', followers: 5000, price: 2500, description: 'টেলিগ্রাম গ্রুপ বা চ্যানেলে একটিভ মেম্বার যুক্ত করুন।', icon: 'https://cdn-icons-png.flaticon.com/512/2111/2111646.png' },
-      { title: '10,000 Followers Package', category: 'Social Media', followers: 10000, price: 5000, description: 'প্রিমিয়াম সোশ্যাল মিডিয়া গ্রোথ প্যাকেজ (সেরা অফার)।', icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041888.png' }
+      { title: 'RS Gallery Shop Featured Item', category: 'RS Gallery', followers: 10000, price: 5000, description: 'আর এস গ্যালারি শপ কোলাবোরেশন ও প্রোডাক্ট প্রমোশন প্যাকেজ।', icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041888.png' }
     ];
     await PromoPackage.insertMany(defaultPkgs);
     pkgs = await PromoPackage.find({ active: true });
@@ -502,7 +530,7 @@ app.post('/api/support', auth, h(async (q, s) => {
   s.json({ ok: true });
 }));
 
-// Admin APIs for Packages Control
+// Admin APIs for Packages & Sliders Control
 app.get('/api/admin/user-packages', admin, h(async (q, s) => {
   s.json(await UserPackage.find({}));
 }));
@@ -528,6 +556,20 @@ app.post('/api/admin/promo-packages', admin, h(async (q, s) => {
 }));
 app.post('/api/admin/promo-packages/delete/:id', admin, h(async (q, s) => {
   await PromoPackage.findByIdAndDelete(q.params.id);
+  s.json({ ok: true });
+}));
+
+// Admin Slider Controls
+app.get('/api/admin/sliders', admin, h(async (q, s) => {
+  s.json(await SliderSetting.find({}));
+}));
+app.post('/api/admin/sliders', admin, h(async (q, s) => {
+  const { title, subtitle, description, link, bgClass, emoji, timerSeconds } = q.body || {};
+  await SliderSetting.create({ title, subtitle, description, link, bgClass: bgClass || 's0', emoji: emoji || '🌟', timerSeconds: Number(timerSeconds) || 6 });
+  s.json({ ok: true });
+}));
+app.post('/api/admin/sliders/delete/:id', admin, h(async (q, s) => {
+  await SliderSetting.findByIdAndDelete(q.params.id);
   s.json({ ok: true });
 }));
 
@@ -644,7 +686,7 @@ const PAGE = `<!DOCTYPE html>
 <meta name="apple-mobile-web-app-title" content="RS Matrix">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1041/1041888.png">
 
-<title>RS Growth Matrix</title>
+<title>RS Growth Matrix & RS Gallery Shop</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{--bg:#060913;--card:#0f172a;--line:#1e293b;--tx:#f8fafc;--mu:#94a3b8;--gold:#fbbf24;--grn:#22c55e;--blu:#38bdf8;--red:#ef4444}
@@ -718,7 +760,7 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .th{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
 .th .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:700}
 .gap{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-.hs{position:relative;height:200px;border-radius:24px;overflow:hidden;margin-bottom:10px;border:1px solid rgba(251,191,36,.45)}
+.hs{position:relative;height:200px;border-radius:24px;overflow:hidden;margin-bottom:10px;border:1px solid rgba(251,191,36,.45);cursor:pointer}
 .sl{position:absolute;inset:0;padding:18px 16px;opacity:0;transform:scale(.96);transition:opacity .7s,transform .7s;display:flex;flex-direction:column;justify-content:center;pointer-events:none}
 .sl.on{opacity:1;transform:none;pointer-events:auto}
 .sl .tag{display:inline-block;align-self:flex-start;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.35);color:#fde68a;margin-bottom:8px}
@@ -782,16 +824,16 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 <div class="app">
 <div id="landing">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-    <div style="display:flex;align-items:center;gap:10px"><div id="logoL"></div><b style="color:var(--gold);font-size:16px">RS Growth Matrix</b></div>
+    <div style="display:flex;align-items:center;gap:10px"><div id="logoL"></div><b style="color:var(--gold);font-size:16px">RS Growth Matrix & RS Gallery</b></div>
     <span style="font-size:12px;background:rgba(251,191,36,.15);color:var(--gold);padding:4px 10px;border-radius:20px;border:1px solid rgba(251,191,36,.3)">EN ▾</span>
   </div>
   <div style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border:1px solid rgba(251,191,36,.3);border-radius:20px;padding:16px;margin-bottom:14px;position:relative;overflow:hidden">
-    <div style="font-size:11px;color:var(--gold);font-weight:700;margin-bottom:6px">⚡ Work Smart • Earn More</div>
+    <div style="font-size:11px;color:var(--gold);font-weight:700;margin-bottom:6px">⚡ Work Smart • Earn & Shop at RS Gallery</div>
     <h1 style="font-size:22px;color:#fff;margin-bottom:8px;line-height:1.3">Small Tasks Big Opportunities</h1>
-    <p style="font-size:12px;color:var(--mu);line-height:1.6;margin-bottom:14px">RS Growth Matrix is a trusted microjob platform where you can complete simple tasks, earn real money and build your financial freedom.</p>
+    <p style="font-size:12px;color:var(--mu);line-height:1.6;margin-bottom:14px">RS Growth Matrix একটি বিশ্বস্ত মাইক্রোজব প্ল্যাটফর্ম। এখানে টাস্ক করে ইনকাম করুন এবং আমাদের কোলাবোরেশন পার্টনার **আর এস গ্যালারি শপ** থেকে আপনার পছন্দের পোশাক অর্ডার করুন।</p>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center">
       <div style="background:#0b1224;padding:8px 4px;border-radius:12px;border:1px solid var(--line)"><span style="font-size:18px">📋</span><small style="display:block;font-size:9px;color:var(--mu);margin-top:2px">Tasks</small></div>
-      <div style="background:#0b1224;padding:8px 4px;border-radius:12px;border:1px solid var(--line)"><span style="font-size:18px">🎁</span><small style="display:block;font-size:9px;color:var(--mu);margin-top:2px">Rewards</small></div>
+      <div style="background:#0b1224;padding:8px 4px;border-radius:12px;border:1px solid var(--line)"><span style="font-size:18px">🛍️</span><small style="display:block;font-size:9px;color:var(--mu);margin-top:2px">RS Gallery</small></div>
       <div style="background:#0b1224;padding:8px 4px;border-radius:12px;border:1px solid var(--line)"><span style="font-size:18px">🛡️</span><small style="display:block;font-size:9px;color:var(--mu);margin-top:2px">Secure</small></div>
       <div style="background:#0b1224;padding:8px 4px;border-radius:12px;border:1px solid var(--line)"><span style="font-size:18px">👥</span><small style="display:block;font-size:9px;color:var(--mu);margin-top:2px">Community</small></div>
     </div>
@@ -806,7 +848,7 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
   <div style="text-align:center;font-size:11px;color:var(--mu);margin-bottom:14px">Join now and start earning today!</div>
   <div style="background:linear-gradient(135deg,#2b1f04,#141c2e);border:1px solid rgba(251,191,36,.4);border-radius:16px;padding:12px;display:flex;align-items:center;gap:12px;margin-bottom:14px">
     <span style="font-size:28px">🎁</span>
-    <div><b style="color:var(--gold);font-size:13px;display:block">Complete More Tasks Get Bigger Rewards!</b><small style="color:var(--mu);font-size:11px">Earn from surveys, offers, games, videos and more...</small></div>
+    <div><b style="color:var(--gold);font-size:13px;display:block">RS Gallery Shop Collaboration!</b><small style="color:var(--mu);font-size:11px">টাস্ক করে ইনকাম করা টাকা দিয়ে আর এস গ্যালারি থেকে শপিং করুন...</small></div>
   </div>
   <div style="display:flex;justify-content:space-around;padding:10px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:11px;color:var(--mu);text-align:center">
     <div>🛡️ 100% Safe & Secure</div>
@@ -867,12 +909,10 @@ function installPWA() {
   }
 }
 
-// Self-ping to prevent Render sleep
 setInterval(function() {
   fetch('/ping').catch(function() {});
 }, 300000);
 
-// Live Increment Demo Stats
 setInterval(function() {
   var u = document.getElementById('stUsers');
   var t = document.getElementById('stTasks');
@@ -952,14 +992,20 @@ function avUp(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();
   im.src=r.result};
  r.readAsDataURL(f);inp.value=''}
 
-var HS=[
- ['s0','🕌 নামাজের স্মরণ','নামাজ কি পড়েছেন?','নামাজ আমাদের জীবনের সবচেয়ে বড় আমানত। কাজের ফাঁকে ওয়াক্ত হলেই নামাজ আদায় করে নিন।','🕌','🌙','⭐'],
- ['s1','🌟 আমাদের সাইট','RS Growth Matrix','এটি একটি টাস্কভিত্তিক আয়ের সাইট। এখানে সহজ টাস্ক ও অ্যাড দেখে আয় করা যায়।','🚀','✨','💎'],
- ['s2','📋 টাস্ক ও অ্যাড আয়','টাস্ক এবং অ্যাড দেখে আয়','Tasks ট্যাবে গিয়ে টাস্ক সম্পন্ন করুন অথবা Watch Ads অপশনে গিয়ে অ্যাড দেখে ইনস্ট্যান্ট ক্যাশ আয় করুন।','📱','💰','🎯'],
- ['s3','💸 উত্তোলন','সহজে টাকা তুলুন','Account থেকে Withdraw চেপে bKash বা Nagad নাম্বার দিন। উত্তোলন ৩০০ থেকে ৫০০০ টাকা পর্যন্ত করা যায়।','💸','🏦','✅']];
-function hsGo(i){HSI=i;var s=document.querySelectorAll('.sl'),d=document.querySelectorAll('.dots i');for(var k=0;k<s.length;k++){s[k].className='sl '+HS[k][0]+(k===i?' on':'');d[k].className=k===i?'on':''}}
+var HS_DATA = [];
+function hsGo(i){
+  HSI=i; var s=document.querySelectorAll('.sl'),d=document.querySelectorAll('.dots i');
+  for(var k=0;k<s.length;k++){if(s[k])s[k].className='sl '+(HS_DATA[k]?HS_DATA[k].bgClass:'s0')+(k===i?' on':''); if(d[k])d[k].className=k===i?'on':''}
+}
+function handleSlideClick(link){
+  if(link && link !== '#'){
+    var w = window.open(link, '_blank');
+    if(!w) location.href = link;
+  }
+}
+
 function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
- return '<div class="ft"><div class="ftl">'+logo(46)+'<div><b>'+esc(c.n)+'</b><small>টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম</small></div></div>'+
+ return '<div class="ft"><div class="ftl">'+logo(46)+'<div><b>'+esc(c.n)+'</b><small>টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম ও আর এস গ্যালারি কোলাবোরেশন</small></div></div>'+
  '<div class="fd">'+esc(c.d||'')+'</div>'+
  '<div class="fcols"><h5>প্ল্যাটফর্ম</h5><a onclick="go(\\'home\\')">Home</a><a onclick="go(\\'tasks\\')">Tasks</a><a onclick="go(\\'pkg\\')">Package</a><a onclick="go(\\'rank\\')">Ranking</a><a onclick="go(\\'ref\\')">Refer</a></div>'+
  '<div><h5>সহায়তা</h5><a onclick="go(\\'help\\')">Support</a><a onclick="go(\\'acc\\')">Account</a><a onclick="go(\\'book\\')">ইসলামিক বই</a></div></div>'+
@@ -968,20 +1014,37 @@ function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
 
 function vHome(){
   var ok=Date.now()-ME.lastDaily>=864e5,sp=Date.now()-(ME.lastSpin||0)>=864e5;HSI=0;
-  var sl=HS.map(function(x,i){return '<div class="sl '+x[0]+(i===0?' on':'')+'"><span class="tag">'+x[1]+'</span><h4>'+x[2]+'</h4><p>'+x[3]+'</p><span class="em">'+x[4]+'</span></div>'}).join('');
-  var dt=HS.map(function(x,i){return '<i class="'+(i===0?'on':'')+'" onclick="hsGo('+i+')"></i>'}).join('');
   
-  $('main').innerHTML='<div class="mq"><span>🌙 RS Growth Matrix-এ স্বাগতম! আপনার নামাজের কথা মনে আছে তো? 🤲 নামাজ পড়ুন, তারপর কাজে মন দিন। ✨</span></div>'+
-  '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
-  '<div class="hs">'+sl+'</div><div class="dots">'+dt+'</div>'+
-  
-  '<div class="bo" style="margin-bottom:14px;padding:4px"><div class="bi lk" style="flex-direction:column;text-align:center;padding:18px"><span class="ic" style="font-size:52px">🎡</span><div><b style="font-size:16px;color:var(--gold);margin-top:4px">Grand Lucky Spin & Rewards!</b><small style="font-size:11.5px">চাকা ঘুরিয়ে ক্যাশ ও কয়েন রিওয়ার্ড জিতে নিন!</small></div>'+
-  '<button class="btn'+(sp?'':' dn')+'" style="margin-top:12px;width:100%" onclick="spinOpen()">'+(sp?'Spin Wheel Now':'Spin Completed ✅')+'</button></div></div>'+
+  api('sliders').then(function(sliders){
+    HS_DATA = sliders;
+    var timerSec = (sliders[0] && sliders[0].timerSeconds) ? (sliders[0].timerSeconds * 1000) : 6000;
+    
+    var sl = sliders.map(function(x,i){
+      return '<div class="sl '+x.bgClass+(i===0?' on':'')+'" onclick="handleSlideClick(\\''+esc(x.link)+'\\')"><span class="tag">'+esc(x.subtitle)+'</span><h4>'+esc(x.title)+'</h4><p>'+esc(x.description)+'</p><span class="em">'+x.emoji+'</span></div>';
+    }).join('');
+    var dt = sliders.map(function(x,i){
+      return '<i class="'+(i===0?'on':'')+'" onclick="hsGo('+i+')"></i>';
+    }).join('');
 
-  '<h3>আজকের বোনাস</h3><div class="bn">'+
-  '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
-  '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
-  TIMER=setInterval(function(){if(!document.querySelector('.hs')){clearInterval(TIMER);return}hsGo((HSI+1)%HS.length)},6000)
+    var container = $('homeContainer');
+    if(container) {
+      container.innerHTML = '<div class="mq"><span>🌙 RS Growth Matrix ও আর এস গ্যালারি শপ-এর যৌথ উদ্যোগে স্বাগতম! টাস্ক করে জমানো টাকা দিয়ে শপিং করুন 🛍️</span></div>'+
+      '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
+      '<div class="hs">'+sl+'</div><div class="dots">'+dt+'</div>'+
+      
+      '<div class="bo" style="margin-bottom:14px;padding:4px"><div class="bi lk" style="flex-direction:column;text-align:center;padding:18px"><span class="ic" style="font-size:52px">🎡</span><div><b style="font-size:16px;color:var(--gold);margin-top:4px">Grand Lucky Spin & Rewards!</b><small style="font-size:11.5px">চাকা ঘুরিয়ে ক্যাশ ও কয়েন রিওয়ার্ড জিতে নিন!</small></div>'+
+      '<button class="btn'+(sp?'':' dn')+'" style="margin-top:12px;width:100%" onclick="spinOpen()">'+(sp?'Spin Wheel Now':'Spin Completed ✅')+'</button></div></div>'+
+
+      '<h3>আজকের বোনাস</h3><div class="bn">'+
+      '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
+      '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
+      
+      if(window.TIMER) clearInterval(window.TIMER);
+      window.TIMER=setInterval(function(){if(!document.querySelector('.hs')){clearInterval(window.TIMER);return}hsGo((HSI+1)%HS_DATA.length)}, timerSec);
+    }
+  }).catch(function(){});
+
+  $('main').innerHTML='<div id="homeContainer">Loading...</div>';
 }
 function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added.')}).catch(function(e){toast(e.message)})}
 
@@ -1006,8 +1069,8 @@ function closeSpin(){closeM();if(TAB==='home')vHome()}
 
 function vEmp(){
   api('promo-packages').then(packages => {
-    $('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>🛍️</div><div><b>Promote Shop (ই-কমার্স স্টাইল)</b><small>আপনার সোশ্যাল মিডিয়া প্রমোট করতে পছন্দের প্যাকেজটি সিলেক্ট করুন।</small></div></div>' +
-    '<h3 style="margin-bottom:10px">উপলব্ধ প্রমোশন প্যাকেজসমূহ</h3>' +
+    $('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>🛍️</div><div><b>Promote Shop (RS Gallery Collaboration)</b><small>আপনার সোশ্যাল মিডিয়া প্রমোট করুন অথবা আর এস গ্যালারি শপের ফিচার্ড প্যাকেজ নিন।</small></div></div>' +
+    '<h3 style="margin-bottom:10px">উপলব্ধ প্রমোশন ও শপ প্যাকেজসমূহ</h3>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
     (packages.length ? packages.map(p => {
       return '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:1px solid rgba(251,191,36,0.4);border-radius:16px;padding:12px;display:flex;flex-direction:column;justify-content:space-between">' +
@@ -1022,8 +1085,8 @@ function vEmp(){
     '<div class="card" style="margin-top:10px">' +
     '<h3 style="color:var(--gold);margin-bottom:8px">বা কাস্টম প্রমোশন টাস্ক দিন</h3>' +
     '<label>প্লাটফর্ম নির্বাচন করুন</label>' +
-    '<select id="etPlatform"><option value="youtube">YouTube</option><option value="facebook">Facebook</option><option value="telegram">Telegram</option></select>' +
-    '<label>চ্যানেল বা পেজের নাম/টাইটেল</label><input id="etTitle" placeholder="যেমন: My YouTube Channel">' +
+    '<select id="etPlatform"><option value="youtube">YouTube</option><option value="facebook">Facebook</option><option value="telegram">Telegram</option><option value="rsgallery">RS Gallery Shop</option></select>' +
+    '<label>চ্যানেল বা পেজের নাম/টাইটেল</label><input id="etTitle" placeholder="যেমন: RS Gallery Shirt Promo">' +
     '<label>লিংক (URL)</label><input id="etLink" placeholder="https://...">' +
     '<label>প্রতি ওয়ার্কারের পেমেন্ট (BDT)</label><input id="etReward" type="number" placeholder="2">' +
     '<label>কতজন ওয়ার্কার কাজ করবে (Target Workers)</label><input id="etWorkers" type="number" placeholder="100">' +
@@ -1035,7 +1098,7 @@ function vEmp(){
 function buyPromoPkg(id, title, price){
   modal('<h3 style="color:var(--gold)">প্যাকেজ অর্ডার নিশ্চিত করুন</h3>' +
   '<div class="tdw">প্যাকেজ: <b>'+title+'</b><br>মূল্য: <b style="color:var(--grn)">'+price+' BDT</b></div>' +
-  '<label>আপনার প্রমোশন লিংক (YouTube/Facebook/Telegram URL)</label><input id="buyLink" placeholder="https://...">' +
+  '<label>আপনার প্রমোশন লিংক (YouTube/Facebook/RS Gallery URL)</label><input id="buyLink" placeholder="https://...">' +
   '<button class="btn g" onclick="confirmBuyPkg(\\''+id+'\\')">Confirm & Pay</button>' +
   '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Cancel</button>');
 }
@@ -1059,7 +1122,7 @@ function submitCustomTask(){
 }
 
 function vTasks(){
-  $('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>📋</div><div><b>Tasks & Watch Ads Dashboard</b><small>নিচের ট্যাব থেকে টাস্ক কিংবা অ্যাড দেখে ইনকাম বেছে নিন।</small></div></div>' +
+  $('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>📋</div><div><b>Tasks & Watch Ads Dashboard</b><small>টাস্ক সম্পন্ন করুন এবং অর্জিত টাকা দিয়ে আর এস গ্যালারি থেকে শপিং করুন।</small></div></div>' +
   '<div class="seg" style="margin-bottom:14px"><div id="subTask" class="on" onclick="switchTaskSub(\\'tasks\\')">📋 Offerwall Tasks</div><div id="subAd" onclick="switchTaskSub(\\'ads\\')">📺 Watch Ads</div></div>' +
   '<div id="taskSubContent"></div>';
   switchTaskSub('tasks');
@@ -1157,16 +1220,27 @@ function vRef(){var link=location.origin+'/?ref='+ME.refCode,e=encodeURIComponen
 function copyL(){(navigator.clipboard?navigator.clipboard.writeText(RL):Promise.reject()).then(function(){toast('Link copied.')}).catch(function(){$('rl').select();toast('Copied.')})}
 
 function vHelp(){
-  $('main').innerHTML=hb('help','💬','Support','কোনো সমস্যা হলে এখানে লিখুন।') +
+  $('main').innerHTML=hb('help','💬','Support','আপনার যেকোনো সমস্যার দ্রুত সমাধান নিন।') +
+  '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">' +
+  '<button class="btn s" onclick="presetMsg(\\'আমার ডিপোজিট এখনো যুক্ত হয়নি, কি করব?\\')">💳 ডিপোজিট সমস্যা</button>' +
+  '<button class="btn s" onclick="presetMsg(\\'আমার উইথড্র পেন্ডিং আছে, কখন পাব?\\')">💸 উইথড্র সমস্যা</button>' +
+  '<button class="btn s" onclick="presetMsg(\\'টাস্ক কমপ্লিট করার নিয়ম সম্পর্কে জানতে চাই।\\')">📋 টাস্ক সমস্যা</button>' +
+  '<button class="btn s" onclick="presetMsg(\\'আর এস গ্যালারি শপ থেকে কিভাবে কেনাকাটা করব?\\')">🛍️ আর এস গ্যালারি শপ</button>' +
+  '</div>' +
   '<div class="chat" id="ch"></div><textarea id="st" rows="2" maxlength="500" placeholder="Describe your problem"></textarea><button class="btn" onclick="sendS()">Send</button>';
   loadSupportMsgs();
   if(window.SUP_TIMER) clearInterval(window.SUP_TIMER);
   window.SUP_TIMER = setInterval(loadSupportMsgs, 10000);
 }
+
+function presetMsg(txt){
+  $('st').value = txt;
+}
+
 function loadSupportMsgs(){
   api('support').then(function(a){
     var c=$('ch');if(!c)return;
-    c.innerHTML=a.length?a.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join(''):'<div class="m support">Hello! Write your message.</div>';
+    c.innerHTML=a.length?a.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join(''):'<div class="m support">Hello! Write your message or select quick help above.</div>';
     c.scrollTop=c.scrollHeight;
   }).catch(function(){})
 }
@@ -1175,12 +1249,13 @@ function sendS(){api('support','POST',{text:$('st').value}).then(function(){$('s
 function vAcc(){
   if(window.SUP_TIMER) clearInterval(window.SUP_TIMER);
   var isEmp = ME.role === 'employer';
-  $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স ও হিসাব।')+
+  $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স, উইথড্র ও ডিপোজিট পেন্ডিং হিসাব।')+
   '<div class="row"><div>'+esc(ME.name)+' ('+(isEmp?'Employer':'Worker')+')<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
   '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
   '<div style="display:flex;gap:8px"><button class="btn g" style="flex:1" onclick="depForm()">Deposit</button>'+(isEmp?'':'<button class="btn r" style="flex:1" onclick="wdForm()">Withdraw</button>')+'</div>'+
-  (isEmp?'':'<h3 style="margin-top:16px">Withdraw history</h3><div id="wh">Loading...</div>')+
-  '<h3 style="margin-top:16px">Deposit history</h3><div id="dh">Loading...</div>'+
+  
+  (isEmp?'':'<h3 style="margin-top:16px">Withdrawal History & Pending</h3><div id="wh">Loading...</div>')+
+  '<h3 style="margin-top:16px">Deposit History & Pending</h3><div id="dh">Loading...</div>'+
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:16px" onclick="admOpen()">Admin panel</button>';
 
   if(!isEmp) api('withdrawals').then(function(a){var el=$('wh');if(el)el.innerHTML=a.length?a.map(function(w){return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' <span class="chip '+w.status+'">'+w.status+'</span></div></div>'}).join(''):'<div class="row">No withdrawals.</div>'});
@@ -1214,7 +1289,7 @@ function doDep(pkgName){
 }
 
 var DUA=[
-["১. সানা","سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ","সুবহানাকাল্লাহুম্মা ওয়া বিহামدিকা...","হে আল্লাহ, আপনি পবিত্র।"],
+["১. সানা","سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ","সুবহানাকাল্লাহুম্মা ওয়া বিহামদিকা...","হে আল্লাহ, আপনি পবিত্র।"],
 ["২. সূরা ফাতিহা","بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ","বিসমিল্লাহির রাহমানির রাহিম...","পরম করুণাময় আল্লাহর নামে।"],
 ["৩. আত্তাহিয়্যাতু","التَّحِيَّاتُ لِلَّهِ","আত্তাহিয়্যাতু লিল্লাহি...","সমস্ত সম্মান আল্লাহর জন্য।"]];
 var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
@@ -1236,14 +1311,14 @@ function bk(p){var h='';
  else if(p==='hadith'){h=bkBack('menu')+'<h3>হাদিস</h3>'+HD.map(function(x){return '<div class="bkc">'+esc(x[0])+'<small>সূত্র: '+esc(x[1])+'</small></div>'}).join('')}
  $('main').innerHTML=h;$('main').scrollTop=0}
 
-var ATABS=[['ov','📊','ওভারভিউ'],['wd','💸','উত্তোলন'],['dep','💳','ডিপোজিট'],['ctask','📢','প্রমোশন'],['shop','🛍️','প্যাকেজ কন্ট্রোল'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ']];
+var ATABS=[['ov','📊','ওভারভিউ'],['wd','💸','উত্তোলন'],['dep','💳','ডিপোজিট'],['ctask','📢','প্রমোশন'],['shop','🛍️','প্যাকেজ ও শপ'],['slider','🖼️','স্লাইডার কন্ট্রোল'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ']];
 function ah(){return{'x-admin-pass':ADM}}
 function admOpen(){var p=prompt('Admin password');if(!p)return;ADM=p;$('adm').className='adm on';
  $('anav').innerHTML=ATABS.map(function(t){return '<div id="a_'+t[0]+'" onclick="admGo(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');admGo('ov')}
 function admClose(){$('adm').className='adm'}
 function aErr(e){if(e.message==='Wrong admin password.'){toast(e.message);admClose()}else $('abody').innerHTML='<div class="row">'+esc(e.message)+'</div>'}
-function admGo(t){ATABS.forEach(function(x){$('a_'+x[0]).className=x[0]===t?'on':''});$('abody').innerHTML='<div class="row">Loading...</div>';
- ({ov:aOv,wd:aWd,dep:aDep,ctask:aCTask,shop:aShopCtrl,sp:aSp,us:aUs})[t]()}
+function admGo(t){ATABS.forEach(function(x){var el=$('a_'+x[0]);if(el)el.className=x[0]===t?'on':''});$('abody').innerHTML='<div class="row">Loading...</div>';
+ ({ov:aOv,wd:aWd,dep:aDep,ctask:aCTask,shop:aShopCtrl,slider:aSliderCtrl,sp:aSp,us:aUs})[t]()}
 function sc(a){return a.map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('')}
 function aOv(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
  $('abody').innerHTML='<h3>আজকের হিসাব</h3><div class="grid">'+sc([['মোট ইউজার',s.users],['আজ ঢুকেছে',s.active],['ডিপোজিট পেন্ডিং',s.depPending],['অপেক্ষমাণ টাস্ক',s.pendingTasks]])+'</div>'}).catch(aErr)}
@@ -1268,19 +1343,52 @@ function aShopCtrl(){
       '<h3>বিদ্যমান ইউজার প্যাকেজসমূহ</h3>' +
       (userPkgs.length ? userPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.description)+'</span><span style="color:var(--gold)">৳'+p.price+'</span></div><small>Coins/Min: '+p.coinsPerMin+' | Hot: '+p.hot+'</small><button class="btn s r" style="margin-top:6px" onclick="delUserPkg(\\''+p._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>') +
       '<hr style="border-color:var(--line);margin:16px 0">' +
-      '<h3>🛍️ এমপ্লয়ার প্রমোশন প্যাকেজ কন্ট্রোল</h3>' +
+      '<h3>🛍️ আর এস গ্যালারি ও প্রমোশন প্যাকেজ কন্ট্রোল</h3>' +
       '<div class="card" style="margin-bottom:12px">' +
-      '<label>প্যাকেজের নাম</label><input id="apTitle" placeholder="যেমন: 500 Followers">' +
-      '<label>ক্যাটাগরি</label><input id="apCat" placeholder="Facebook / YouTube">' +
-      '<label>পরিমাণ (Followers/Subscribers)</label><input id="apFol" type="number" placeholder="500">' +
+      '<label>প্যাকেজের নাম</label><input id="apTitle" placeholder="যেমন: RS Gallery Shirt Featured">' +
+      '<label>ক্যাটাগরি</label><input id="apCat" placeholder="RS Gallery / Social Media">' +
+      '<label>পরিমাণ/ফলোয়ার</label><input id="apFol" type="number" placeholder="500">' +
       '<label>মূল্য (BDT)</label><input id="apPrice" type="number" placeholder="150">' +
+      '<label>ছবির লিংক (Icon URL)</label><input id="apIcon" placeholder="https://...">' +
       '<label>বিবরণ</label><input id="apDesc" placeholder="ছোট বিবরণ">' +
       '<button class="btn g" onclick="addPromoPkg()">প্রমোশন প্যাকেজ যোগ করুন</button>' +
       '</div>' +
-      '<h3>বিদ্যমান প্রমোশন প্যাকেজসমূহ</h3>' +
-      (promoPkgs.length ? promoPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.title)+'</span><span style="color:var(--gold)">৳'+p.price+'</span></div><small>Category: '+esc(p.category)+' | Followers: '+p.followers+'</small><button class="btn s r" style="margin-top:6px" onclick="delPromoPkg(\\''+p._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>');
+      '<h3>বিদ্যমান প্যাকেজসমূহ</h3>' +
+      (promoPkgs.length ? promoPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.title)+'</span><span style="color:var(--gold)">৳'+p.price+'</span></div><small>Category: '+esc(p.category)+'</small><button class="btn s r" style="margin-top:6px" onclick="delPromoPkg(\\''+p._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>');
     }).catch(aErr);
   }).catch(aErr);
+}
+
+function aSliderCtrl(){
+  api('admin/sliders','GET',null,ah()).then(function(sliders){
+    $('abody').innerHTML='<h3>🖼️ হোম স্লাইডার ও ব্যানার কন্ট্রোল</h3>' +
+    '<div class="card" style="margin-bottom:12px">' +
+    '<label>মূল শিরোনাম (Title)</label><input id="slTitle" placeholder="যেমন: নামাজের স্মরণ">' +
+    '<label>উপ-শিরোনাম (Subtitle)</label><input id="slSub" placeholder="যেমন: নামাজ কি পড়েছেন?">' +
+    '<label>বিবরণ (Description)</label><input id="slDesc" placeholder="বিস্তারিত লিখুন">' +
+    '<label>কোলাবোরেশন বা এক্সটার্নাল লিংক (URL)</label><input id="slLink" placeholder="https://www.facebook.com/share/..."> ' +
+    '<label>ইমোজি বা আইকন</label><input id="slEmoji" placeholder="🛍️">' +
+    '<label>পরিবর্তন সময় (স্লাইড টাইমার সেকেন্ডে, যেমন: ৬)</label><input id="slTimer" type="number" value="6">' +
+    '<button class="btn g" onclick="addSlider()">স্লাইড ব্যানার যোগ করুন</button>' +
+    '</div>' +
+    '<h3>সক্রিয় স্লাইডার ব্যানারসমূহ</h3>' +
+    (sliders.length ? sliders.map(s => '<div class="th"><div class="hd"><span>'+esc(s.title)+'</span><span style="color:var(--gold)">টাইমার: '+s.timerSeconds+'s</span></div><small>Link: '+esc(s.link)+'</small><button class="btn s r" style="margin-top:6px" onclick="delSlider(\\''+s._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো স্লাইডার নেই।</div>');
+  }).catch(aErr);
+}
+
+function addSlider(){
+  api('admin/sliders','POST',{
+    title: $('slTitle').value,
+    subtitle: $('slSub').value,
+    description: $('slDesc').value,
+    link: $('slLink').value,
+    emoji: $('slEmoji').value,
+    timerSeconds: $('slTimer').value
+  }, ah()).then(() => { toast('স্লাইডার যোগ হয়েছে!'); aSliderCtrl(); }).catch(aErr);
+}
+
+function delSlider(id){
+  api('admin/sliders/delete/'+id,'POST',null,ah()).then(() => { toast('স্লাইডার ডিলিট হয়েছে!'); aSliderCtrl(); }).catch(aErr);
 }
 
 function addUserPkg(){
@@ -1302,7 +1410,8 @@ function addPromoPkg(){
     category: $('apCat').value,
     followers: $('apFol').value,
     price: $('apPrice').value,
-    description: $('apDesc').value
+    description: $('apDesc').value,
+    icon: $('apIcon').value
   }, ah()).then(() => { toast('প্রমোশন প্যাকেজ যোগ হয়েছে!'); aShopCtrl(); }).catch(aErr);
 }
 
