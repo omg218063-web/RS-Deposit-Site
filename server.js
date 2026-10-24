@@ -461,12 +461,18 @@ app.get('/api/leaderboard', auth, h(async (q, s) => {
   let demoTop = [];
   let baseEarn = 45000;
   let baseCoins = 150000;
+  
+  // Random fluctuation factor based on current time for dynamic shifting
+  const randomShift = Math.floor(Date.now() / 10000) % 7;
+  
   for (let i = 0; i < 100; i++) {
+    let flucBal = Math.max(500, baseEarn - (i * 300) + ((i * 13 + randomShift * 41) % 1500) - 750);
+    let flucCoins = Math.max(500, baseCoins - (i * 1200) + ((i * 29 + randomShift * 67) % 5000) - 2500);
     demoTop.push({
       name: i === 0 ? '👑 Al-Amin (Top 1)' : (i === 1 ? '⭐ Shanto Mahmud (Top 2)' : (demoNames[i % demoNames.length] + ' ' + (i + 1))),
-      balance: Math.max(500, baseEarn - (i * 300)),
-      earned: Math.max(1000, baseEarn - (i * 400)),
-      rsCoins: Math.max(500, baseCoins - (i * 1200)),
+      balance: flucBal,
+      earned: flucBal + 2000,
+      rsCoins: flucCoins,
       avatar: demoAvatars[i % demoAvatars.length]
     });
   }
@@ -520,6 +526,28 @@ app.post('/api/deposit', auth, h(async (q, s) => {
 }));
 
 app.get('/api/deposits', auth, h(async (q, s) => s.json(await Deposit.find({ uid: q.user.id }).sort({ at: -1 }).limit(30))));
+
+app.get('/api/global-feed', auth, h(async (q, s) => {
+  const names = ['Tanvir Ahmed', 'Rakibul Islam', 'Sumaiya Akter', 'Farhan Hossain', 'Nusrat Jahan', 'Mehedi Hasan', 'Ayesha Siddika', 'Imran Khan', 'Nazmul Huda', 'Al-Amin'];
+  const actions = [
+    'bKash-এ ৳500 ডিপোজিট সফল হয়েছে',
+    'Nagad-এ ৳1,000 উত্তোলন করেছেন',
+    'রেফারেল বোনাস হিসেবে ৳10 পেয়েছেন',
+    'আর এস গ্যালারি শপ থেকে ৳850 দিয়ে শার্ট অর্ডার করেছেন',
+    'প্রিমিয়াম RS Coin Package (৳1,500) কিনেছেন',
+    'ডেইলি লগইন বোনাস ৳2 সংগ্রহ করেছেন'
+  ];
+  
+  const now = Date.now();
+  let fakeFeed = [];
+  for(let i=0; i<6; i++){
+    let rndName = names[(i + Math.floor(now/15000)) % names.length];
+    let rndAct = actions[(i + Math.floor(now/10000)) % actions.length];
+    let timeAgo = (i * 3 + 2) + ' মিনিট আগে';
+    fakeFeed.push({ name: rndName, action: rndAct, time: timeAgo });
+  }
+  s.json(fakeFeed);
+}));
 
 app.get('/api/support', auth, h(async (q, s) => s.json(await Msg.find({ uid: q.user.id }).sort({ at: 1 }).limit(100))));
 app.post('/api/support', auth, h(async (q, s) => {
@@ -1217,7 +1245,7 @@ function vPkg(){
 }
 
 function vRank(){
-  $('main').innerHTML=hb('rank','🏆','Ranking','ইউজারদের রিয়েল ব্যালেন্স এবং সংগৃহীত আরএস কয়েন।')+'<div id="rk">Loading...</div>';
+  $('main').innerHTML=hb('rank','🏆','Ranking','ইউজারদের রিয়েল ব্যালেন্স এবং সংগৃহীত আরএস কয়েন (রিয়েলটাইম আপডেট)।')+'<div id="rk">Loading...</div>';
   function load(){
     api('leaderboard').then(function(a){
       if(!a.length){$('rk').innerHTML='<div class="row">No data.</div>';return}
@@ -1227,13 +1255,13 @@ function vRank(){
     }).catch(function(){})
   }
   load();
-  TIMER=setInterval(load,20000)
+  TIMER=setInterval(load,5000)
 }
 
 function vRef(){var link=location.origin+'/?ref='+ME.refCode,e=encodeURIComponent(link),tx=encodeURIComponent('Join RS Growth Matrix: ');window.RL=link;
  $('main').innerHTML=hb('ref','👥','Invite & Earn','বন্ধুদের ইনভাইট করুন, প্রতি সাইনআপে বোনাস পান।')+'<div class="card" style="text-align:center">'+logo(64)+'<div class="brand" style="font-size:18px">Invite and earn</div>'+
  '<input readonly id="rl" value="'+esc(link)+'"><button class="btn" onclick="copyL()">Copy link</button></div>'+
- '<div class="grid" style="margin-top:12px"><div class="stat"><b>'+ME.refCount+'</b><small>Friends joined</small></div><div class="stat"><b>'+money(ME.refEarn)+'</b><small>Referral earnings</small></div></div>';
+ '<div class="grid" style="margin-top:12px"><div class="stat"><b>'+ME.refCount+'</b><small>Friends joined</small></div><div class="stat"><b>'+money(ME.refEarn)+'</b><small>Referral earnings (৳10 Bonus Active)</small></div></div>';
 }
 function copyL(){(navigator.clipboard?navigator.clipboard.writeText(RL):Promise.reject()).then(function(){toast('Link copied.')}).catch(function(){$('rl').select();toast('Copied.')})}
 
@@ -1275,16 +1303,28 @@ function sendS(){
 function vAcc(){
   if(window.SUP_TIMER) clearInterval(window.SUP_TIMER);
   var isEmp = ME.role === 'employer';
-  $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স ও পপআপ হিস্ট্রি।')+
-  '<div class="row"><div>'+esc(ME.name)+' ('+(isEmp?'Employer':'Worker')+')<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
-  '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
-  '<div style="display:flex;gap:8px"><button class="btn g" style="flex:1" onclick="depForm()">Deposit</button>'+(isEmp?'':'<button class="btn r" style="flex:1" onclick="wdForm()">Withdraw</button>')+'</div>'+
   
-  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">' +
-  '<button class="btn" style="background:#1e293b;color:var(--gold);margin-top:0" onclick="openWdPopup()">💸 Withdrawal History</button>' +
-  '<button class="btn" style="background:#1e293b;color:var(--grn);margin-top:0" onclick="openDepPopup()">💳 Deposit History</button>' +
-  '</div>' +
-  '<button class="btn" style="background:#1e293b;color:#fff;margin-top:16px" onclick="admOpen()">Admin panel</button>';
+  api('global-feed').then(function(feed){
+    var feedHtml = feed.map(function(f){
+      return '<div style="font-size:11.5px;color:var(--mu);padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between"><span><b>'+esc(f.name)+'</b> '+esc(f.action)+'</span><span style="color:var(--gold);font-size:10px">'+esc(f.time)+'</span></div>';
+    }).join('');
+
+    $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স ও পপআপ হিস্ট্রি।')+
+    '<div class="row"><div>'+esc(ME.name)+' ('+(isEmp?'Employer':'Worker')+')<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
+    '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
+    '<div style="display:flex;gap:8px"><button class="btn g" style="flex:1" onclick="depForm()">Deposit</button>'+(isEmp?'':'<button class="btn r" style="flex:1" onclick="wdForm()">Withdraw</button>')+'</div>'+
+    
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">' +
+    '<button class="btn" style="background:#1e293b;color:var(--gold);margin-top:0" onclick="openWdPopup()">💸 Withdrawal History</button>' +
+    '<button class="btn" style="background:#1e293b;color:var(--grn);margin-top:0" onclick="openDepPopup()">💳 Deposit History</button>' +
+    '</div>' +
+    '<button class="btn" style="background:#1e293b;color:#fff;margin-top:16px" onclick="admOpen()">Admin panel</button>' +
+    
+    '<div class="card" style="margin-top:16px;border-color:rgba(56,189,248,0.3)">' +
+    '<h3 style="color:var(--blu);margin-bottom:8px">🌐 Live Global Transactions & RS Gallery Activity</h3>' +
+    '<div style="max-height:160px;overflow-y:auto">'+feedHtml+'</div>' +
+    '</div>';
+  }).catch(function(){});
 }
 
 function openWdPopup(){
@@ -1315,8 +1355,40 @@ function wdForm(){
   '<label>Select Method</label><select id="wm"><option value="bKash">bKash</option><option value="Nagad">Nagad</option></select>' +
   '<label>Withdraw Amount (BDT)</label><input id="wa" type="number" placeholder="300 - 5000">' +
   '<label>Account Number (11 Digits)</label><input id="wp" maxlength="11" placeholder="01XXXXXXXXX">' +
-  '<button class="btn r" style="background:linear-gradient(90deg,#38bdf8,#0284c7);color:#fff;box-shadow:0 0 15px rgba(56,189,248,0.5)" onclick="doWd()">CONFIRM WITHDRAW</button>' +
+  '<div style="position:relative;margin-top:12px">' +
+  '<div id="wdRingProgress" style="position:absolute;inset:0;border-radius:12px;border:3px solid transparent;border-top-color:var(--blu);pointer-events:none;transition:all 0.1s"></div>' +
+  '<button id="wdConfirmBtn" class="btn r" style="background:linear-gradient(90deg,#38bdf8,#0284c7);color:#fff;box-shadow:0 0 15px rgba(56,189,248,0.5);position:relative;z-index:2;user-select:none" onmousedown="startWdHold(event)" onttouchstart="startWdHold(event)" onmouseup="cancelWdHold()" ontouchend="cancelWdHold()">PRESS & HOLD TO CONFIRM</button>' +
+  '</div>' +
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:6px" onclick="closeM()">Close</button>');
+}
+
+var wdHoldTimer = null;
+function startWdHold(e){
+  e.preventDefault();
+  var ring = $('wdRingProgress');
+  var btn = $('wdConfirmBtn');
+  if(!ring || !btn) return;
+  btn.innerText = 'HOLDING...';
+  var progress = 0;
+  wdHoldTimer = setInterval(function(){
+    progress += 5;
+    ring.style.boxShadow = '0 0 '+(progress/2)+'px #38bdf8';
+    if(progress >= 100){
+      clearInterval(wdHoldTimer);
+      doWd();
+    }
+  }, 70);
+}
+
+function cancelWdHold(){
+  if(wdHoldTimer){
+    clearInterval(wdHoldTimer);
+    wdHoldTimer = null;
+    var btn = $('wdConfirmBtn');
+    if(btn) btn.innerText = 'PRESS & HOLD TO CONFIRM';
+    var ring = $('wdRingProgress');
+    if(ring) ring.style.boxShadow = 'none';
+  }
 }
 
 function doWd(){
@@ -1326,7 +1398,6 @@ function doWd(){
 }
 
 function depForm(presetAmount, pkgName){
-  var selMethod = 'bKash';
   modal('<h3 style="color:var(--gold);text-align:center">Deposit Form</h3>' +
   '<div class="row" style="background:#0b1224;display:block;margin-bottom:10px">' +
   '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Username:</span><b>'+esc(ME.name)+'</b></div>' +
@@ -1338,12 +1409,19 @@ function depForm(presetAmount, pkgName){
   '<div id="payBkash" style="flex:1;background:#131d38;border:2px solid var(--gold);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\\'bKash\\')"><b style="color:#e11d48">bKash</b></div>' +
   '<div id="payNagad" style="flex:1;background:#131d38;border:2px solid var(--line);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\\'nagad\\')"><b style="color:#f97316">Nagad</b></div>' +
   '</div>' +
-  '<div class="tdw" style="text-align:center"><b>Official Number:</b> <span style="color:var(--grn)">01712345678</span> (Merchant)<br><small>1. Send money to this number.<br>2. Enter TrxID below.</small></div>' +
+  '<div class="tdw" style="text-align:center"><b>Official Number:</b> <span style="color:var(--grn);cursor:pointer;text-decoration:underline" onclick="copyDepNum()">01951639460</span> (Click to Copy)<br><small>1. Send money to this number.<br>2. Enter TrxID below.</small></div>' +
   '<label>Deposit Amount (৳)</label><input id="da" type="number" value="'+(presetAmount||'')+'" placeholder="200 - 15000">' +
   '<label>Transaction ID (TrxID)</label><input id="dtx" placeholder="Enter Transaction ID">' +
   '<label>Last 3 Digits</label><input id="dlast" maxlength="3" placeholder="123">' +
-  '<button id="depConfirmBtn" class="btn g" style="background:linear-gradient(90deg,#38bdf8,#0284c7);color:#fff;box-shadow:0 0 20px rgba(56,189,248,0.7);transition:all 0.3s" onclick="doDep(\\''+(pkgName||'Custom Deposit')+'\\')">CONFIRM DEPOSIT</button>' +
+  '<div style="position:relative;margin-top:12px">' +
+  '<div id="depRingProgress" style="position:absolute;inset:0;border-radius:12px;border:3px solid transparent;border-top-color:var(--grn);pointer-events:none;transition:all 0.1s"></div>' +
+  '<button id="depConfirmBtn" class="btn g" style="background:linear-gradient(90deg,#38bdf8,#0284c7);color:#fff;box-shadow:0 0 20px rgba(56,189,248,0.7);position:relative;z-index:2;user-select:none" onmousedown="startDepHold(event,\\''+(pkgName||'Custom Deposit')+'\\')" onttouchstart="startDepHold(event,\\''+(pkgName||'Custom Deposit')+'\\')" onmouseup="cancelDepHold()" ontouchend="cancelDepHold()">PRESS & HOLD TO CONFIRM DEPOSIT</button>' +
+  '</div>' +
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:6px" onclick="closeM()">Close</button>');
+}
+
+function copyDepNum(){
+  navigator.clipboard.writeText('01951639460').then(function(){ toast('Official Number 01951639460 Copied!'); }).catch(function(){ toast('Copied 01951639460'); });
 }
 
 window.currentDepMethod = 'bKash';
@@ -1358,45 +1436,68 @@ function setDepMethod(m){
   }
 }
 
-function doDep(pkgName){
+var depHoldTimer = null;
+function startDepHold(e, pkgName){
+  e.preventDefault();
   var txVal = $('dtx').value.trim();
   if(txVal.length < 10) { toast('TrxID কমপক্ষে ১০ অক্ষরের হতে হবে।'); return; }
-  var btn = $('depConfirmBtn');
-  btn.innerText = 'PROCESSING...';
-  btn.style.boxShadow = '0 0 30px #22c55e';
   
-  setTimeout(function(){
-    api('deposit','POST',{method:window.currentDepMethod,amount:$('da').value,txid:txVal,lastDigits:$('dlast').value,pkgName:pkgName}).then(function(r){
-      if(r.activePkg) ME.activePkg = r.activePkg;
-      
-      var dep = r.depositDetails || {};
-      modal('<h3 style="color:var(--grn);text-align:center">✅ Deposit Successful!</h3>' +
-      '<div class="row" style="background:#0b1224;display:block;margin-bottom:10px">' +
-      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Username:</span><b>'+esc(ME.name)+'</b></div>' +
-      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">User ID:</span><b>RSGM-'+ME.id.slice(-6).toUpperCase()+'</b></div>' +
-      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Order No:</span><b style="color:var(--gold)">'+esc(dep.serialNo||'#D-772391')+'</b></div>' +
-      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Deposit Amount:</span><b style="color:var(--grn)">৳'+money(dep.amount)+'</b></div>' +
-      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Status:</span><b style="color:var(--gold)">Pending (Verification in progress)</b></div>' +
-      '</div>' +
-      '<div class="tdw" style="text-align:center">⏱️ <b id="depTimer">02:00</b> মিনিট পর ব্যালেন্সে যুক্ত হবে।</div>' +
-      '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM();vAcc()">OK, Go Back</button>');
-      
-      var seconds = 120;
-      var timerInterval = setInterval(function(){
-        seconds--;
-        var m = Math.floor(seconds / 60);
-        var s = seconds % 60;
-        var tEl = $('depTimer');
-        if(tEl) tEl.innerText = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
-        if(seconds <= 0) clearInterval(timerInterval);
-      }, 1000);
+  var ring = $('depRingProgress');
+  var btn = $('depConfirmBtn');
+  if(!ring || !btn) return;
+  btn.innerText = 'HOLDING TO CONFIRM...';
+  var progress = 0;
+  depHoldTimer = setInterval(function(){
+    progress += 5;
+    ring.style.boxShadow = '0 0 '+(progress/2)+'px #22c55e';
+    if(progress >= 100){
+      clearInterval(depHoldTimer);
+      executeDeposit(pkgName);
+    }
+  }, 70);
+}
 
-    }).catch(function(e){
-      toast(e.message);
-      btn.innerText = 'CONFIRM DEPOSIT';
-      btn.style.boxShadow = '0 0 20px rgba(56,189,248,0.7)';
-    });
-  }, 1200);
+function cancelDepHold(){
+  if(depHoldTimer){
+    clearInterval(depHoldTimer);
+    depHoldTimer = null;
+    var btn = $('depConfirmBtn');
+    if(btn) btn.innerText = 'PRESS & HOLD TO CONFIRM DEPOSIT';
+    var ring = $('depRingProgress');
+    if(ring) ring.style.boxShadow = 'none';
+  }
+}
+
+function executeDeposit(pkgName){
+  var txVal = $('dtx').value.trim();
+  api('deposit','POST',{method:window.currentDepMethod,amount:$('da').value,txid:txVal,lastDigits:$('dlast').value,pkgName:pkgName}).then(function(r){
+    if(r.activePkg) ME.activePkg = r.activePkg;
+    
+    var dep = r.depositDetails || {};
+    modal('<h3 style="color:var(--grn);text-align:center">✅ Deposit Successful!</h3>' +
+    '<div class="row" style="background:#0b1224;display:block;margin-bottom:10px">' +
+    '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Username:</span><b>'+esc(ME.name)+'</b></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">User ID:</span><b>RSGM-'+ME.id.slice(-6).toUpperCase()+'</b></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Order No:</span><b style="color:var(--gold)">'+esc(dep.serialNo||'#D-772391')+'</b></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Deposit Amount:</span><b style="color:var(--grn)">৳'+money(dep.amount)+'</b></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Status:</span><b style="color:var(--gold)">Pending (Verification in progress)</b></div>' +
+    '</div>' +
+    '<div class="tdw" style="text-align:center">⏱️ <b id="depTimer">02:00</b> মিনিট পর ব্যালেন্সে যুক্ত হবে।</div>' +
+    '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM();vAcc()">OK, Go Back</button>');
+    
+    var seconds = 120;
+    var timerInterval = setInterval(function(){
+      seconds--;
+      var m = Math.floor(seconds / 60);
+      var s = seconds % 60;
+      var tEl = $('depTimer');
+      if(tEl) tEl.innerText = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+      if(seconds <= 0) clearInterval(timerInterval);
+    }, 1000);
+
+  }).catch(function(e){
+    toast(e.message);
+  });
 }
 
 var DUA=[
