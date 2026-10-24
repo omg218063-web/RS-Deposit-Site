@@ -462,7 +462,6 @@ app.get('/api/leaderboard', auth, h(async (q, s) => {
   let baseEarn = 45000;
   let baseCoins = 150000;
   
-  // Random fluctuation factor based on current time for dynamic shifting
   const randomShift = Math.floor(Date.now() / 10000) % 7;
   
   for (let i = 0; i < 100; i++) {
@@ -860,6 +859,15 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .fr a{color:#7dd3fc;text-decoration:none}
 .fc{font-size:10.5px;color:#64748b;text-align:center;margin-top:12px;border-top:1px solid #1e293b;padding-top:10px}
 .img-upload-btn{display:flex;align-items:center;justify-content:center;gap:6px;background:#1e293b;border:1px dashed var(--gold);color:var(--gold);padding:10px;border-radius:10px;cursor:pointer;font-size:13px;margin-top:6px;font-weight:bold}
+
+/* bKash/Nagad Style Circular Hold Button */
+.hold-circle-container{position:relative;width:110px;height:110px;margin:16px auto 8px;display:flex;align-items:center;justify-content:center}
+.hold-circle-svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.hold-bg-circle{fill:none;stroke:#1e293b;stroke-width:8}
+.hold-progress-circle{fill:none;stroke:#22c55e;stroke-width:8;stroke-dasharray:301.59;stroke-dashoffset:301.59;transition:stroke-dashoffset 0.05s linear;stroke-linecap:round}
+.hold-btn-inner{position:relative;width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,#0284c7,#0369a1);border:none;color:#fff;font-size:12px;font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;box-shadow:0 0 20px rgba(2,132,199,0.5);text-align:center;padding:6px;touch-action:none}
+.hold-btn-inner:active{transform:scale(0.95)}
+.copy-btn-inline{background:var(--gold);color:#000;border:0;padding:3px 10px;border-radius:8px;font-weight:bold;font-size:11px;cursor:pointer;margin-left:6px;display:inline-block}
 </style></head><body>
 <div class="app">
 <div id="landing">
@@ -1345,8 +1353,53 @@ function openDepPopup(){
   });
 }
 
+/* Circular Hold Button Engine */
+var circularTimer = null;
+var currentProgress = 0;
+
+function startCircleHold(type, pkgName){
+  if(type === 'dep'){
+    var txVal = $('dtx').value.trim();
+    if(txVal.length < 10) { toast('TrxID কমপক্ষে ১০ অক্ষরের হতে হবে।'); return; }
+  } else if(type === 'wd'){
+    var wa = $('wa').value, wp = $('wp').value;
+    if(!wa || wa < 300) { toast('উইথড্র অ্যামাউন্ট কমপক্ষে ৩০০ টাকা হতে হবে।'); return; }
+    if(!/^01\d{9}$/.test(wp)) { toast('সঠিক ১১ ডিজিটের ফোন নাম্বার দিন।'); return; }
+  }
+
+  currentProgress = 0;
+  var circle = $('circleProgress');
+  var txt = $('circleBtnText');
+  if(txt) txt.innerText = 'HOLDING...';
+
+  circularTimer = setInterval(function(){
+    currentProgress += 5;
+    var offset = 301.59 - (301.59 * currentProgress / 100);
+    if(circle) circle.style.strokeDashoffset = offset;
+
+    if(currentProgress >= 100){
+      clearInterval(circularTimer);
+      circularTimer = null;
+      if(type === 'dep') executeDeposit(pkgName);
+      else if(type === 'wd') doWd();
+    }
+  }, 40);
+}
+
+function cancelCircleHold(){
+  if(circularTimer){
+    clearInterval(circularTimer);
+    circularTimer = null;
+  }
+  currentProgress = 0;
+  var circle = $('circleProgress');
+  if(circle) circle.style.strokeDashoffset = 301.59;
+  var txt = $('circleBtnText');
+  if(txt) txt.innerText = 'TAP & HOLD';
+}
+
 function wdForm(){
-  modal('<h3 style="color:var(--gold)">Withdraw Form (300 - 5000 BDT)</h3>' +
+  modal('<h3 style="color:var(--gold);text-align:center">Withdraw Form</h3>' +
   '<div class="row" style="background:#0b1224;display:block;margin-bottom:10px">' +
   '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Username:</span><b>'+esc(ME.name)+'</b></div>' +
   '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">User ID:</span><b>RSGM-'+ME.id.slice(-6).toUpperCase()+'</b></div>' +
@@ -1355,40 +1408,13 @@ function wdForm(){
   '<label>Select Method</label><select id="wm"><option value="bKash">bKash</option><option value="Nagad">Nagad</option></select>' +
   '<label>Withdraw Amount (BDT)</label><input id="wa" type="number" placeholder="300 - 5000">' +
   '<label>Account Number (11 Digits)</label><input id="wp" maxlength="11" placeholder="01XXXXXXXXX">' +
-  '<div style="position:relative;margin-top:12px">' +
-  '<div id="wdRingProgress" style="position:absolute;inset:0;border-radius:12px;border:3px solid transparent;border-top-color:var(--blu);pointer-events:none;transition:all 0.1s"></div>' +
-  '<button id="wdConfirmBtn" class="btn r" style="background:linear-gradient(90deg,#38bdf8,#0284c7);color:#fff;box-shadow:0 0 15px rgba(56,189,248,0.5);position:relative;z-index:2;user-select:none" onmousedown="startWdHold(event)" onttouchstart="startWdHold(event)" onmouseup="cancelWdHold()" ontouchend="cancelWdHold()">PRESS & HOLD TO CONFIRM</button>' +
+  
+  '<div class="hold-circle-container">' +
+  '<svg class="hold-circle-svg" viewBox="0 0 100 100"><circle class="hold-bg-circle" cx="50" cy="50" r="48"/><circle id="circleProgress" class="hold-progress-circle" cx="50" cy="50" r="48"/></svg>' +
+  '<div class="hold-btn-inner" onmousedown="startCircleHold(\\'wd\\')" ontouchstart="startCircleHold(\\'wd\\')" onmouseup="cancelCircleHold()" ontouchend="cancelCircleHold()"><span id="circleBtnText">TAP & HOLD</span><small style="font-size:8px;opacity:0.8">TO SUBMIT</small></div>' +
   '</div>' +
+  
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:6px" onclick="closeM()">Close</button>');
-}
-
-var wdHoldTimer = null;
-function startWdHold(e){
-  e.preventDefault();
-  var ring = $('wdRingProgress');
-  var btn = $('wdConfirmBtn');
-  if(!ring || !btn) return;
-  btn.innerText = 'HOLDING...';
-  var progress = 0;
-  wdHoldTimer = setInterval(function(){
-    progress += 5;
-    ring.style.boxShadow = '0 0 '+(progress/2)+'px #38bdf8';
-    if(progress >= 100){
-      clearInterval(wdHoldTimer);
-      doWd();
-    }
-  }, 70);
-}
-
-function cancelWdHold(){
-  if(wdHoldTimer){
-    clearInterval(wdHoldTimer);
-    wdHoldTimer = null;
-    var btn = $('wdConfirmBtn');
-    if(btn) btn.innerText = 'PRESS & HOLD TO CONFIRM';
-    var ring = $('wdRingProgress');
-    if(ring) ring.style.boxShadow = 'none';
-  }
 }
 
 function doWd(){
@@ -1407,16 +1433,18 @@ function depForm(presetAmount, pkgName){
   '</div>' +
   '<div style="display:flex;gap:10px;margin-bottom:10px">' +
   '<div id="payBkash" style="flex:1;background:#131d38;border:2px solid var(--gold);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\\'bKash\\')"><b style="color:#e11d48">bKash</b></div>' +
-  '<div id="payNagad" style="flex:1;background:#131d38;border:2px solid var(--line);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\\'nagad\\')"><b style="color:#f97316">Nagad</b></div>' +
+  '<div id="payNagad" style="flex:1;background:#131d38;border:2px solid var(--line);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\\'Nagad\\')"><b style="color:#f97316">Nagad</b></div>' +
   '</div>' +
-  '<div class="tdw" style="text-align:center"><b>Official Number:</b> <span style="color:var(--grn);cursor:pointer;text-decoration:underline" onclick="copyDepNum()">01951639460</span> (Click to Copy)<br><small>1. Send money to this number.<br>2. Enter TrxID below.</small></div>' +
+  '<div class="tdw" style="text-align:center"><b>Official Number:</b> <span style="color:var(--grn);font-weight:bold">01951639460</span> <button class="copy-btn-inline" onclick="copyDepNum()">Copy</button><br><small>1. Send money to this number.<br>2. Enter TrxID below.</small></div>' +
   '<label>Deposit Amount (৳)</label><input id="da" type="number" value="'+(presetAmount||'')+'" placeholder="200 - 15000">' +
   '<label>Transaction ID (TrxID)</label><input id="dtx" placeholder="Enter Transaction ID">' +
   '<label>Last 3 Digits</label><input id="dlast" maxlength="3" placeholder="123">' +
-  '<div style="position:relative;margin-top:12px">' +
-  '<div id="depRingProgress" style="position:absolute;inset:0;border-radius:12px;border:3px solid transparent;border-top-color:var(--grn);pointer-events:none;transition:all 0.1s"></div>' +
-  '<button id="depConfirmBtn" class="btn g" style="background:linear-gradient(90deg,#38bdf8,#0284c7);color:#fff;box-shadow:0 0 20px rgba(56,189,248,0.7);position:relative;z-index:2;user-select:none" onmousedown="startDepHold(event,\\''+(pkgName||'Custom Deposit')+'\\')" onttouchstart="startDepHold(event,\\''+(pkgName||'Custom Deposit')+'\\')" onmouseup="cancelDepHold()" ontouchend="cancelDepHold()">PRESS & HOLD TO CONFIRM DEPOSIT</button>' +
+  
+  '<div class="hold-circle-container">' +
+  '<svg class="hold-circle-svg" viewBox="0 0 100 100"><circle class="hold-bg-circle" cx="50" cy="50" r="48"/><circle id="circleProgress" class="hold-progress-circle" cx="50" cy="50" r="48"/></svg>' +
+  '<div class="hold-btn-inner" onmousedown="startCircleHold(\\'dep\\',\\''+(pkgName||'Custom Deposit')+'\\')" ontouchstart="startCircleHold(\\'dep\\',\\''+(pkgName||'Custom Deposit')+'\\')" onmouseup="cancelCircleHold()" ontouchend="cancelCircleHold()"><span id="circleBtnText">TAP & HOLD</span><small style="font-size:8px;opacity:0.8">TO SUBMIT</small></div>' +
   '</div>' +
+  
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:6px" onclick="closeM()">Close</button>');
 }
 
@@ -1433,38 +1461,6 @@ function setDepMethod(m){
   } else {
     $('payNagad').style.borderColor = 'var(--gold)';
     $('payBkash').style.borderColor = 'var(--line)';
-  }
-}
-
-var depHoldTimer = null;
-function startDepHold(e, pkgName){
-  e.preventDefault();
-  var txVal = $('dtx').value.trim();
-  if(txVal.length < 10) { toast('TrxID কমপক্ষে ১০ অক্ষরের হতে হবে।'); return; }
-  
-  var ring = $('depRingProgress');
-  var btn = $('depConfirmBtn');
-  if(!ring || !btn) return;
-  btn.innerText = 'HOLDING TO CONFIRM...';
-  var progress = 0;
-  depHoldTimer = setInterval(function(){
-    progress += 5;
-    ring.style.boxShadow = '0 0 '+(progress/2)+'px #22c55e';
-    if(progress >= 100){
-      clearInterval(depHoldTimer);
-      executeDeposit(pkgName);
-    }
-  }, 70);
-}
-
-function cancelDepHold(){
-  if(depHoldTimer){
-    clearInterval(depHoldTimer);
-    depHoldTimer = null;
-    var btn = $('depConfirmBtn');
-    if(btn) btn.innerText = 'PRESS & HOLD TO CONFIRM DEPOSIT';
-    var ring = $('depRingProgress');
-    if(ring) ring.style.boxShadow = 'none';
   }
 }
 
