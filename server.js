@@ -9,7 +9,6 @@ const SECRET = process.env.SECRET || crypto.randomBytes(32).toString('hex');
 const ADMIN_PASS = process.env.ADMIN_PASSWORD || '';
 const GID = process.env.GOOGLE_CLIENT_ID || '';
 
-// AdGem & CPAGrip Environment Variables
 const ADGEM_APP_ID = process.env.ADGEM_APP_ID || '';
 const ADGEM_POSTBACK_KEY = process.env.ADGEM_POSTBACK_KEY || '';
 
@@ -84,6 +83,7 @@ const UserPackage = mongoose.model('UserPackage', new mongoose.Schema({
   price: Number,
   coinsPerMin: Number,
   description: String,
+  pkgImage: { type: String, default: '' },
   hot: { type: Boolean, default: false },
   active: { type: Boolean, default: true }
 }));
@@ -216,7 +216,7 @@ app.get('/api/me', auth, h(async (q, s) => {
 
 app.post('/api/avatar', auth, h(async (q, s) => {
   const img = String((q.body || {}).img || '');
-  if (img.length > 500000) return bad(s, 'Photo is too large.');
+  if (img.length > 2000000) return bad(s, 'Photo is too large.');
   await User.updateOne({ _id: q.user.id }, { avatar: img });
   s.json({ av: img });
 }));
@@ -526,6 +526,21 @@ app.post('/api/support', auth, h(async (q, s) => {
   const text = String((q.body || {}).text || '').trim().slice(0, 500);
   if (!text) return bad(s, 'Write your message first.');
   await Msg.create({ uid: q.user.id, name: q.user.name, from: 'user', text });
+  
+  // Automatic Support AI Bot Response
+  let botReply = 'আপনার মেসেজটি আমরা পেয়েছি। আমাদের সাপোর্ট টিম শীঘ্রই এটি চেক করে আপনাকে সহযোগিতা করবে।';
+  const lower = text.toLowerCase();
+  if(lower.includes('ডিপোজিট') || lower.includes('deposit')) {
+    botReply = 'ডিপোজিট সমস্যার জন্য অনুগ্রহ করে সঠিক TrxID ও সঠিক লাস্ট ডিজিট প্রদান করুন। সাধারণত ১০-১৫ মিনিটের মধ্যে ডিপোজিট ব্যালেন্সে যুক্ত হয়।';
+  } else if(lower.includes('উইথড্র') || lower.includes('withdrawal') || lower.includes('টাকা পাব')) {
+    botReply = 'উইথড্র রিকোয়েস্ট করার পর ২৪ থেকে ৪৮ ঘণ্টার মধ্যে পেমেন্ট সফলভাবে সম্পন্ন করা হয়। অনুগ্রহ করে অপেক্ষা করুন।';
+  } else if(lower.includes('টাস্ক') || lower.includes('task')) {
+    botReply = 'টাস্ক সেকশন থেকে যেকোনো অফার বা টাস্ক সঠিকভাবে নিয়ম মেনে সম্পন্ন করলে ব্যালেন্সে রিওয়ার্ড যোগ হয়ে যাবে।';
+  } else if(lower.includes('গ্যালারি') || lower.includes('gallery')) {
+    botReply = 'আর এস গ্যালারি শপ (RS Gallery Shop) আমাদের অফিশিয়াল পার্টনার। এখানে আপনি ইনকামের টাকা দিয়ে খুব সহজেই সাশ্রয়ী মূল্যে সেরা পোশাক ও ফ্যাশন আইটেম অর্ডার করতে পারবেন!';
+  }
+  
+  await Msg.create({ uid: q.user.id, name: 'Support Bot', from: 'support', text: botReply });
   s.json({ ok: true });
 }));
 
@@ -534,9 +549,9 @@ app.get('/api/admin/user-packages', admin, h(async (q, s) => {
   s.json(await UserPackage.find({}));
 }));
 app.post('/api/admin/user-packages', admin, h(async (q, s) => {
-  const { title, price, coinsPerMin, description, hot } = q.body || {};
+  const { title, price, coinsPerMin, description, pkgImage, hot } = q.body || {};
   if (!price || !coinsPerMin) return bad(s, 'Price and coins per min are required.');
-  await UserPackage.create({ title: title || 'RS Coin Package', price: Number(price), coinsPerMin: Number(coinsPerMin), description: description || '', hot: !!hot });
+  await UserPackage.create({ title: title || 'RS Coin Package', price: Number(price), coinsPerMin: Number(coinsPerMin), description: description || '', pkgImage: pkgImage || '', hot: !!hot });
   s.json({ ok: true });
 }));
 app.post('/api/admin/user-packages/delete/:id', admin, h(async (q, s) => {
@@ -711,7 +726,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--gold)}
 .top{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#131d38,#0f172a)}
 .top .l{display:flex;align-items:center;gap:9px;min-width:0}.top b{font-size:14px}.bal{text-align:right;font-size:17px;font-weight:800;color:var(--grn)}.bal small{display:block;font-size:10px;color:var(--mu);font-weight:400}
 .av{width:40px;height:40px;border-radius:50%;border:2px solid var(--gold);background:#16213f;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;overflow:hidden;flex-shrink:0;box-shadow:0 0 10px rgba(251,191,36,.3)}
-.av img{width:100%;height:100%;object-fit:cover;display:block}
+.av img{width:100%;height:100%;object-fit:contain;display:block}
 nav{display:flex;gap:2px;padding:7px 3px 9px;background:#0b1224;box-shadow:0 10px 20px rgba(0,0,0,.6);position:relative;z-index:5}
 nav div{flex:1;text-align:center;font-size:9px;color:var(--mu);padding:6px 0;cursor:pointer;border-radius:11px;background:linear-gradient(180deg,#18244a,#0e1730)}
 nav div i{display:block;font-style:normal;font-size:14px;position:relative;width:22px;height:22px;line-height:22px;margin:0 auto}
@@ -758,8 +773,8 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .th{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
 .th .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:700}
 .gap{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-.hs{position:relative;height:200px;border-radius:24px;overflow:hidden;margin-bottom:10px;border:1px solid rgba(251,191,36,.45);cursor:pointer;background-size:cover;background-position:center}
-.sl{position:absolute;inset:0;padding:18px 16px;opacity:0;transform:scale(.96);transition:opacity .7s,transform .7s;display:flex;flex-direction:column;justify-content:center;pointer-events:none;background-size:cover;background-position:center}
+.hs{position:relative;height:200px;border-radius:24px;overflow:hidden;margin-bottom:10px;border:1px solid rgba(251,191,36,.45);cursor:pointer;background-size:contain;background-repeat:no-repeat;background-position:center}
+.sl{position:absolute;inset:0;padding:18px 16px;opacity:0;transform:scale(.96);transition:opacity .7s,transform .7s;display:flex;flex-direction:column;justify-content:center;pointer-events:none;background-size:contain;background-repeat:no-repeat;background-position:center}
 .sl.on{opacity:1;transform:none;pointer-events:auto}
 .sl .tag{display:inline-block;align-self:flex-start;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.5);color:#fde68a;margin-bottom:8px}
 .sl h4{font-size:18px;color:#fff;margin-bottom:6px;max-width:72%;text-shadow:0 2px 4px rgba(0,0,0,.8)}
@@ -985,9 +1000,9 @@ function toast(m){alert(m)}
 
 function avUp(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();
  r.onload=function(){var im=new Image();
-  im.onload=function(){var c=document.createElement('canvas');c.width=c.height=128;var x=c.getContext('2d'),m=Math.min(im.width,im.height);
-   x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,128,128);
-   api('avatar','POST',{img:c.toDataURL('image/jpeg',0.8)}).then(function(d){ME.av=d.av;head()}).catch(function(e){toast(e.message)})};
+  im.onload=function(){var c=document.createElement('canvas');c.width=c.height=128;var x=c.getContext('2d');
+   x.drawImage(im,0,0,128,128);
+   api('avatar','POST',{img:c.toDataURL('image/jpeg',0.9)}).then(function(d){ME.av=d.av;head()}).catch(function(e){toast(e.message)})};
   im.src=r.result};
  r.readAsDataURL(f);inp.value=''}
 
@@ -1022,7 +1037,7 @@ function vHome(){
     var timerSec = (sliders[0] && sliders[0].timerSeconds) ? (sliders[0].timerSeconds * 1000) : 6000;
     
     var sl = sliders.map(function(x,i){
-      var styleBg = x.bgImage ? 'background-image:linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.7)),url(\\''+esc(x.bgImage)+'\\');' : '';
+      var styleBg = x.bgImage ? 'background-image:linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.6)),url(\\''+esc(x.bgImage)+'\\');background-size:cover;' : '';
       return '<div class="sl '+x.bgClass+(i===0?' on':'')+'" style="'+styleBg+'" onclick="handleSlideClick(\\''+esc(x.link)+'\\')"><span class="tag">'+esc(x.subtitle)+'</span><h4>'+esc(x.title)+'</h4><p>'+esc(x.description)+'</p><span class="em">'+x.emoji+'</span></div>';
     }).join('');
     var dt = sliders.map(function(x,i){
@@ -1190,8 +1205,10 @@ function vPkg(){
     (isBought ? '<div class="row" style="border-color:var(--grn);margin-bottom:12px"><div><b>আপনার একটি প্যাকেজ সক্রিয় আছে!</b></div></div>' : '') +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
     (pkgs.length ? pkgs.map(function(x){
+      var imgTag = x.pkgImage ? '<img src="'+esc(x.pkgImage)+'" width="100%" height="90" style="object-fit:cover;border-radius:10px;margin-bottom:6px" alt="">' : '';
       return '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:2px solid '+(x.hot?'var(--red)':'rgba(251,191,36,0.4)')+';border-radius:16px;padding:12px;text-align:center;position:relative">' +
       (x.hot?'<div style="position:absolute;top:-8px;left:-8px;background:var(--red);color:#fff;font-size:9px;font-weight:bold;padding:2px 6px;border-radius:6px">🔥 HOT</div>':'') +
+      imgTag +
       '<b style="color:var(--gold);font-size:13px;display:block;margin-bottom:4px">'+esc(x.description)+'</b>' +
       '<div style="font-size:11px;color:var(--mu)">মূল্য: <b>'+x.price+' BDT</b></div>' +
       '<div style="font-size:12px;color:var(--grn);margin:4px 0 8px">মিনিটে: <b>'+formatCompact(x.coinsPerMin)+' RS Coins</b></div>' +
@@ -1260,27 +1277,33 @@ function sendS(){
 function vAcc(){
   if(window.SUP_TIMER) clearInterval(window.SUP_TIMER);
   var isEmp = ME.role === 'employer';
-  $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স, উইথড্র ও ডিপোজিট পেন্ডিং হিসাব।')+
+  $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স ও পপআপ হিস্ট্রি।')+
   '<div class="row"><div>'+esc(ME.name)+' ('+(isEmp?'Employer':'Worker')+')<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
   '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
   '<div style="display:flex;gap:8px"><button class="btn g" style="flex:1" onclick="depForm()">Deposit</button>'+(isEmp?'':'<button class="btn r" style="flex:1" onclick="wdForm()">Withdraw</button>')+'</div>'+
   
-  (isEmp?'':'<h3 style="margin-top:16px">Withdrawal History & Pending</h3><div id="wh">Loading...</div>')+
-  '<h3 style="margin-top:16px">Deposit History & Pending</h3><div id="dh">Loading...</div>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">' +
+  '<button class="btn" style="background:#1e293b;color:var(--gold);margin-top:0" onclick="openWdPopup()">💸 Withdrawal History</button>' +
+  '<button class="btn" style="background:#1e293b;color:var(--grn);margin-top:0" onclick="openDepPopup()">💳 Deposit History</button>' +
+  '</div>' +
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:16px" onclick="admOpen()">Admin panel</button>';
+}
 
-  if(!isEmp) api('withdrawals').then(function(a){
-    var el=$('wh');
-    if(el) el.innerHTML=a.length?a.map(function(w){
+function openWdPopup(){
+  api('withdrawals').then(function(a){
+    var content = a.length ? a.map(function(w){
       return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' BDT <span class="chip '+(w.status==='pending'?'pending':w.status)+'">'+w.status+'</span></div></div>';
-    }).join(''):'<div class="row">No withdrawals.</div>';
+    }).join('') : '<div class="row">No withdrawals.</div>';
+    modal('<h3 style="color:var(--gold)">💸 Withdrawal History & Pending</h3><div style="max-height:60vh;overflow-y:auto">'+content+'</div><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>');
   });
+}
 
+function openDepPopup(){
   api('deposits').then(function(a){
-    var el=$('dh');
-    if(el) el.innerHTML=a.length?a.map(function(d){
+    var content = a.length ? a.map(function(d){
       return '<div class="row"><div>'+esc(d.method)+' (Trx: ...'+esc(d.lastDigits)+')<small>'+new Date(d.at).toLocaleDateString()+'</small></div><div>'+money(d.amount)+' BDT <span class="chip '+(d.status==='pending'?'pending':d.status)+'">'+d.status+'</span></div></div>';
-    }).join(''):'<div class="row">No deposits.</div>';
+    }).join('') : '<div class="row">No deposits.</div>';
+    modal('<h3 style="color:var(--grn)">💳 Deposit History & Pending</h3><div style="max-height:60vh;overflow-y:auto">'+content+'</div><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>');
   });
 }
 
@@ -1359,6 +1382,10 @@ function aShopCtrl(){
       '<label>প্যাকেজ বিবরণ / নাম</label><input id="upDesc" placeholder="যেমন: Basic RS Coin Package">' +
       '<label>মূল্য (BDT)</label><input id="upPrice" type="number" placeholder="200">' +
       '<label>প্রতি মিনিটে কয়েন</label><input id="upCoins" type="number" placeholder="10">' +
+      '<label>প্যাকেজের ছবি আপলোড করুন (গ্যালারি বা প্লাস আইকন)</label>' +
+      '<input type="file" id="upFile" accept="image/*" style="display:none" onchange="uploadUserPkgImg(this)">' +
+      '<div class="img-upload-btn" onclick="$(\\'upFile\\').click()">➕ গ্যালারি থেকে ছবি যোগ করুন</div>' +
+      '<input id="upImgUrl" placeholder="বা সরাসরি ছবির URL" style="margin-top:6px">' +
       '<label>হট অফার (true/false)</label><input id="upHot" placeholder="false">' +
       '<button class="btn g" onclick="addUserPkg()">ইউজার প্যাকেজ যোগ করুন</button>' +
       '</div>' +
@@ -1384,6 +1411,16 @@ function aShopCtrl(){
   }).catch(aErr);
 }
 
+function uploadUserPkgImg(inp){
+  var f = inp.files[0]; if(!f) return;
+  var r = new FileReader();
+  r.onload = function(){
+    $('upImgUrl').value = r.result;
+    toast('প্যাকেজ ছবি যুক্ত হয়েছে!');
+  };
+  r.readAsDataURL(f);
+}
+
 function uploadPkgImg(inp){
   var f = inp.files[0]; if(!f) return;
   var r = new FileReader();
@@ -1402,7 +1439,7 @@ function aSliderCtrl(){
     '<label>উপ-শিরোনাম (Subtitle)</label><input id="slSub" placeholder="যেমন: নামাজ কি পড়েছেন?">' +
     '<label>বিবরণ (Description)</label><input id="slDesc" placeholder="বিস্তারিত লিখুন">' +
     '<label>কোলাবোরেশন বা এক্সটার্নাল লিংক (URL)</label><input id="slLink" placeholder="https://www.facebook.com/share/...">' +
-    '<label>গ্যালারি থেকে ব্যাকগ্রাউন্ড ব্যানার ছবি যোগ করুন</label>' +
+    '<label>গ্যালারি থেকে ব্যাকগ্রাউন্ড ব্যানার ছবি থিম যোগ করুন</label>' +
     '<input type="file" id="slFile" accept="image/*" style="display:none" onchange="uploadSliderImg(this)">' +
     '<div class="img-upload-btn" onclick="$(\\'slFile\\').click()">➕ প্লাস আইকন (গ্যালারি থেকে ছবি থিম সিলেক্ট করুন)</div>' +
     '<input id="slBgImg" placeholder="বা সরাসরি ছবি URL" style="margin-top:6px">' +
@@ -1446,6 +1483,7 @@ function addUserPkg(){
     description: $('upDesc').value,
     price: $('upPrice').value,
     coinsPerMin: $('upCoins').value,
+    pkgImage: $('upImgUrl').value,
     hot: $('upHot').value === 'true'
   }, ah()).then(() => { toast('ইউজার প্যাকেজ যোগ হয়েছে!'); aShopCtrl(); }).catch(aErr);
 }
