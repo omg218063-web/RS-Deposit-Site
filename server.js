@@ -59,7 +59,9 @@ const User = mongoose.model('User', new mongoose.Schema({
   refCode: { type: String, unique: true }, refBy: String,
   refEarn: { type: Number, default: 0 }, refCount: { type: Number, default: 0 },
   avatar: { type: String, default: '' },
-  lastDaily: { type: Number, default: 0 }, lastCheckin: String, lastSpin: { type: Number, default: 0 }, lastAdWatch: { type: Number, default: 0 }, lastSeen: Number, created: { type: Date, default: Date.now }
+  lastDaily: { type: Number, default: 0 }, lastCheckin: String, lastSpin: { type: Number, default: 0 }, lastAdWatch: { type: Number, default: 0 },
+  adRotateCount: { type: Number, default: 0 }, adCooldownUntil: { type: Number, default: 0 },
+  lastSeen: Number, created: { type: Date, default: Date.now }
 }));
 const Click = mongoose.model('Click', new mongoose.Schema({ uid: String, offerId: String, title: String, icon: String, bdt: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now }, doneAt: Number }));
 const Conv = mongoose.model('Conv', new mongoose.Schema({ key: { type: String, unique: true }, uid: String, tx: String, bdt: Number, status: String, at: { type: Date, default: Date.now } }));
@@ -120,7 +122,7 @@ const partners = () => [
   'RS Gallery Shop (Official Collaboration)'
 ].filter(Boolean);
 
-const me = u => ({ id: u._id, name: u.name, phone: u.phone || '', email: u.email || '', av: u.avatar || '', role: u.role || 'worker', balance: u.balance, earned: u.earned, rsCoins: u.rsCoins || 0, activePkg: u.activePkg || null, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, lastAdWatch: u.lastAdWatch || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS, ct: CO, pt: partners() });
+const me = u => ({ id: u._id, name: u.name, phone: u.phone || '', email: u.email || '', av: u.avatar || '', role: u.role || 'worker', balance: u.balance, earned: u.earned, rsCoins: u.rsCoins || 0, activePkg: u.activePkg || null, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, lastAdWatch: u.lastAdWatch || 0, adRotateCount: u.adRotateCount || 0, adCooldownUntil: u.adCooldownUntil || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS, ct: CO, pt: partners() });
 const bdtFor = usd => Math.round(usd * RATE * (usd > 1 ? 0.5 : 0.7) * 100) / 100;
 const expire = uid => Click.updateMany(Object.assign({ status: 'pending', at: { $lt: new Date(Date.now() - PENDING_HOURS * 36e5) } }, uid ? { uid } : {}), { status: 'expired' });
 
@@ -419,10 +421,30 @@ app.get('/api/employer/tasks', auth, h(async (q, s) => {
 
 app.post('/api/watch-ad', auth, h(async (q, s) => {
   const now = Date.now();
-  if (q.user.lastAdWatch && now - q.user.lastAdWatch < 30000) return bad(s, 'Please wait 30 seconds.');
+  let user = q.user;
+  
+  if (user.adCooldownUntil && now < user.adCooldownUntil) {
+    const remainMin = Math.ceil((user.adCooldownUntil - now) / 60000);
+    return bad(s, `আপনার ২০ মিনিটের বিরতি চলছে। আরও ${remainMin} মিনিট পর চেষ্টা করুন।`);
+  }
+
+  if (user.lastAdWatch && now - user.lastAdWatch < 10000) return bad(s, 'অনুগ্রহ করে ১০ সেকেন্ড অপেক্ষা করুন।');
+  
   const adReward = 0.50;
-  const u = await User.findOneAndUpdate({ _id: q.user.id }, { $set: { lastAdWatch: now }, $inc: { balance: adReward, earned: adReward } }, { new: true });
-  s.json({ reward: adReward, me: me(u) });
+  let newRotateCount = (user.adRotateCount || 0) + 1;
+  let cooldownUntil = 0;
+
+  if (newRotateCount >= 10) {
+    cooldownUntil = now + (20 * 60 * 1000); // ২০ মিনিট বিরতি
+    newRotateCount = 0;
+  }
+
+  const u = await User.findOneAndUpdate({ _id: user.id }, { 
+    $set: { lastAdWatch: now, adRotateCount: newRotateCount, adCooldownUntil: cooldownUntil }, 
+    $inc: { balance: adReward, earned: adReward } 
+  }, { new: true });
+
+  s.json({ reward: adReward, me: me(u), cooldown: cooldownUntil > 0 });
 }));
 
 app.get('/api/timewall', auth, (q, s) => s.json({ url: TW_URL ? TW_URL.replace(/\{uid\}/g, encodeURIComponent(q.user.id)) : '' }));
@@ -670,7 +692,6 @@ app.post('/api/admin/dep/:id', admin, h(async (q, s) => {
     dep.status = 'approved';
     await dep.save();
     
-    // Balance and Package Unlock Logic
     let coinsPerMin = 10;
     const a = dep.amount;
     if (a >= 3000) coinsPerMin = 300;
@@ -869,7 +890,11 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .fc{font-size:10.5px;color:#64748b;text-align:center;margin-top:12px;border-top:1px solid #1e293b;padding-top:10px}
 .img-upload-btn{display:flex;align-items:center;justify-content:center;gap:6px;background:#1e293b;border:1px dashed var(--gold);color:var(--gold);padding:10px;border-radius:10px;cursor:pointer;font-size:13px;margin-top:6px;font-weight:bold}
 
-/* Enhanced bKash/Nagad Style Circular Hold Button with Glow Animation */
+/* Premium Animated Ad Button */
+.premium-ad-btn{position:relative;width:100%;background:linear-gradient(135deg,#38bdf8,#22c55e,#fbbf24);background-size:200% 200%;color:#000;font-weight:800;font-size:15px;padding:14px;border:none;border-radius:16px;cursor:pointer;box-shadow:0 0 20px rgba(56,189,248,0.5);animation:premiumGlow 3s ease infinite;transition:transform 0.2s;text-align:center;margin-top:12px}
+.premium-ad-btn:active{transform:scale(0.97)}
+@keyframes premiumGlow{0%{background-position:0% 50%;box-shadow:0 0 15px rgba(56,189,248,0.4)}50%{background-position:100% 50%;box-shadow:0 0 30px rgba(34,197,94,0.8)}100%{background-position:0% 50%;box-shadow:0 0 15px rgba(56,189,248,0.4)}}
+
 .hold-circle-container{position:relative;width:120px;height:120px;margin:18px auto 8px;display:flex;align-items:center;justify-content:center}
 .hold-circle-svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
 .hold-bg-circle{fill:none;stroke:#1e293b;stroke-width:8}
@@ -1206,28 +1231,72 @@ function switchTaskSub(sub){
     return '<div class="row"'+(op?' style="cursor:pointer" onclick="showT('+i+')"':'')+'><div style="display:flex;gap:10px;align-items:center">'+(t.icon?'<img src="'+esc(t.icon)+'" width="38" height="38" style="border-radius:10px" alt="">':'')+'<div>'+esc(t.title)+'<small>Reward: '+money(t.bdt)+' BDT</small></div></div>'+b+'</div>'}).join(''):'<div class="row">এই মুহূর্তে কোনো টাস্ক নেই।</div>'}).catch(function(e){if($('tl'))$('tl').textContent=e.message})}
     loadOffers();
   } else {
-    c.innerHTML = '<div class="card" style="text-align:center;padding:24px"><span style="font-size:48px">📺</span><h3 style="color:var(--gold);margin-top:10px">Watch Ads & Earn Cash</h3><div class="sub">প্রতিটি অ্যাড সম্পূর্ণ দেখলে ইনস্ট্যান্ট ৳০.৫০ আপনার ব্যালেন্সে যোগ হবে।</div><div id="adTimerBox" style="font-size:14px;color:var(--mu);margin:14px 0">অ্যাড দেখতে নিচে ক্লিক করুন</div><button id="watchBtn" class="btn g" onclick="startWatchAd()">Watch Ad Now (+৳0.50)</button></div>';
+    var now = Date.now();
+    var cd = ME.adCooldownUntil || 0;
+    var isCooldown = cd > now;
+    var remainMin = isCooldown ? Math.ceil((cd - now) / 60000) : 0;
+
+    c.innerHTML = '<div class="card" style="text-align:center;padding:24px"><span style="font-size:48px">📺</span><h3 style="color:var(--gold);margin-top:10px">Watch Ads Rotation & Earn Cash</h3><div class="sub">১২টি ডাইরেক্ট লিংক রোটেশন সিস্টেম। প্রতিটি অ্যাড দেখায় ৳০.৫০ টাকা রিওয়ার্ড। ১০টি অ্যাড দেখার পর ২০ মিনিটের বিরতি!</div>' +
+    '<div id="adTimerBox" style="font-size:14px;color:var(--mu);margin:14px 0">' + (isCooldown ? '⚠️ ২০ মিনিটের বিরতি চলছে। আরও <b style="color:var(--gold)">' + remainMin + '</b> মিনিট বাকি।' : 'অ্যাড দেখার জন্য নিচের প্রিমিয়াম বাটনে ক্লিক করুন') + '</div>' +
+    '<button id="watchBtn" class="premium-ad-btn" ' + (isCooldown ? 'disabled style="opacity:0.5"' : '') + ' onclick="startWatchAdRotation()">🚀 Watch Ad & Earn ৳0.50</button></div>';
   }
 }
 
-function startWatchAd(){
-  var btn = $('watchBtn'); var box = $('adTimerBox');
+// Direct Links Rotation Array (12 Links provided)
+var directLinksRotation = [
+  "https://uplcm.com/4/12120000",
+  "https://uplcm.com/4/12120002",
+  "https://uplcm.com/4/12120003",
+  "https://uplcm.com/4/12120004",
+  "https://uplcm.com/4/12120005",
+  "https://uplcm.com/4/12120006",
+  "https://uplcm.com/4/12120007",
+  "https://uplcm.com/4/12120010",
+  "https://uplcm.com/4/12120015",
+  "https://uplcm.com/4/12120016",
+  "https://abscloud.org/1/4fa2774dcde43d897d7ba0fbadf5f92a",
+  "https://araplhn.org/4/9999763f279b0ac9fb6a3ee5bab67a4d"
+];
+
+function startWatchAdRotation(){
+  var btn = $('watchBtn'); 
+  var box = $('adTimerBox');
   if(!btn || !box) return;
-  btn.disabled = true; btn.style.opacity = '.5';
+  btn.disabled = true; 
+  btn.style.opacity = '.5';
+
   var sec = 10;
-  box.innerHTML = 'অ্যাড চলছে... অনুগ্রহ করে <b style="color:var(--gold)">'+sec+'</b> সেকেন্ড অপেক্ষা করুন';
+  box.innerHTML = 'অ্যাড লোড হচ্ছে... অনুগ্রহ করে <b style="color:var(--gold)">'+sec+'</b> সেকেন্ড অপেক্ষা করুন';
+
+  // Get link based on rotation index
+  var linkIndex = (ME.adRotateCount || 0) % directLinksRotation.length;
+  var targetUrl = directLinksRotation[linkIndex];
+
   var int = setInterval(function(){
     sec--;
-    if(sec > 0){ box.innerHTML = 'অ্যাড চলছে... অনুগ্রহ করে <b style="color:var(--gold)">'+sec+'</b> সেকেন্ড অপেক্ষা করুন'; }
-    else {
+    if(sec > 0){ 
+      box.innerHTML = 'অ্যাড কাউন্টডাউন... অনুগ্রহ করে <b style="color:var(--gold)">'+sec+'</b> সেকেন্ড অপেক্ষা করুন'; 
+    } else {
       clearInterval(int);
+      
+      // Open the rotated direct link
+      var w = window.open(targetUrl, '_blank');
+      if(!w) location.href = targetUrl;
+
       api('watch-ad', 'POST').then(function(r){
         ME = r.me; head();
-        box.innerHTML = '<span style="color:var(--grn);font-weight:bold">🎉 সফল! আপনি ০.৫০ টাকা অর্জন করেছেন।</span>';
-        btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Watch Another Ad';
+        if(r.cooldown){
+          box.innerHTML = '<span style="color:var(--red);font-weight:bold">১০টি অ্যাড দেখা সম্পন্ন! ২০ মিনিটের বিরতি শুরু হয়েছে।</span>';
+        } else {
+          box.innerHTML = '<span style="color:var(--grn);font-weight:bold">🎉 সফল! আপনি ০.৫০ টাকা অর্জন করেছেন। (আজকের অ্যাড কাউন্ট: '+(ME.adRotateCount)+'/10)</span>';
+          btn.disabled = false; 
+          btn.style.opacity = '1'; 
+          btn.textContent = 'Watch Next Ad (Rotation)';
+        }
       }).catch(function(e){
         box.innerHTML = '<span style="color:var(--red)">'+e.message+'</span>';
-        btn.disabled = false; btn.style.opacity = '1';
+        btn.disabled = false; 
+        btn.style.opacity = '1';
       });
     }
   }, 1000);
@@ -1377,7 +1446,6 @@ function openDepPopup(){
   });
 }
 
-/* Circular Hold Button Engine */
 var circularTimer = null;
 var currentProgress = 0;
 
