@@ -1334,7 +1334,6 @@ function vAcc(){
 function renderLiveFeed(feed){
   var c = $('liveFeedContainer');
   if(!c) return;
-  // Rotate items dynamically every 2 seconds for live effect
   var shifted = feed.concat(feed.splice(0, Math.floor(Math.random() * feed.length)));
   c.innerHTML = shifted.map(function(f){
     var badgeColor = f.type === 'dep' ? 'var(--grn)' : (f.type === 'wd' ? 'var(--red)' : (f.type === 'shop' ? 'var(--gold)' : 'var(--blu)'));
@@ -1771,5 +1770,5 @@ document.addEventListener('DOMContentLoaded',function(){$('logoL').innerHTML=log
  if(T)api('me').then(enter).catch(function(){$('landing').style.display='block'});else $('landing').style.display='block'});
 </script></body></html>`;
 
-app.get('/', (req, res) => res.sendPAGE.replace('__GID__', GID.replace(/[^\w.\-]/g, '')).replace(/__AGE__/g, String(MIN_AGE | 0)));
+app.get('/', (req, res) => res.send(PAGE.replace('__GID__', GID.replace(/[^\w.\-]/g, '')).replace(/__AGE__/g, String(MIN_AGE | 0))));
 app.listen(PORT, () => console.log('Server is running on port ' + PORT));
