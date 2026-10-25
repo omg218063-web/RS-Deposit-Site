@@ -486,10 +486,10 @@ app.post('/api/withdraw', auth, h(async (q, s) => {
   const a = Math.floor(+amount);
   if (!(a >= MIN_WD && a <= MAX_WD)) return bad(s, 'Withdraw amount must be between ' + MIN_WD + ' and ' + MAX_WD + '.');
   if (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
-  if (!/^01\d{9}$/.test(String(phone || ''))) return bad(s, 'Enter a valid 11-digit number.');
+  if (!phone || String(phone).trim().length < 11) return bad(s, 'Enter a valid phone number.');
   const r = await User.findOneAndUpdate({ _id: q.user.id, balance: { $gte: a } }, { $inc: { balance: -a } }, { new: true });
   if (!r) return bad(s, 'Not enough balance.');
-  await Wd.create({ uid: q.user.id, name: q.user.name, amount: a, method, phone });
+  await Wd.create({ uid: q.user.id, name: q.user.name, amount: a, method, phone: String(phone).trim() });
   s.json(me(r));
 }));
 
@@ -504,25 +504,9 @@ app.post('/api/deposit', auth, h(async (q, s) => {
   if (!lastDigits || String(lastDigits).trim().length !== 3) return bad(s, 'Please provide the last 3 digits of TrxID.');
   const lDigits = String(lastDigits).trim();
   const serialNo = '#D-' + Math.floor(100000 + Math.random() * 900000);
-  
-  let pkgData = null;
-  if (pkgName && pkgName !== 'Custom Deposit') {
-    let coinsPerMin = 10;
-    if (a >= 3000) coinsPerMin = 300;
-    else if (a >= 2500) coinsPerMin = 220;
-    else if (a >= 2000) coinsPerMin = 160;
-    else if (a >= 1500) coinsPerMin = 110;
-    else if (a >= 1200) coinsPerMin = 80;
-    else if (a >= 800) coinsPerMin = 50;
-    else if (a >= 500) coinsPerMin = 25;
-    else if (a >= 200) coinsPerMin = 10;
-
-    pkgData = { name: pkgName, amount: a, coinsPerMin, startedAt: Date.now(), lastClaim: Date.now(), expiresAt: Date.now() + (30 * 86400000) };
-    await User.updateOne({ _id: q.user.id }, { $set: { activePkg: pkgData } });
-  }
 
   const newDep = await Deposit.create({ uid: q.user.id, name: q.user.name, amount: a, method, txid: txid.trim(), lastDigits: lDigits, pkgName: pkgName || 'Custom Deposit', serialNo });
-  s.json({ ok: true, serialNo, time: new Date().toLocaleString(), balance: q.user.balance, depositDetails: newDep, activePkg: pkgData });
+  s.json({ ok: true, serialNo, time: new Date().toLocaleString(), balance: q.user.balance, depositDetails: newDep });
 }));
 
 app.get('/api/deposits', auth, h(async (q, s) => s.json(await Deposit.find({ uid: q.user.id }).sort({ at: -1 }).limit(30))));
@@ -679,8 +663,42 @@ app.post('/api/admin/wd/:id', admin, h(async (q, s) => {
 }));
 
 app.post('/api/admin/dep/:id', admin, h(async (q, s) => {
-  const x = await Deposit.findOneAndUpdate({ _id: q.params.id, status: 'pending' }, { status: q.body.ok ? 'approved' : 'rejected' });
-  if (x && q.body.ok) await User.updateOne({ _id: x.uid }, { $inc: { balance: x.amount, earned: x.amount } });
+  const dep = await Deposit.findOne({ _id: q.params.id, status: 'pending' });
+  if (!dep) return bad(s, 'Deposit not found or already processed.');
+  
+  if (q.body.ok) {
+    dep.status = 'approved';
+    await dep.save();
+    
+    // Balance and Package Unlock Logic
+    let coinsPerMin = 10;
+    const a = dep.amount;
+    if (a >= 3000) coinsPerMin = 300;
+    else if (a >= 2500) coinsPerMin = 220;
+    else if (a >= 2000) coinsPerMin = 160;
+    else if (a >= 1500) coinsPerMin = 110;
+    else if (a >= 1200) coinsPerMin = 80;
+    else if (a >= 800) coinsPerMin = 50;
+    else if (a >= 500) coinsPerMin = 25;
+    else if (a >= 200) coinsPerMin = 10;
+
+    const pkgData = { 
+      name: dep.pkgName || 'RS Coin Package', 
+      amount: a, 
+      coinsPerMin, 
+      startedAt: Date.now(), 
+      lastClaim: Date.now(), 
+      expiresAt: Date.now() + (30 * 86400000) 
+    };
+
+    await User.updateOne({ _id: dep.uid }, { 
+      $inc: { balance: a, earned: a },
+      $set: { activePkg: pkgData } 
+    });
+  } else {
+    dep.status = 'rejected';
+    await dep.save();
+  }
   s.json({ ok: true });
 }));
 
@@ -1372,7 +1390,7 @@ function startCircleHold(type, pkgName){
   } else if(type === 'wd'){
     var wa = $('wa').value, wp = $('wp').value;
     if(!wa || wa < 300) { toast('উইথড্র অ্যামাউন্ট কমপক্ষে ৩০০ টাকা হতে হবে।'); return; }
-    if(!/^01\d{9}$/.test(wp)) { toast('সঠিক ১১ ডিজিটের ফোন নাম্বার দিন।'); return; }
+    if(!wp || wp.length < 11) { toast('সঠিক ফোন নাম্বার দিন।'); return; }
   }
 
   currentProgress = 0;
@@ -1415,7 +1433,7 @@ function wdForm(){
   '</div>' +
   '<label>Select Method</label><select id="wm"><option value="bKash">bKash</option><option value="Nagad">Nagad</option></select>' +
   '<label>Withdraw Amount (BDT)</label><input id="wa" type="number" placeholder="300 - 5000">' +
-  '<label>Account Number (11 Digits)</label><input id="wp" maxlength="11" placeholder="01XXXXXXXXX">' +
+  '<label>Account Number</label><input id="wp" placeholder="01XXXXXXXXX">' +
   
   '<div class="hold-circle-container">' +
   '<svg class="hold-circle-svg" viewBox="0 0 100 100"><defs><linearGradient id="circleGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#22c55e"/></linearGradient></defs><circle class="hold-bg-circle" cx="50" cy="50" r="48"/><circle id="circleProgress" class="hold-progress-circle" cx="50" cy="50" r="48"/></svg>' +
@@ -1476,8 +1494,6 @@ function executeDeposit(pkgName){
   var txVal = $('dtx').value.trim();
   var lastDig = $('dlast').value.trim();
   api('deposit','POST',{method:window.currentDepMethod,amount:$('da').value,txid:txVal,lastDigits:lastDig,pkgName:pkgName}).then(function(r){
-    if(r.activePkg) ME.activePkg = r.activePkg;
-    
     var dep = r.depositDetails || {};
     modal('<h3 style="color:var(--grn);text-align:center">✅ Deposit Successful!</h3>' +
     '<div class="row" style="background:#0b1224;display:block;margin-bottom:10px">' +
@@ -1487,19 +1503,8 @@ function executeDeposit(pkgName){
     '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Deposit Amount:</span><b style="color:var(--grn)">৳'+money(dep.amount)+'</b></div>' +
     '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Status:</span><b style="color:var(--gold)">Pending (Verification in progress)</b></div>' +
     '</div>' +
-    '<div class="tdw" style="text-align:center">⏱️ <b id="depTimer">02:00</b> মিনিট পর ব্যালেন্সে যুক্ত হবে।</div>' +
+    '<div class="tdw" style="text-align:center">⏱️ এডমিন অনুমোদন করলে প্যাকেজ ও ব্যালেন্স যুক্ত হবে।</div>' +
     '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM();vAcc()">OK, Go Back</button>');
-    
-    var seconds = 120;
-    var timerInterval = setInterval(function(){
-      seconds--;
-      var m = Math.floor(seconds / 60);
-      var s = seconds % 60;
-      var tEl = $('depTimer');
-      if(tEl) tEl.innerText = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
-      if(seconds <= 0) clearInterval(timerInterval);
-    }, 1000);
-
   }).catch(function(e){
     toast(e.message);
   });
@@ -1587,20 +1592,21 @@ function decDep(i,ok){var d=AD.deps[i];api('admin/dep/'+d._id,'POST',{ok:!!ok},a
 function aDep(){
   api('admin/dep-list','GET',null,ah()).then(function(d){
     AD.deps = d.pending;
-    $('abody').innerHTML = '<h3>অপেক্ষমাণ ডিপোজিট (Real-time & Copy)</h3>' +
+    $('abody').innerHTML = '<h3>অপেক্ষমাণ ডিপোজিট ও প্যাকেজ রিকোয়েস্ট (Real-time & Copy)</h3>' +
     (d.pending.length ? d.pending.map(function(dep, i){
       var timeStr = new Date(dep.at).toLocaleTimeString();
       return '<div class="th">' +
       '<div class="hd"><span>'+esc(dep.name)+'</span><span style="color:var(--gold)">৳'+money(dep.amount)+'</span></div>' +
       '<div style="font-size:13px">' +
       'Method: <b>'+esc(dep.method)+'</b><br>' +
+      'Package/Type: <b style="color:var(--grn)">'+esc(dep.pkgName || 'Custom Deposit')+'</b><br>' +
       'TrxID: <b id="depTrx'+i+'">'+esc(dep.txid)+'</b> <button class="admin-copy-btn" onclick="copyAdminText(\\'depTrx'+i+'\\')">Copy Trx</button><br>' +
       'Last 3 Digits: <b>'+esc(dep.lastDigits)+'</b><br>' +
       '<small style="color:var(--mu)">সময়: '+timeStr+' | Order: '+esc(dep.serialNo)+'</small>' +
       '</div>' +
-      '<div class="gap"><button class="btn s g" onclick="decDep('+i+',1)">Approve</button><button class="btn s r" onclick="decDep('+i+',0)">Reject</button></div>' +
+      '<div class="gap"><button class="btn s g" onclick="decDep('+i+',1)">Approve & Unlock</button><button class="btn s r" onclick="decDep('+i+',0)">Reject</button></div>' +
       '</div>';
-    }).join('') : '<div class="row">কোনো পেন্ডিং ডিপোজিট নেই।</div>');
+    }).join('') : '<div class="row">কোনো পেন্ডিং ডিপোজিট বা প্যাকেজ নেই।</div>');
   }).catch(aErr);
 }
 
