@@ -501,7 +501,8 @@ app.post('/api/deposit', auth, h(async (q, s) => {
   if (!(a >= 200 && a <= 15000)) return bad(s, 'Deposit amount must be between 200 and 15000 BDT.');
   if (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
   if (!txid || txid.trim().length < 10) return bad(s, 'Transaction ID must be at least 10 characters.');
-  const lDigits = lastDigits || txid.slice(-3);
+  if (!lastDigits || String(lastDigits).trim().length !== 3) return bad(s, 'Please provide the last 3 digits of TrxID.');
+  const lDigits = String(lastDigits).trim();
   const serialNo = '#D-' + Math.floor(100000 + Math.random() * 900000);
   
   let pkgData = null;
@@ -527,25 +528,15 @@ app.post('/api/deposit', auth, h(async (q, s) => {
 app.get('/api/deposits', auth, h(async (q, s) => s.json(await Deposit.find({ uid: q.user.id }).sort({ at: -1 }).limit(30))));
 
 app.get('/api/global-feed', auth, h(async (q, s) => {
-  const names = ['Tanvir Ahmed', 'Rakibul Islam', 'Sumaiya Akter', 'Farhan Hossain', 'Nusrat Jahan', 'Mehedi Hasan', 'Ayesha Siddika', 'Imran Khan', 'Nazmul Huda', 'Al-Amin'];
-  const actions = [
-    'bKash-এ ৳500 ডিপোজিট সফল হয়েছে',
-    'Nagad-এ ৳1,000 উত্তোলন করেছেন',
-    'রেফারেল বোনাস হিসেবে ৳10 পেয়েছেন',
-    'আর এস গ্যালারি শপ থেকে ৳850 দিয়ে শার্ট অর্ডার করেছেন',
-    'প্রিমিয়াম RS Coin Package (৳1,500) কিনেছেন',
-    'ডেইলি লগইন বোনাস ৳2 সংগ্রহ করেছেন'
+  const feedItems = [
+    { name: 'Tanvir Ahmed', action: 'bKash-এ ৳500 ডিপোজিট সফল হয়েছে', type: 'dep', time: 'মাত্রই' },
+    { name: 'Rakibul Islam', action: 'Nagad-এ ৳1,000 উত্তোলন করেছেন', type: 'wd', time: '১ মিনিট আগে' },
+    { name: 'Sumaiya Akter', action: 'আর এস গ্যালারি শপ থেকে ৳850 দিয়ে শার্ট অর্ডার করেছেন', type: 'shop', time: '২ মিনিট আগে' },
+    { name: 'Farhan Hossain', action: 'রেফারেল বোনাস হিসেবে ৳10 পেয়েছেন', type: 'bonus', time: '৩ মিনিট আগে' },
+    { name: 'Nusrat Jahan', action: 'প্রিমিয়াম RS Coin Package (৳1,500) কিনেছেন', type: 'shop', time: '৪ মিনিট আগে' },
+    { name: 'Mehedi Hasan', action: 'bKash-এ ৳1,200 ডিপোজিট সফল হয়েছে', type: 'dep', time: '৫ মিনিট আগে' }
   ];
-  
-  const now = Date.now();
-  let fakeFeed = [];
-  for(let i=0; i<6; i++){
-    let rndName = names[(i + Math.floor(now/15000)) % names.length];
-    let rndAct = actions[(i + Math.floor(now/10000)) % actions.length];
-    let timeAgo = (i * 3 + 2) + ' মিনিট আগে';
-    fakeFeed.push({ name: rndName, action: rndAct, time: timeAgo });
-  }
-  s.json(fakeFeed);
+  s.json(feedItems);
 }));
 
 app.get('/api/support', auth, h(async (q, s) => s.json(await Msg.find({ uid: q.user.id }).sort({ at: 1 }).limit(100))));
@@ -860,14 +851,16 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .fc{font-size:10.5px;color:#64748b;text-align:center;margin-top:12px;border-top:1px solid #1e293b;padding-top:10px}
 .img-upload-btn{display:flex;align-items:center;justify-content:center;gap:6px;background:#1e293b;border:1px dashed var(--gold);color:var(--gold);padding:10px;border-radius:10px;cursor:pointer;font-size:13px;margin-top:6px;font-weight:bold}
 
-/* bKash/Nagad Style Circular Hold Button */
-.hold-circle-container{position:relative;width:110px;height:110px;margin:16px auto 8px;display:flex;align-items:center;justify-content:center}
+/* Enhanced bKash/Nagad Style Circular Hold Button with Glow Animation */
+.hold-circle-container{position:relative;width:120px;height:120px;margin:18px auto 8px;display:flex;align-items:center;justify-content:center}
 .hold-circle-svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
 .hold-bg-circle{fill:none;stroke:#1e293b;stroke-width:8}
-.hold-progress-circle{fill:none;stroke:#22c55e;stroke-width:8;stroke-dasharray:301.59;stroke-dashoffset:301.59;transition:stroke-dashoffset 0.05s linear;stroke-linecap:round}
-.hold-btn-inner{position:relative;width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,#0284c7,#0369a1);border:none;color:#fff;font-size:12px;font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;box-shadow:0 0 20px rgba(2,132,199,0.5);text-align:center;padding:6px;touch-action:none}
-.hold-btn-inner:active{transform:scale(0.95)}
-.copy-btn-inline{background:var(--gold);color:#000;border:0;padding:3px 10px;border-radius:8px;font-weight:bold;font-size:11px;cursor:pointer;margin-left:6px;display:inline-block}
+.hold-progress-circle{fill:none;stroke:url(#circleGrad);stroke-width:9;stroke-dasharray:301.59;stroke-dashoffset:301.59;transition:stroke-dashoffset 0.04s linear;stroke-linecap:round}
+.hold-btn-inner{position:relative;width:96px;height:96px;border-radius:50%;background:radial-gradient(circle,#0284c7,#0369a1);border:2px solid rgba(251,191,36,0.5);color:#fff;font-size:11.5px;font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;box-shadow:0 0 25px rgba(56,189,248,0.6);text-align:center;padding:4px;touch-action:none;animation:pulseGlow 2s infinite}
+.hold-btn-inner:active{transform:scale(0.94)}
+@keyframes pulseGlow{0%{box-shadow:0 0 15px rgba(56,189,248,0.4)}50%{box-shadow:0 0 30px rgba(34,197,94,0.8)}100%{box-shadow:0 0 15px rgba(56,189,248,0.4)}}
+.copy-btn-inline{background:var(--gold);color:#000;border:0;padding:4px 12px;border-radius:8px;font-weight:bold;font-size:11px;cursor:pointer;margin-left:6px;display:inline-block}
+.admin-copy-btn{background:#1e293b;color:var(--gold);border:1px solid var(--gold);padding:3px 8px;border-radius:6px;font-size:10px;cursor:pointer;margin-left:6px}
 </style></head><body>
 <div class="app">
 <div id="landing">
@@ -1308,31 +1301,45 @@ function sendS(){
   api('support','POST',{text:txt}).then(function(){$('st').value='';loadSupportMsgs()}).catch(function(e){toast(e.message)})
 }
 
+var globalFeedInterval = null;
 function vAcc(){
   if(window.SUP_TIMER) clearInterval(window.SUP_TIMER);
+  if(globalFeedInterval) clearInterval(globalFeedInterval);
   var isEmp = ME.role === 'employer';
   
   api('global-feed').then(function(feed){
-    var feedHtml = feed.map(function(f){
-      return '<div style="font-size:11.5px;color:var(--mu);padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between"><span><b>'+esc(f.name)+'</b> '+esc(f.action)+'</span><span style="color:var(--gold);font-size:10px">'+esc(f.time)+'</span></div>';
-    }).join('');
-
-    $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স ও পপআপ হিস্ট্রি।')+
-    '<div class="row"><div>'+esc(ME.name)+' ('+(isEmp?'Employer':'Worker')+')<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
-    '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
-    '<div style="display:flex;gap:8px"><button class="btn g" style="flex:1" onclick="depForm()">Deposit</button>'+(isEmp?'':'<button class="btn r" style="flex:1" onclick="wdForm()">Withdraw</button>')+'</div>'+
-    
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">' +
-    '<button class="btn" style="background:#1e293b;color:var(--gold);margin-top:0" onclick="openWdPopup()">💸 Withdrawal History</button>' +
-    '<button class="btn" style="background:#1e293b;color:var(--grn);margin-top:0" onclick="openDepPopup()">💳 Deposit History</button>' +
-    '</div>' +
-    '<button class="btn" style="background:#1e293b;color:#fff;margin-top:16px" onclick="admOpen()">Admin panel</button>' +
-    
-    '<div class="card" style="margin-top:16px;border-color:rgba(56,189,248,0.3)">' +
-    '<h3 style="color:var(--blu);margin-bottom:8px">🌐 Live Global Transactions & RS Gallery Activity</h3>' +
-    '<div style="max-height:160px;overflow-y:auto">'+feedHtml+'</div>' +
-    '</div>';
+    renderLiveFeed(feed);
+    globalFeedInterval = setInterval(function(){
+      api('global-feed').then(renderLiveFeed).catch(function(){});
+    }, 2000);
   }).catch(function(){});
+
+  $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স ও পপআপ হিস্ট্রি।')+
+  '<div class="row"><div>'+esc(ME.name)+' ('+(isEmp?'Employer':'Worker')+')<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
+  '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
+  '<div style="display:flex;gap:8px"><button class="btn g" style="flex:1" onclick="depForm()">Deposit</button>'+(isEmp?'':'<button class="btn r" style="flex:1" onclick="wdForm()">Withdraw</button>')+'</div>'+
+  
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">' +
+  '<button class="btn" style="background:#1e293b;color:var(--gold);margin-top:0" onclick="openWdPopup()">💸 Withdrawal History</button>' +
+  '<button class="btn" style="background:#1e293b;color:var(--grn);margin-top:0" onclick="openDepPopup()">💳 Deposit History</button>' +
+  '</div>' +
+  '<button class="btn" style="background:#1e293b;color:#fff;margin-top:16px" onclick="admOpen()">Admin panel</button>' +
+  
+  '<div class="card" style="margin-top:16px;border-color:rgba(56,189,248,0.3)">' +
+  '<h3 style="color:var(--blu);margin-bottom:8px">🌐 Live Global Transactions & RS Gallery Activity</h3>' +
+  '<div id="liveFeedContainer" style="max-height:160px;overflow-y:auto">Loading live feed...</div>' +
+  '</div>';
+}
+
+function renderLiveFeed(feed){
+  var c = $('liveFeedContainer');
+  if(!c) return;
+  // Rotate items dynamically every 2 seconds for live effect
+  var shifted = feed.concat(feed.splice(0, Math.floor(Math.random() * feed.length)));
+  c.innerHTML = shifted.map(function(f){
+    var badgeColor = f.type === 'dep' ? 'var(--grn)' : (f.type === 'wd' ? 'var(--red)' : (f.type === 'shop' ? 'var(--gold)' : 'var(--blu)'));
+    return '<div style="font-size:11.5px;color:var(--mu);padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between;align-items:center"><span><b style="color:'+badgeColor+'">●</b> <b>'+esc(f.name)+'</b> '+esc(f.action)+'</span><span style="color:var(--gold);font-size:10px">'+esc(f.time)+'</span></div>';
+  }).join('');
 }
 
 function openWdPopup(){
@@ -1360,7 +1367,9 @@ var currentProgress = 0;
 function startCircleHold(type, pkgName){
   if(type === 'dep'){
     var txVal = $('dtx').value.trim();
+    var lastDig = $('dlast').value.trim();
     if(txVal.length < 10) { toast('TrxID কমপক্ষে ১০ অক্ষরের হতে হবে।'); return; }
+    if(lastDig.length !== 3) { toast('সঠিকভাবে ট্রানজেকশনের শেষের ৩ ডিজিট দিন।'); return; }
   } else if(type === 'wd'){
     var wa = $('wa').value, wp = $('wp').value;
     if(!wa || wa < 300) { toast('উইথড্র অ্যামাউন্ট কমপক্ষে ৩০০ টাকা হতে হবে।'); return; }
@@ -1373,7 +1382,7 @@ function startCircleHold(type, pkgName){
   if(txt) txt.innerText = 'HOLDING...';
 
   circularTimer = setInterval(function(){
-    currentProgress += 5;
+    currentProgress += 4;
     var offset = 301.59 - (301.59 * currentProgress / 100);
     if(circle) circle.style.strokeDashoffset = offset;
 
@@ -1383,7 +1392,7 @@ function startCircleHold(type, pkgName){
       if(type === 'dep') executeDeposit(pkgName);
       else if(type === 'wd') doWd();
     }
-  }, 40);
+  }, 35);
 }
 
 function cancelCircleHold(){
@@ -1410,8 +1419,8 @@ function wdForm(){
   '<label>Account Number (11 Digits)</label><input id="wp" maxlength="11" placeholder="01XXXXXXXXX">' +
   
   '<div class="hold-circle-container">' +
-  '<svg class="hold-circle-svg" viewBox="0 0 100 100"><circle class="hold-bg-circle" cx="50" cy="50" r="48"/><circle id="circleProgress" class="hold-progress-circle" cx="50" cy="50" r="48"/></svg>' +
-  '<div class="hold-btn-inner" onmousedown="startCircleHold(\\'wd\\')" ontouchstart="startCircleHold(\\'wd\\')" onmouseup="cancelCircleHold()" ontouchend="cancelCircleHold()"><span id="circleBtnText">TAP & HOLD</span><small style="font-size:8px;opacity:0.8">TO SUBMIT</small></div>' +
+  '<svg class="hold-circle-svg" viewBox="0 0 100 100"><defs><linearGradient id="circleGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#22c55e"/></linearGradient></defs><circle class="hold-bg-circle" cx="50" cy="50" r="48"/><circle id="circleProgress" class="hold-progress-circle" cx="50" cy="50" r="48"/></svg>' +
+  '<div class="hold-btn-inner" onmousedown="startCircleHold(\\'wd\\')" ontouchstart="startCircleHold(\\'wd\\')" onmouseup="cancelCircleHold()" ontouchend="cancelCircleHold()"><span id="circleBtnText">TAP & HOLD</span><small style="font-size:7px;opacity:0.9">TO SUBMIT</small></div>' +
   '</div>' +
   
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:6px" onclick="closeM()">Close</button>');
@@ -1435,14 +1444,14 @@ function depForm(presetAmount, pkgName){
   '<div id="payBkash" style="flex:1;background:#131d38;border:2px solid var(--gold);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\\'bKash\\')"><b style="color:#e11d48">bKash</b></div>' +
   '<div id="payNagad" style="flex:1;background:#131d38;border:2px solid var(--line);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\\'Nagad\\')"><b style="color:#f97316">Nagad</b></div>' +
   '</div>' +
-  '<div class="tdw" style="text-align:center"><b>Official Number:</b> <span style="color:var(--grn);font-weight:bold">01951639460</span> <button class="copy-btn-inline" onclick="copyDepNum()">Copy</button><br><small>1. Send money to this number.<br>2. Enter TrxID below.</small></div>' +
+  '<div class="tdw" style="text-align:center"><b>Official Number:</b> <span style="color:var(--grn);font-weight:bold" id="offNumText">01951639460</span> <button class="copy-btn-inline" onclick="copyDepNum()">Copy</button><br><small>1. Send money to this number.<br>2. Enter TrxID and Last 3 Digits below.</small></div>' +
   '<label>Deposit Amount (৳)</label><input id="da" type="number" value="'+(presetAmount||'')+'" placeholder="200 - 15000">' +
   '<label>Transaction ID (TrxID)</label><input id="dtx" placeholder="Enter Transaction ID">' +
-  '<label>Last 3 Digits</label><input id="dlast" maxlength="3" placeholder="123">' +
+  '<label>Last 3 Digits (Mandatory)</label><input id="dlast" maxlength="3" placeholder="123">' +
   
   '<div class="hold-circle-container">' +
-  '<svg class="hold-circle-svg" viewBox="0 0 100 100"><circle class="hold-bg-circle" cx="50" cy="50" r="48"/><circle id="circleProgress" class="hold-progress-circle" cx="50" cy="50" r="48"/></svg>' +
-  '<div class="hold-btn-inner" onmousedown="startCircleHold(\\'dep\\',\\''+(pkgName||'Custom Deposit')+'\\')" ontouchstart="startCircleHold(\\'dep\\',\\''+(pkgName||'Custom Deposit')+'\\')" onmouseup="cancelCircleHold()" ontouchend="cancelCircleHold()"><span id="circleBtnText">TAP & HOLD</span><small style="font-size:8px;opacity:0.8">TO SUBMIT</small></div>' +
+  '<svg class="hold-circle-svg" viewBox="0 0 100 100"><defs><linearGradient id="circleGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#22c55e"/></linearGradient></defs><circle class="hold-bg-circle" cx="50" cy="50" r="48"/><circle id="circleProgress" class="hold-progress-circle" cx="50" cy="50" r="48"/></svg>' +
+  '<div class="hold-btn-inner" onmousedown="startCircleHold(\\'dep\\',\\''+(pkgName||'Custom Deposit')+'\\')" ontouchstart="startCircleHold(\\'dep\\',\\''+(pkgName||'Custom Deposit')+'\\')" onmouseup="cancelCircleHold()" ontouchend="cancelCircleHold()"><span id="circleBtnText">TAP & HOLD</span><small style="font-size:7px;opacity:0.9">TO SUBMIT</small></div>' +
   '</div>' +
   
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:6px" onclick="closeM()">Close</button>');
@@ -1466,7 +1475,8 @@ function setDepMethod(m){
 
 function executeDeposit(pkgName){
   var txVal = $('dtx').value.trim();
-  api('deposit','POST',{method:window.currentDepMethod,amount:$('da').value,txid:txVal,lastDigits:$('dlast').value,pkgName:pkgName}).then(function(r){
+  var lastDig = $('dlast').value.trim();
+  api('deposit','POST',{method:window.currentDepMethod,amount:$('da').value,txid:txVal,lastDigits:lastDig,pkgName:pkgName}).then(function(r){
     if(r.activePkg) ME.activePkg = r.activePkg;
     
     var dep = r.depositDetails || {};
@@ -1553,11 +1563,57 @@ function sc(a){return a.map(function(x){return '<div class="stat"><b>'+x[1]+'</b
 function aOv(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
  $('abody').innerHTML='<h3>আজকের হিসাব</h3><div class="grid">'+sc([['মোট ইউজার',s.users],['আজ ঢুকেছে',s.active],['ডিপোজিট পেন্ডিং',s.depPending],['অপেক্ষমাণ টাস্ক',s.pendingTasks]])+'</div>'}).catch(aErr)}
 function decI(i,ok){var w=AD.wds[i];api('admin/wd/'+w._id,'POST',{ok:!!ok},ah()).then(aWd).catch(aErr)}
-function aWd(){api('admin/wd-list','GET',null,ah()).then(function(d){AD.wds=d.pending;
- $('abody').innerHTML='<h3>অপেক্ষমাণ উত্তোলন</h3>'+(d.pending.map(function(w,i){return '<div class="th"><div class="hd"><span>'+esc(w.name)+'</span><span style="color:var(--gold)">'+money(w.amount)+'</span></div><div style="font-size:13px">'+esc(w.method)+': <b>'+esc(w.phone)+'</b></div><div class="gap"><button class="btn s g" onclick="decI('+i+',1)">Success</button><button class="btn s r" onclick="decI('+i+',0)">Reject</button></div></div>'}).join('')||'<div class="row">নেই</div>')}).catch(aErr)}
+
+function aWd(){
+  api('admin/wd-list','GET',null,ah()).then(function(d){
+    AD.wds = d.pending;
+    $('abody').innerHTML = '<h3>অপেক্ষমাণ উত্তোলন (Real-time & Copy)</h3>' +
+    (d.pending.length ? d.pending.map(function(w, i){
+      var timeStr = new Date(w.at).toLocaleTimeString();
+      return '<div class="th">' +
+      '<div class="hd"><span>'+esc(w.name)+'</span><span style="color:var(--gold)">৳'+money(w.amount)+'</span></div>' +
+      '<div style="font-size:13px">' +
+      'Method: <b>'+esc(w.method)+'</b><br>' +
+      'Phone: <b id="wdPhone'+i+'">'+esc(w.phone)+'</b> <button class="admin-copy-btn" onclick="copyAdminText(\\'wdPhone'+i+'\\')">Copy</button><br>' +
+      '<small style="color:var(--mu)">সময়: '+timeStr+'</small>' +
+      '</div>' +
+      '<div class="gap"><button class="btn s g" onclick="decI('+i+',1)">Success</button><button class="btn s r" onclick="decI('+i+',0)">Reject</button></div>' +
+      '</div>';
+    }).join('') : '<div class="row">কোনো পেন্ডিং উইথড্র নেই।</div>');
+  }).catch(aErr);
+}
+
 function decDep(i,ok){var d=AD.deps[i];api('admin/dep/'+d._id,'POST',{ok:!!ok},ah()).then(aDep).catch(aErr)}
-function aDep(){api('admin/dep-list','GET',null,ah()).then(function(d){AD.deps=d.pending;
- $('abody').innerHTML='<h3>অপেক্ষমাণ ডিপোজিট</h3>'+(d.pending.map(function(dep,i){return '<div class="th"><div class="hd"><span>'+esc(dep.name)+'</span><span style="color:var(--gold)">'+money(dep.amount)+'</span></div><div style="font-size:13px">'+esc(dep.method)+': <b>'+esc(dep.txid)+'</b></div><div class="gap"><button class="btn s g" onclick="decDep('+i+',1)">Approve</button><button class="btn s r" onclick="decDep('+i+',0)">Reject</button></div></div>'}).join('')||'<div class="row">নেই</div>')}).catch(aErr)}
+
+function aDep(){
+  api('admin/dep-list','GET',null,ah()).then(function(d){
+    AD.deps = d.pending;
+    $('abody').innerHTML = '<h3>অপেক্ষমাণ ডিপোজিট (Real-time & Copy)</h3>' +
+    (d.pending.length ? d.pending.map(function(dep, i){
+      var timeStr = new Date(dep.at).toLocaleTimeString();
+      return '<div class="th">' +
+      '<div class="hd"><span>'+esc(dep.name)+'</span><span style="color:var(--gold)">৳'+money(dep.amount)+'</span></div>' +
+      '<div style="font-size:13px">' +
+      'Method: <b>'+esc(dep.method)+'</b><br>' +
+      'TrxID: <b id="depTrx'+i+'">'+esc(dep.txid)+'</b> <button class="admin-copy-btn" onclick="copyAdminText(\\'depTrx'+i+'\\')">Copy Trx</button><br>' +
+      'Last 3 Digits: <b>'+esc(dep.lastDigits)+'</b><br>' +
+      '<small style="color:var(--mu)">সময়: '+timeStr+' | Order: '+esc(dep.serialNo)+'</small>' +
+      '</div>' +
+      '<div class="gap"><button class="btn s g" onclick="decDep('+i+',1)">Approve</button><button class="btn s r" onclick="decDep('+i+',0)">Reject</button></div>' +
+      '</div>';
+    }).join('') : '<div class="row">কোনো পেন্ডিং ডিপোজিট নেই।</div>');
+  }).catch(aErr);
+}
+
+function copyAdminText(elemId){
+  var el = $(elemId);
+  if(!el) return;
+  navigator.clipboard.writeText(el.innerText).then(function(){
+    toast('Copied: ' + el.innerText);
+  }).catch(function(){
+    toast('Copy failed');
+  });
+}
 
 function aShopCtrl(){
   api('admin/user-packages','GET',null,ah()).then(function(userPkgs){
@@ -1715,5 +1771,5 @@ document.addEventListener('DOMContentLoaded',function(){$('logoL').innerHTML=log
  if(T)api('me').then(enter).catch(function(){$('landing').style.display='block'});else $('landing').style.display='block'});
 </script></body></html>`;
 
-app.get('/', (req, res) => res.send(PAGE.replace('__GID__', GID.replace(/[^\w.\-]/g, '')).replace(/__AGE__/g, String(MIN_AGE | 0))));
+app.get('/', (req, res) => res.sendPAGE.replace('__GID__', GID.replace(/[^\w.\-]/g, '')).replace(/__AGE__/g, String(MIN_AGE | 0)));
 app.listen(PORT, () => console.log('Server is running on port ' + PORT));
