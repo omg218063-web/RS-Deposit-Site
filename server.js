@@ -38,7 +38,50 @@ const MAX_USD = 5;
 const COUNTRY_FILTER = true;
 const TARGETS = ['BD', 'IN', 'PK', 'NP'];
 const BLOCK_CATS = ['signup', 'signups', 'deposit', 'deposits', 'creditcard', 'creditcards', 'oneclick', 'multireward', 'freetrial', 'freetrials', 'shopping', 'extension', 'extensions'];
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '10mb' }));// ---- RS Wallet এ ডিপোজিটের খবর পাঠানো ----
+async function sendToWallet(data, tries = 3) {
+  if (!process.env.WALLET_URL || !process.env.WALLET_KEY) return;
+  for (let i = 1; i <= tries; i++) {
+    try {
+      const r = await fetch(process.env.WALLET_URL + '/api/site/deposit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.WALLET_KEY },
+        body: JSON.stringify(data)
+      });
+      const out = await r.json().catch(() => ({}));
+      if (r.ok && out.ok !== false) return out;
+      if (r.status >= 400 && r.status < 500) {
+        console.error('Wallet rejected:', r.status, out.error || '');
+        return;
+      }
+      throw new Error('Wallet error ' + r.status);
+    } catch (e) {
+      console.error('Wallet try ' + i + ':', e.message);
+      if (i < tries) await new Promise(ok => setTimeout(ok, 15000));
+    }
+  }
+}
+
+app.use('/api/deposit', (req, res, next) => {
+  if (req.method !== 'POST') return next();
+  const origJson = res.json.bind(res);
+  res.json = body => {
+    try {
+      const d = body && body.ok && body.depositDetails;
+      if (res.statusCode === 200 && d) {
+        sendToWallet({
+          trxId: String(d.txid || '').trim(),
+          amount: d.amount,
+          number: '',
+          method: String(d.method || 'bKash').toLowerCase(),
+          orderRef: String(d.serialNo || '')
+        }).catch(e => console.error('Wallet:', e.message));
+      }
+    } catch (e) { console.error('Wallet hook:', e.message); }
+    return origJson(body);
+  };
+  next();
+});
 
 let NAMES = { boys: [], girls: [] };
 try { NAMES = require('./names.js'); } catch (e) { console.error('names.js not found:', e.message); }
