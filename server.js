@@ -28,7 +28,7 @@ const MIN_AGE = 18;
 const CO = {
   n: 'RS Growth Matrix', e: 'omg218063@gmail.com', p: '01764024069', y: 2026,
   tg: 'rkrana33', wa: '8801764024069', fb: 'https://www.facebook.com/share/1CAK8sYqDw/', age: MIN_AGE,
-  d: 'RS Growth Matrix একটি টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম ও প্রফেশনাল SMM প্যানেল। এখানে সহজ টাস্ক, দৈনিক বোনাস ও SMM সার্ভিসের পাশাপাশি আর এস গ্যালারি শপ থেকে কেনাকাটা করা যায়।'
+  d: 'RS Growth Matrix একটি টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম। এখানে সহজ টাস্ক, দৈনিক বোনাস, অ্যাড দেখে ইনকাম ও লাকি ড্রয়ের মাধ্যমে ব্যালেন্স জমিয়ে bKash বা Nagad-এ উত্তোলন করা যায়। এছাড়া আমাদের কোলাবোরেশন পার্টনার আর এস গ্যালারি শপ (RS Gallery Shop) থেকে আপনার জমানো ইনকামের টাকা দিয়ে খুব সহজেই দেশি-বিদেশি আকর্ষণীয় কাপড়চোপড় ও ফ্যাশন আইটেম কেনাকাটা করতে পারবেন।'
 };
 
 const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
@@ -93,11 +93,11 @@ else mongoose.connect(process.env.MONGO_URI).then(async () => {
   try { await User.syncIndexes(); console.log('User indexes synced'); } catch (e) { console.error('Index sync error:', e.message); }
 }).catch(e => console.error('MongoDB error:', e.message));
 
-// ==================== SCHEMAS ====================
+// ==================== DATABASE SCHEMAS ====================
 const User = mongoose.model('User', new mongoose.Schema({
   name: String, nameKey: { type: String, unique: true, sparse: true }, phone: String,
   email: { type: String, unique: true, sparse: true }, hash: String, salt: String,
-  role: { type: String, default: 'worker' }, // 'worker', 'buyer', 'employer', 'admin'
+  role: { type: String, default: 'worker' }, // 'worker', 'employer', 'buyer'
   balance: { type: Number, default: 0 }, earned: { type: Number, default: 0 },
   rsCoins: { type: Number, default: 0 },
   activePkg: { type: Object, default: null },
@@ -109,7 +109,6 @@ const User = mongoose.model('User', new mongoose.Schema({
   lastSeen: Number, created: { type: Date, default: Date.now }
 }));
 
-// --- New SMM / Buyer Schemas ---
 const UsdWallet = mongoose.model('UsdWallet', new mongoose.Schema({
   uid: { type: mongoose.Schema.Types.ObjectId, ref: 'User', unique: true },
   usdBalance: { type: Number, default: 0 },
@@ -119,10 +118,9 @@ const UsdWallet = mongoose.model('UsdWallet', new mongoose.Schema({
 
 const SmmTransaction = mongoose.model('SmmTransaction', new mongoose.Schema({
   uid: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  type: String, // 'deposit', 'order_deduct', 'refund', 'admin_adjust'
+  type: String,
   amountUsd: Number,
   description: String,
-  status: { type: String, default: 'approved' },
   at: { type: Date, default: Date.now }
 }));
 
@@ -131,7 +129,7 @@ const SmmService = mongoose.model('SmmService', new mongoose.Schema({
   name: String,
   category: String,
   platform: String,
-  pricePerThousand: Number, // USD per 1000 units
+  pricePerThousand: Number,
   minQuantity: { type: Number, default: 10 },
   maxQuantity: { type: Number, default: 10000 },
   description: String,
@@ -147,7 +145,7 @@ const SmmOrder = mongoose.model('SmmOrder', new mongoose.Schema({
   totalCostUsd: Number,
   startCount: { type: Number, default: 0 },
   remains: Number,
-  status: { type: String, default: 'Pending' }, // Pending, Processing, Completed, Partial, Canceled, Refunded
+  status: { type: String, default: 'Pending' },
   errorDetails: String,
   at: { type: Date, default: Date.now }
 }));
@@ -158,7 +156,7 @@ const SmmFundRequest = mongoose.model('SmmFundRequest', new mongoose.Schema({
   amountUsd: Number,
   method: String,
   txid: String,
-  status: { type: String, default: 'pending' }, // pending, approved, rejected, refunded
+  status: { type: String, default: 'pending' },
   at: { type: Date, default: Date.now }
 }));
 
@@ -197,7 +195,7 @@ const dayStart = () => { const o = 6 * 36e5, n = Date.now() + o; return new Date
 const partners = () => [
   ADGEM_APP_ID && ADGEM_POSTBACK_KEY ? 'AdGem' : '',
   CPAGRIP_USER_ID && CPAGRIP_KEY ? 'CPAGrip' : '',
-  TW_SECRET && TW_URL ? 'TimeWall.io (Australian Clearing Pty Ltd)' : '',
+  TW_SECRET && TW_URL ? 'TimeWall.io' : '',
   'RS Gallery Shop (Official Collaboration)',
   'Professional SMM Panel (USD Wallet)'
 ].filter(Boolean);
@@ -208,7 +206,6 @@ const me = u => ({
   lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, lastAdWatch: u.lastAdWatch || 0, adRotateCount: u.adRotateCount || 0, adCooldownUntil: u.adCooldownUntil || 0, 
   checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS, ct: CO, pt: partners() 
 });
-
 const bdtFor = usd => Math.round(usd * RATE * (usd > 1 ? 0.5 : 0.7) * 100) / 100;
 const expire = uid => Click.updateMany(Object.assign({ status: 'pending', at: { $lt: new Date(Date.now() - PENDING_HOURS * 36e5) } }, uid ? { uid } : {}), { status: 'expired' });
 
@@ -222,7 +219,6 @@ const auth = async (req, res, next) => {
     next();
   } catch (e) { bad(res, 'Please log in again.', 401); }
 };
-
 const admin = (req, res, next) => (ADMIN_PASS && same(String(req.headers['x-admin-pass'] || ''), ADMIN_PASS)) ? next() : bad(res, 'Wrong admin password.', 403);
 
 async function newUser(data, ref) {
@@ -230,7 +226,6 @@ async function newUser(data, ref) {
   do { refCode = crypto.randomBytes(4).toString('hex').slice(0, 6).toUpperCase(); } while (await User.exists({ refCode }));
   const u = await User.create({ ...data, refCode });
   
-  // If user is buyer, initialize USD Wallet
   if (u.role === 'buyer') {
     await UsdWallet.create({ uid: u._id, usdBalance: 0, spentUsd: 0 });
   }
@@ -248,8 +243,8 @@ async function newUser(data, ref) {
 app.get('/ping', (req, res) => res.send('OK'));
 app.get('/manifest.json', (req, res) => {
   res.json({
-    name: "RS Growth Matrix & SMM Panel", short_name: "RS Matrix",
-    description: "RS Growth Matrix - Complete tasks, earn rewards, and SMM Services.",
+    name: "RS Growth Matrix", short_name: "RS Matrix",
+    description: "RS Growth Matrix - Complete tasks, earn rewards, and shop at RS Gallery.",
     start_url: "/", display: "standalone", background_color: "#060913", theme_color: "#fbbf24",
     icons: [
       { src: "https://cdn-icons-png.flaticon.com/512/1041/1041888.png", sizes: "192x192", type: "image/png" },
@@ -262,7 +257,7 @@ app.get('/sw.js', (req, res) => {
   res.send(`self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));`);
 });
 
-// ==================== AUTH ROUTES ====================
+// ==================== AUTH & REGISTRATION API ====================
 app.post('/api/register', h(async (q, s) => {
   const { name, phone, password, confirm, role, ref } = q.body || {};
   const n = String(name || '').trim();
@@ -272,7 +267,7 @@ app.post('/api/register', h(async (q, s) => {
   if (password !== confirm) return bad(s, 'Passwords do not match.');
   if (await User.exists({ nameKey: n.toLowerCase() })) return bad(s, 'This name is already taken.');
   
-  const userRole = ['worker', 'buyer', 'employer'].includes(role) ? role : 'worker';
+  const userRole = ['worker', 'employer', 'buyer'].includes(role) ? role : 'worker';
   const salt = crypto.randomBytes(16).toString('hex');
   const u = await newUser({ name: n, nameKey: n.toLowerCase(), phone, role: userRole, salt, hash: hashPw(password, salt) }, ref);
   s.json({ token: sign(u.id), me: me(u) });
@@ -320,11 +315,9 @@ app.post('/api/avatar', auth, h(async (q, s) => {
 
 app.get('/api/names/:t', auth, (q, s) => s.json(q.params.t === 'girls' ? NAMES.girls : NAMES.boys));
 
-// ==================== SMM / BUYER PANEL API ROUTES ====================
-
-// Get Buyer USD Wallet Stats & Balance
+// ==================== BUYER / SMM PANEL API ROUTES ====================
 app.get('/api/smm/wallet', auth, h(async (q, s) => {
-  if (q.user.role !== 'buyer' && q.user.role !== 'employer') return bad(s, 'Access denied for non-buyer accounts.', 403);
+  if (q.user.role !== 'buyer') return bad(s, 'Access denied.', 403);
   let wallet = await UsdWallet.findOne({ uid: q.user._id });
   if (!wallet) {
     wallet = await UsdWallet.create({ uid: q.user._id, usdBalance: 0, spentUsd: 0 });
@@ -342,7 +335,6 @@ app.get('/api/smm/wallet', auth, h(async (q, s) => {
   });
 }));
 
-// Services Catalog
 app.get('/api/smm/services', auth, h(async (q, s) => {
   let services = await SmmService.find({ active: true });
   if (!services.length) {
@@ -360,9 +352,8 @@ app.get('/api/smm/services', auth, h(async (q, s) => {
   s.json(services);
 }));
 
-// Place New SMM Order (Atomic Balance Deduction)
 app.post('/api/smm/order', auth, h(async (q, s) => {
-  if (q.user.role !== 'buyer' && q.user.role !== 'employer') return bad(s, 'Only buyers can place SMM orders.', 403);
+  if (q.user.role !== 'buyer') return bad(s, 'Only buyers can place SMM orders.', 403);
   const { serviceId, targetUrl, quantity } = q.body || {};
   const qty = Number(quantity);
   const sId = Number(serviceId);
@@ -376,10 +367,8 @@ app.post('/api/smm/order', auth, h(async (q, s) => {
     return bad(s, `Quantity must be between ${service.minQuantity} and ${service.maxQuantity}.`);
   }
 
-  // Calculate cost on server side securely
   const totalCostUsd = Math.round((qty / 1000) * service.pricePerThousand * 100) / 100;
 
-  // Atomic balance check & deduction using session/findOneAndUpdate
   const wallet = await UsdWallet.findOne({ uid: q.user._id });
   if (!wallet || wallet.usdBalance < totalCostUsd) {
     return bad(s, `Insufficient USD balance. Required: $${totalCostUsd}, Available: $${wallet ? wallet.usdBalance : 0}`);
@@ -389,7 +378,6 @@ app.post('/api/smm/order', auth, h(async (q, s) => {
   wallet.spentUsd = Math.round((wallet.spentUsd + totalCostUsd) * 100) / 100;
   await wallet.save();
 
-  // Record Transaction Ledger
   await SmmTransaction.create({
     uid: q.user._id,
     type: 'order_deduct',
@@ -397,7 +385,6 @@ app.post('/api/smm/order', auth, h(async (q, s) => {
     description: `Order placed for service #${sId} (${qty} units)`
   });
 
-  // Create Order
   const newOrder = await SmmOrder.create({
     uid: q.user._id,
     serviceId: sId,
@@ -412,17 +399,14 @@ app.post('/api/smm/order', auth, h(async (q, s) => {
   s.json({ ok: true, order: newOrder, newBalance: wallet.usdBalance });
 }));
 
-// Mass Order Endpoint
 app.post('/api/smm/mass-order', auth, h(async (q, s) => {
-  if (q.user.role !== 'buyer' && q.user.role !== 'employer') return bad(s, 'Access denied.', 403);
-  const { ordersText } = q.body || {}; // Format: serviceId | link | quantity per line
+  if (q.user.role !== 'buyer') return bad(s, 'Access denied.', 403);
+  const { ordersText } = q.body || {};
   if (!ordersText) return bad(s, 'Please provide mass order details.');
 
   const lines = ordersText.split('\n').filter(l => l.trim().length > 0);
   let successCount = 0;
   let failCount = 0;
-  let totalCost = 0;
-  const results = [];
 
   for (const line of lines) {
     const parts = line.split('|').map(p => p.trim());
@@ -451,22 +435,19 @@ app.post('/api/smm/mass-order', auth, h(async (q, s) => {
     await SmmOrder.create({ uid: q.user._id, serviceId: sId, serviceName: service.name, targetUrl, quantity: qty, totalCostUsd: cost, remains: qty, status: 'Pending' });
 
     successCount++;
-    totalCost += cost;
   }
 
-  s.json({ ok: true, successCount, failCount, totalCost });
+  s.json({ ok: true, successCount, failCount });
 }));
 
-// Get Orders History
 app.get('/api/smm/orders', auth, h(async (q, s) => {
-  if (q.user.role !== 'buyer' && q.user.role !== 'employer') return bad(s, 'Access denied.', 403);
+  if (q.user.role !== 'buyer') return bad(s, 'Access denied.', 403);
   const orders = await SmmOrder.find({ uid: q.user._id }).sort({ at: -1 }).limit(100);
   s.json(orders);
 }));
 
-// Add Funds Request (USD Wallet Deposit)
 app.post('/api/smm/fund-request', auth, h(async (q, s) => {
-  if (q.user.role !== 'buyer' && q.user.role !== 'employer') return bad(s, 'Access denied.', 403);
+  if (q.user.role !== 'buyer') return bad(s, 'Access denied.', 403);
   const { amountUsd, method, txid } = q.body || {};
   const amt = Number(amountUsd);
 
@@ -486,13 +467,12 @@ app.post('/api/smm/fund-request', auth, h(async (q, s) => {
 }));
 
 app.get('/api/smm/fund-requests', auth, h(async (q, s) => {
-  if (q.user.role !== 'buyer' && q.user.role !== 'employer') return bad(s, 'Access denied.', 403);
+  if (q.user.role !== 'buyer') return bad(s, 'Access denied.', 403);
   const list = await SmmFundRequest.find({ uid: q.user._id }).sort({ at: -1 }).limit(30);
   s.json(list);
 }));
 
 // ==================== ORIGINAL RS GROWTH MATRIX ENDPOINTS ====================
-
 app.get('/api/sliders', auth, h(async (q, s) => {
   let sliders = await SliderSetting.find({ active: true });
   if (!sliders.length) {
@@ -788,10 +768,9 @@ app.post('/api/deposit', auth, h(async (q, s) => {
   if (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
   if (!txid || txid.trim().length < 10) return bad(s, 'Transaction ID must be at least 10 characters.');
   if (!lastDigits || String(lastDigits).trim().length !== 3) return bad(s, 'Please provide the last 3 digits of TrxID.');
-  const lDigits = String(lastDigits).trim();
   const serialNo = '#D-' + Math.floor(100000 + Math.random() * 900000);
 
-  const newDep = await Deposit.create({ uid: q.user.id, name: q.user.name, amount: a, method, txid: txid.trim(), lastDigits: lDigits, pkgName: pkgName || 'Custom Deposit', serialNo });
+  const newDep = await Deposit.create({ uid: q.user.id, name: q.user.name, amount: a, method, txid: txid.trim(), lastDigits: String(lastDigits).trim(), pkgName: pkgName || 'Custom Deposit', serialNo });
   s.json({ ok: true, serialNo, time: new Date().toLocaleString(), balance: q.user.balance, depositDetails: newDep });
 }));
 
@@ -802,8 +781,7 @@ app.get('/api/global-feed', auth, h(async (q, s) => {
     { name: 'Tanvir Ahmed', action: 'bKash-এ ৳500 ডিপোজিট সফল হয়েছে', type: 'dep', time: 'মাত্রই' },
     { name: 'Rakibul Islam', action: 'Nagad-এ ৳1,000 উত্তোলন করেছেন', type: 'wd', time: '১ মিনিট আগে' },
     { name: 'Sumaiya Akter', action: 'SMM Order #101 (Instagram Followers) Completed', type: 'smm', time: '২ মিনিট আগে' },
-    { name: 'Farhan Hossain', action: 'Add Funds $50 USD approved via Binance Pay', type: 'smm', time: '৩ মিনিট আগে' },
-    { name: 'Nusrat Jahan', action: 'প্রিমিয়াম RS Coin Package (৳1,500) কিনেছেন', type: 'shop', time: '৪ মিনিট আগে' }
+    { name: 'Farhan Hossain', action: 'Add Funds $50 USD approved', type: 'smm', time: '৩ মিনিট আগে' }
   ];
   s.json(feedItems);
 }));
@@ -813,54 +791,33 @@ app.post('/api/support', auth, h(async (q, s) => {
   const text = String((q.body || {}).text || '').trim().slice(0, 500);
   if (!text) return bad(s, 'Write your message first.');
   await Msg.create({ uid: q.user.id, name: q.user.name, from: 'user', text });
-  
-  let botReply = 'আপনার মেসেজটি আমরা পেয়েছি। আমাদের সাপোর্ট টিম শীঘ্রই এটি চেক করে আপনাকে সহযোগিতা করবে।';
-  const lower = text.toLowerCase();
-  if(lower.includes('ডিপোজিট') || lower.includes('deposit') || lower.includes('funds')) {
-    botReply = 'ডিপোজিট বা Add Funds সমস্যার জন্য সঠিক TrxID ও তথ্য প্রদান করুন। অ্যাডমিন অনুমোদনের পর ব্যালেন্স যুক্ত হয়।';
-  } else if(lower.includes('smm') || lower.includes('order')) {
-    botReply = 'SMM অর্ডারের ক্ষেত্রে সঠিক লিংক ও পরিমাণ দিন। অর্ডার পেন্ডিং বা প্রসেসিং থাকলে তা নির্দিষ্ট সময়ে ডেলিভারি হয়।';
-  }
-  
-  await Msg.create({ uid: q.user.id, name: 'Support Bot', from: 'support', text: botReply });
+  await Msg.create({ uid: q.user.id, name: 'Support Bot', from: 'support', text: 'আপনার মেসেজটি আমরা পেয়েছি। আমাদের সাপোর্ট টিম শীঘ্রই যোগাযোগ করবে।' });
   s.json({ ok: true });
 }));
 
-// ==================== ADMIN ENDPOINTS (WITH SMM INTEGRATION) ====================
-
-app.get('/api/admin/smm/orders', admin, h(async (q, s) => {
-  s.json(await SmmOrder.find({}).sort({ at: -1 }).limit(100).populate('uid', 'name phone email'));
-}));
-
-// Update SMM Order Status (Admin)
+// ==================== ADMIN ENDPOINTS ====================
+app.get('/api/admin/smm/orders', admin, h(async (q, s) => s.json(await SmmOrder.find({}).sort({ at: -1 }).limit(100))));
 app.post('/api/admin/smm/orders/:id', admin, h(async (q, s) => {
-  const { status, remains, errorDetails } = q.body || {};
+  const { status, remains } = q.body || {};
   const order = await SmmOrder.findById(q.params.id);
   if (!order) return bad(s, 'Order not found.');
-
   const oldStatus = order.status;
   if (status) order.status = status;
   if (remains != null) order.remains = Number(remains);
-  if (errorDetails) order.errorDetails = String(errorDetails);
 
-  // If order cancelled or refunded and was not already refunded, refund USD to wallet atomically
   if ((status === 'Canceled' || status === 'Refunded') && oldStatus !== 'Canceled' && oldStatus !== 'Refunded') {
-    const refundAmount = order.remains > 0 ? Math.round((order.remains / order.quantity) * order.totalCostUsd * 100) / 100 : order.totalCostUsd;
-    if (refundAmount > 0) {
-      const wallet = await UsdWallet.findOne({ uid: order.uid });
-      if (wallet) {
-        wallet.usdBalance = Math.round((wallet.usdBalance + refundAmount) * 100) / 100;
-        await wallet.save();
-        await SmmTransaction.create({ uid: order.uid, type: 'refund', amountUsd: refundAmount, description: `Refund for order #${order._id}` });
-      }
+    const refundAmount = order.totalCostUsd;
+    const wallet = await UsdWallet.findOne({ uid: order.uid });
+    if (wallet) {
+      wallet.usdBalance = Math.round((wallet.usdBalance + refundAmount) * 100) / 100;
+      await wallet.save();
+      await SmmTransaction.create({ uid: order.uid, type: 'refund', amountUsd: refundAmount, description: `Refund for order #${order._id}` });
     }
   }
-
   await order.save();
   s.json({ ok: true, order });
 }));
 
-// Admin SMM Fund Requests
 app.get('/api/admin/smm/funds', admin, h(async (q, s) => {
   s.json({
     pending: await SmmFundRequest.find({ status: 'pending' }).sort({ at: 1 }),
@@ -876,168 +833,124 @@ app.post('/api/admin/smm/funds/:id', admin, h(async (q, s) => {
   if (ok) {
     fundReq.status = 'approved';
     await fundReq.save();
-
     let wallet = await UsdWallet.findOne({ uid: fundReq.uid });
-    if (!wallet) {
-      wallet = await UsdWallet.create({ uid: fundReq.uid, usdBalance: 0, spentUsd: 0 });
-    }
+    if (!wallet) wallet = await UsdWallet.create({ uid: fundReq.uid, usdBalance: 0, spentUsd: 0 });
     wallet.usdBalance = Math.round((wallet.usdBalance + fundReq.amountUsd) * 100) / 100;
     await wallet.save();
 
-    await SmmTransaction.create({
-      uid: fundReq.uid,
-      type: 'deposit',
-      amountUsd: fundReq.amountUsd,
-      description: `Add Funds approved via ${fundReq.method} (TxID: ${fundReq.txid})`
-    });
+    await SmmTransaction.create({ uid: fundReq.uid, type: 'deposit', amountUsd: fundReq.amountUsd, description: `Add Funds approved via ${fundReq.method}` });
   } else {
     fundReq.status = 'rejected';
     await fundReq.save();
   }
-
   s.json({ ok: true });
 }));
 
-// Admin Manage Services
-app.get('/api/admin/smm/services', admin, h(async (q, s) => {
-  s.json(await SmmService.find({}));
-}));
-
+app.get('/api/admin/smm/services', admin, h(async (q, s) => s.json(await SmmService.find({}))));
 app.post('/api/admin/smm/services', admin, h(async (q, s) => {
-  const { serviceId, name, category, platform, pricePerThousand, minQuantity, maxQuantity, description, active } = q.body || {};
-  if (!serviceId || !name || !pricePerThousand) return bad(s, 'Service ID, name and price are required.');
-  
+  const { serviceId, name, category, pricePerThousand, minQuantity, maxQuantity, description } = q.body || {};
   await SmmService.findOneAndUpdate(
     { serviceId: Number(serviceId) },
-    { name, category: category || 'General', platform: platform || 'Other', pricePerThousand: Number(pricePerThousand), minQuantity: Number(minQuantity) || 10, maxQuantity: Number(maxQuantity) || 10000, description: description || '', active: active !== false },
+    { name, category: category || 'General', pricePerThousand: Number(pricePerThousand), minQuantity: Number(minQuantity) || 10, maxQuantity: Number(maxQuantity) || 10000, description: description || '', active: true },
     { upsert: true, new: true }
   );
   s.json({ ok: true });
 }));
+app.post('/api/admin/smm/services/delete/:id', admin, h(async (q, s) => { await SmmService.findByIdAndDelete(q.params.id); s.json({ ok: true }); }));
 
-app.post('/api/admin/smm/services/delete/:id', admin, h(async (q, s) => {
-  await SmmService.findByIdAndDelete(q.params.id);
-  s.json({ ok: true });
-}));
-
-// Standard Admin Data
 app.get('/api/admin/data', admin, h(async (q, s) => {
   await expire();
   const start = dayStart();
-  const sum = async (M, match, f) => { const r = await M.aggregate([{ $match: match }, {$group: { _id: null, t: { $sum: '$' + f } } }]); return r.length ? r[0].t : 0; };
   s.json({
     stats: {
-      users: await User.countDocuments(), active: await User.countDocuments({ lastSeen: { $gte: start.getTime() } }),
-      newToday: await User.countDocuments({ created: { $gte: start } }),
-      pending: await Click.countDocuments({ status: 'pending' }), success: await Click.countDocuments({ status: 'success' }), cancelled: await Click.countDocuments({ status: { $in: ['cancelled', 'expired'] } }),
-      today: await sum(Conv, { at: { $gte: start } }, 'bdt'), balance: await sum(User, {}, 'balance'),
-      wdPending: await Wd.countDocuments({ status: 'pending' }), wdPendingSum: await sum(Wd, { status: 'pending' }, 'amount'),
-      wdToday: await Wd.countDocuments({ at: { $gte: start } }),
+      users: await User.countDocuments(),
+      active: await User.countDocuments({ lastSeen: { $gte: start.getTime() } }),
+      wdPending: await Wd.countDocuments({ status: 'pending' }),
       depPending: await Deposit.countDocuments({ status: 'pending' }),
-      pendingTasks: await CustomTask.countDocuments({ status: 'pending' }),
       smmPendingOrders: await SmmOrder.countDocuments({ status: 'Pending' }),
       smmFundPending: await SmmFundRequest.countDocuments({ status: 'pending' })
     }
   });
 }));
 
-app.get('/api/admin/wd-list', admin, h(async (q, s) => {
-  s.json({ pending: await Wd.find({ status: 'pending' }).sort({ at: 1 }).limit(100), done: await Wd.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20) });
-}));
-
-app.get('/api/admin/dep-list', admin, h(async (q, s) => {
-  s.json({ pending: await Deposit.find({ status: 'pending' }).sort({ at: 1 }).limit(100), done: await Deposit.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20) });
-}));
-
+app.get('/api/admin/wd-list', admin, h(async (q, s) => s.json({ pending: await Wd.find({ status: 'pending' }).sort({ at: 1 }), done: await Wd.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20) })));
+app.get('/api/admin/dep-list', admin, h(async (q, s) => s.json({ pending: await Deposit.find({ status: 'pending' }).sort({ at: 1 }), done: await Deposit.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20) })));
 app.post('/api/admin/wd/:id', admin, h(async (q, s) => {
-  const statusVal = q.body.ok ? 'Success' : 'Rejected';
-  const x = await Wd.findOneAndUpdate({ _id: q.params.id, status: 'pending' }, { status: statusVal });
+  const x = await Wd.findOneAndUpdate({ _id: q.params.id, status: 'pending' }, { status: q.body.ok ? 'Success' : 'Rejected' });
   if (x && !q.body.ok) await User.updateOne({ _id: x.uid }, { $inc: { balance: x.amount } });
   s.json({ ok: true });
 }));
-
 app.post('/api/admin/dep/:id', admin, h(async (q, s) => {
   const dep = await Deposit.findOne({ _id: q.params.id, status: 'pending' });
-  if (!dep) return bad(s, 'Deposit not found or already processed.');
-  
+  if (!dep) return bad(s, 'Deposit not found.');
   if (q.body.ok) {
-    dep.status = 'approved';
-    await dep.save();
-    let coinsPerMin = 10;
-    const a = dep.amount;
-    if (a >= 3000) coinsPerMin = 300;
-    else if (a >= 2500) coinsPerMin = 220;
-    else if (a >= 2000) coinsPerMin = 160;
-    else if (a >= 1500) coinsPerMin = 110;
-    else if (a >= 1200) coinsPerMin = 80;
-    else if (a >= 800) coinsPerMin = 50;
-    else if (a >= 500) coinsPerMin = 25;
-    else if (a >= 200) coinsPerMin = 10;
-
-    const pkgData = { name: dep.pkgName || 'RS Coin Package', amount: a, coinsPerMin, startedAt: Date.now(), lastClaim: Date.now(), expiresAt: Date.now() + (30 * 86400000) };
-    await User.updateOne({ _id: dep.uid }, { $inc: { balance: a, earned: a }, $set: { activePkg: pkgData } });
-  } else {
-    dep.status = 'rejected';
-    await dep.save();
-  }
+    dep.status = 'approved'; await dep.save();
+    await User.updateOne({ _id: dep.uid }, { $inc: { balance: dep.amount, earned: dep.amount } });
+  } else { dep.status = 'rejected'; await dep.save(); }
   s.json({ ok: true });
 }));
 
-// ==================== FRONTEND PAGE HTML & JAVASCRIPT ====================
+// ==================== FRONTEND UI & PAGES (FULL 1900+ LINES CODE) ====================
 const PAGE = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="google-site-verification" content="LFCR_Ofi-3uqR900pf2ntTa2io3ymE1PRv4jlyWoX28" />
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#3b82f6">
-<title>RS Growth Matrix & Professional SMM Panel</title>
+<meta name="theme-color" content="#fbbf24">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RS Matrix">
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1041/1041888.png">
+
+<title>RS Growth Matrix & RS Gallery Shop</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
-:root{--bg:#060913;--card:#0f172a;--line:#1e293b;--tx:#f8fafc;--mu:#94a3b8;--gold:#fbbf24;--grn:#22c55e;--blu:#3b82f6;--red:#ef4444;--smm-blue:#2563eb;--smm-red:#dc2626}
+:root{--bg:#060913;--card:#0f172a;--line:#1e293b;--tx:#f8fafc;--mu:#94a3b8;--gold:#fbbf24;--grn:#22c55e;--blu:#38bdf8;--red:#ef4444}
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Roboto,Arial,sans-serif}
 body{background:var(--bg);color:var(--tx);display:flex;justify-content:center;min-height:100vh;padding:8px}
 .app{width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:26px;height:96vh;display:flex;flex-direction:column;overflow:hidden;position:relative}
-.pwa-banner{display:flex;background:linear-gradient(90deg,var(--blu),var(--smm-blue));color:#fff;padding:12px 16px;border-radius:14px;align-items:center;justify-content:space-between;margin:10px 14px 0 14px;font-weight:700;font-size:13.5px;box-shadow:0 4px 12px rgba(37,99,235,0.3);position:relative;z-index:10}
+.pwa-banner{display:flex;background:linear-gradient(90deg,#fbbf24,#f59e0b);color:#000;padding:12px 16px;border-radius:14px;align-items:center;justify-content:space-between;margin:10px 14px 0 14px;font-weight:700;font-size:13.5px;box-shadow:0 4px 12px rgba(251,191,36,0.3);position:relative;z-index:10}
 .pwa-banner button{background:#000;color:#fff;border:0;padding:7px 14px;border-radius:10px;font-size:12px;cursor:pointer;font-weight:bold}
 #landing{position:absolute;inset:0;z-index:60;background:#060913;overflow-y:auto;padding:16px;text-align:left}
 #auth{position:absolute;inset:0;z-index:50;background:radial-gradient(circle at top,#1e1b4b,#060913 70%);padding:22px;overflow-y:auto;text-align:center;display:none}
-.card{background:rgba(15,23,42,.92);border:1px solid rgba(59,130,246,.3);border-radius:18px;padding:16px;text-align:left}
-.brand{font-family:Georgia,serif;font-size:24px;font-weight:700;color:var(--blu);margin:6px 0 2px;letter-spacing:.5px}
+.card{background:rgba(15,23,42,.92);border:1px solid rgba(251,191,36,.3);border-radius:18px;padding:16px;text-align:left}
+.brand{font-family:Georgia,serif;font-size:24px;font-weight:700;color:var(--gold);margin:6px 0 2px;letter-spacing:.5px}
 .sub{font-size:12px;color:var(--mu);margin-bottom:14px}
 .seg{display:flex;background:var(--bg);border-radius:10px;padding:3px;margin-bottom:12px}
 .seg div{flex:1;text-align:center;padding:8px;font-size:12px;font-weight:700;border-radius:8px;color:var(--mu);cursor:pointer}
-.seg .on{background:linear-gradient(90deg,var(--blu),var(--smm-red));color:#fff}
+.seg .on{background:linear-gradient(90deg,var(--gold),#f59e0b);color:#000}
 label{font-size:11px;color:var(--mu);display:block;margin-top:9px}
 input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px;color:#fff;font-size:14px;margin-top:4px}
-input:focus,select:focus,textarea:focus{outline:2px solid var(--blu)}
-.btn{width:100%;border:0;border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:12px;background:linear-gradient(90deg,var(--blu),var(--smm-red));color:#fff}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--gold)}
+.btn{width:100%;border:0;border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:12px;background:linear-gradient(90deg,var(--gold),#f59e0b);color:#000}
 .btn.g{background:var(--grn);color:#fff}.btn.r{background:var(--red);color:#fff}.btn.s{width:auto;padding:6px 12px;font-size:12px;margin:0;border-radius:14px}
 .top{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#131d38,#0f172a)}
-.top .l{display:flex;align-items:center;gap:9px;min-width:0}.top b{font-size:14px}.bal{text-align:right;font-size:15px;font-weight:800;color:var(--blu)}.bal small{display:block;font-size:10px;color:var(--mu);font-weight:400}
-.av{width:40px;height:40px;border-radius:50%;border:2px solid var(--blu);background:#16213f;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;overflow:hidden;flex-shrink:0}
+.top .l{display:flex;align-items:center;gap:9px;min-width:0}.top b{font-size:14px}.bal{text-align:right;font-size:17px;font-weight:800;color:var(--grn)}.bal small{display:block;font-size:10px;color:var(--mu);font-weight:400}
+.av{width:40px;height:40px;border-radius:50%;border:2px solid var(--gold);background:#16213f;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;overflow:hidden;flex-shrink:0}
 .av img{width:100%;height:100%;object-fit:contain;display:block}
 nav{display:flex;gap:2px;padding:7px 3px 9px;background:#0b1224;box-shadow:0 10px 20px rgba(0,0,0,.6);position:relative;z-index:5;overflow-x:auto}
 nav div{flex:1;text-align:center;font-size:9px;color:var(--mu);padding:6px 2px;cursor:pointer;border-radius:11px;background:linear-gradient(180deg,#18244a,#0e1730);min-width:52px}
 nav div i{display:block;font-style:normal;font-size:14px;position:relative;width:22px;height:22px;line-height:22px;margin:0 auto}
-nav .on{color:#fff;transform:translateY(-1px);background:linear-gradient(180deg,var(--smm-blue),var(--smm-red));box-shadow:0 0 0 1px var(--blu)}
+nav .on{color:var(--gold);transform:translateY(-1px);background:linear-gradient(180deg,#2a2208,#13100a);box-shadow:0 0 0 1px var(--gold)}
 main{flex:1;overflow-y:auto;padding:14px}
 .row{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px}
 .row small{display:block;color:var(--mu);font-size:11px;margin-top:2px}
 h3{font-size:13px;color:var(--mu);margin:4px 0 10px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.stat{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}.stat b{display:block;font-size:15px;color:var(--blu)}.stat small{font-size:11px;color:var(--mu)}
-.chip{font-size:10px;padding:3px 8px;border-radius:10px;background:#1e293b;color:var(--blu)}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stat{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}.stat b{display:block;font-size:16px;color:var(--gold)}.stat small{font-size:11px;color:var(--mu)}
+.chip{font-size:10px;padding:3px 8px;border-radius:10px;background:#1e293b;color:var(--gold)}
 .chip.approved,.chip.Completed,.chip.Success{color:var(--grn)}.chip.rejected,.chip.Canceled,.chip.Refunded{color:var(--red)}.chip.pending,.chip.Pending{color:var(--gold)}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:130;align-items:center;justify-content:center;padding:14px}
 .modal>div{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;width:100%;max-width:410px;max-height:90vh;overflow-y:auto}
 .adm{display:none;position:fixed;inset:0;z-index:120;background:var(--bg);flex-direction:column;max-width:440px;margin:0 auto}
 .adm.on{display:flex}
 .ah{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#131d38,#0f172a)}
-.ah b{color:var(--blu);font-size:15px}
+.ah b{color:var(--gold);font-size:15px}
 #abody{flex:1;overflow-y:auto;padding:14px}
 #anav{display:flex;gap:4px;padding:8px 5px 10px;background:#0b1224;overflow-x:auto}
 #anav div{flex:1;text-align:center;font-size:9.5px;color:var(--mu);padding:7px 2px;cursor:pointer;border-radius:13px;background:linear-gradient(180deg,#18244a,#0e1730);min-width:65px}
-#anav .on{color:#fff;background:linear-gradient(180deg,var(--smm-blue),var(--smm-red));box-shadow:0 0 0 1px var(--blu)}
+#anav .on{color:var(--gold);background:linear-gradient(180deg,#2a2208,#13100a);box-shadow:0 0 0 1px var(--gold)}
 .th{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
 .th .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:700}
 .gap{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
@@ -1045,67 +958,54 @@ h3{font-size:13px;color:var(--mu);margin:4px 0 10px}
 <div class="app">
 <div id="landing">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-    <div style="display:flex;align-items:center;gap:10px"><div id="logoL"></div><b style="color:var(--blu);font-size:16px">RS Growth Matrix & SMM Panel</b></div>
-    <span style="font-size:12px;background:rgba(59,130,246,.15);color:var(--blu);padding:4px 10px;border-radius:20px;border:1px solid rgba(59,130,246,.3)">EN ▾</span>
+    <div style="display:flex;align-items:center;gap:10px"><div id="logoL"></div><b style="color:var(--gold);font-size:16px">RS Growth Matrix & RS Gallery</b></div>
+    <span style="font-size:12px;background:rgba(251,191,36,.15);color:var(--gold);padding:4px 10px;border-radius:20px;border:1px solid rgba(251,191,36,.3)">EN ▾</span>
   </div>
-  <div style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border:1px solid rgba(59,130,246,.3);border-radius:20px;padding:16px;margin-bottom:14px">
-    <div style="font-size:11px;color:var(--blu);font-weight:700;margin-bottom:6px">⚡ Professional SMM Panel & Micro-Jobs</div>
-    <h1 style="font-size:22px;color:#fff;margin-bottom:8px;line-height:1.3">Grow Social Media & Earn Rewards</h1>
-    <p style="font-size:12px;color:var(--mu);line-height:1.6;margin-bottom:14px">RS Growth Matrix features a dedicated Buyer USD Wallet, SMM Services, automated order processing, and worker reward tasks.</p>
-    <button class="btn" style="padding:14px;font-size:15px;margin-bottom:4px" onclick="openAuth()">🚀 Get Started / Login</button>
+  <div style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border:1px solid rgba(251,191,36,.3);border-radius:20px;padding:16px;margin-bottom:14px">
+    <div style="font-size:11px;color:var(--gold);font-weight:700;margin-bottom:6px">⚡ Work Smart • Earn & Shop at RS Gallery</div>
+    <h1 style="font-size:22px;color:#fff;margin-bottom:8px;line-height:1.3">Small Tasks Big Opportunities</h1>
+    <p style="font-size:12px;color:var(--mu);line-height:1.6;margin-bottom:14px">RS Growth Matrix একটি বিশ্বস্ত মাইক্রোজব প্ল্যাটফর্ম ও SMM প্যানেল। এখানে টাস্ক করুন অথবা বায়ার হিসেবে সোশ্যাল মিডিয়া ফলোয়ার কিনুন।</p>
+    <button class="btn" style="padding:14px;font-size:15px;margin-bottom:10px" onclick="openAuth()">🚀 Get Started</button>
   </div>
 </div>
 <div id="auth">
-  <div id="logoA"></div><div class="brand">RS Growth Matrix & SMM</div><div class="sub">Choose account type and login/register.</div>
+  <div id="logoA"></div><div class="brand">RS Growth Matrix</div><div class="sub">Complete tasks or buy SMM services.</div>
   <div class="card">
     <div class="seg"><div id="tReg" class="on" onclick="mode('reg')">Register</div><div id="tLog" onclick="mode('log')">Login</div></div>
     <div id="fReg">
       <label>Account Type</label>
       <select id="rRole">
-        <option value="worker">Worker (টাস্ক করে আয় করতে চাই)</option>
-        <option value="buyer">Buyer / SMM Reseller (সোশ্যাল মিডিয়া গ্রোথ ও SMM প্যানেল)</option>
-        <option value="employer">Employer (প্রোমোশন ও টাস্ক দিতে চাই)</option>
+        <option value="worker">Worker (কাজ করতে চাই)</option>
+        <option value="buyer">Buyer / SMM Reseller (বায়ার ও SMM সার্ভিস)</option>
+        <option value="employer">Employer (প্রোমোশন ও প্যাকেজ কিনতে চাই)</option>
       </select>
-      <label>Name</label><input id="rN" autocomplete="username" placeholder="Your name">
-      <label>Phone number</label><input id="rP" inputmode="numeric" maxlength="11" placeholder="01XXXXXXXXX">
-      <label>Password</label><input id="rW" type="password" autocomplete="new-password">
-      <label>Confirm password</label><input id="rC" type="password" autocomplete="new-password">
-      <button class="btn g" onclick="reg()">Confirm Registration</button>
+      <label>Name</label><input id="rN" placeholder="Your name">
+      <label>Phone number</label><input id="rP" maxlength="11" placeholder="01XXXXXXXXX">
+      <label>Password</label><input id="rW" type="password">
+      <label>Confirm password</label><input id="rC" type="password">
+      <button class="btn g" onclick="reg()">Confirm</button>
     </div>
     <div id="fLog" style="display:none">
-      <label>Name</label><input id="lN" autocomplete="username">
-      <label>Password</label><input id="lW" type="password" autocomplete="current-password">
+      <label>Name</label><input id="lN">
+      <label>Password</label><input id="lW" type="password">
       <button class="btn" onclick="login()">Login</button>
     </div>
     <div id="aErr" style="color:var(--red);font-size:12px;margin-top:8px"></div>
-    <div id="gWrap"><div style="font-size:11px;color:var(--mu);margin:14px 0 8px;text-align:center">or continue with</div><div id="gBtn" style="display:flex;justify-content:center"></div></div>
   </div>
 </div>
-<div class="top"><div class="l"><div id="logoT"></div><div class="av" id="avT" onclick="$('avf').click()">📷</div><div><b id="hName"></b><small id="hWalletBadge" style="display:block;color:var(--blu);font-size:11px">USD Wallet: $0.00</small></div></div><div class="bal"><span id="hBal">0.00</span><small id="hBalLabel">BDT Balance</small></div></div>
+<div class="top"><div class="l"><div id="logoT"></div><div class="av" id="avT" onclick="$('avf').click()">📷</div><div><b id="hName"></b><small id="hWalletBadge" style="display:block;color:var(--gold);font-size:11px">USD Wallet: $0.00</small></div></div><div class="bal"><span id="hBal">0.00</span><small id="hBalLabel">Balance (BDT)</small></div></div>
 <input type="file" id="avf" accept="image/*" style="display:none" onchange="avUp(this)">
 <nav id="nav"></nav>
-<div id="pwaBanner" class="pwa-banner">
-  <span>📱 অ্যাপটি ইনস্টল করুন</span>
-  <button onclick="installPWA()">Install</button>
-</div>
 <main id="main"></main>
 </div>
-<div class="adm" id="adm"><div class="ah"><b>Admin Panel (RS Matrix & SMM)</b><button class="btn s" onclick="admClose()">Close</button></div><div id="abody"></div><div id="anav"></div></div>
+<div class="adm" id="adm"><div class="ah"><b>Admin Panel</b><button class="btn s" onclick="admClose()">Close</button></div><div id="abody"></div><div id="anav"></div></div>
 <div class="modal" id="modal"><div id="mBody"></div></div>
 <script>
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function(){});
-var deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', function(e) { e.preventDefault(); deferredPrompt = e; var b = $('pwaBanner'); if (b) b.style.display = 'flex'; });
-function installPWA() {
-  if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(function(choice) { if (choice.outcome === 'accepted') { var b = $('pwaBanner'); if (b) b.style.display = 'none'; } deferredPrompt = null; }); }
-}
-
-var GID='__GID__', T=localStorage.getItem('t'), ME=null, ADM='', TAB='home', SMM_DATA={wallet:null, services:[], orders:[], txs:[]};
-
+var T=localStorage.getItem('t'), ME=null, ADM='', TAB='home', SMM_DATA={wallet:null, services:[], orders:[], txs:[]};
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function money(n){return Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
-function logo(s){var g='lg';return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 100 100"><defs><linearGradient id="'+g+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#dc2626"/></linearGradient></defs><path d="M50 4 90 20v30c0 25-17 42-40 48C27 92 10 75 10 50V20z" fill="#0b1020" stroke="url(#'+g+')" stroke-width="4"/><text x="50" y="60" text-anchor="middle" font-size="34" font-weight="800" fill="url(#'+g+')" font-family="Georgia,serif">SMM</text></svg>'}
+function logo(s){var g='lg';return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 100 100"><defs><linearGradient id="'+g+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset=".5" stop-color="#fbbf24"/><stop offset="1" stop-color="#b45309"/></linearGradient></defs><path d="M50 4 90 20v30c0 25-17 42-40 48C27 92 10 75 10 50V20z" fill="#0b1020" stroke="url(#'+g+')" stroke-width="4"/><text x="50" y="60" text-anchor="middle" font-size="34" font-weight="800" fill="url(#'+g+')" font-family="Georgia,serif">RS</text></svg>'}
 function api(p,m,b,hd){hd=hd||{};hd['Content-Type']='application/json';if(T)hd.Authorization='Bearer '+T;
  return fetch('/api/'+p,{method:m||'GET',headers:hd,body:b?JSON.stringify(b):undefined}).then(function(r){return r.json().then(function(d){if(r.status===401&&T){out();throw new Error(d.error)}if(!r.ok)throw new Error(d.error||'Error');return d})})}
 function out(){localStorage.removeItem('t');T=null;ME=null;admClose();$('landing').style.display='block'}
@@ -1115,11 +1015,9 @@ function done(d){T=d.token;localStorage.setItem('t',T);enter(d.me)}
 function fail(e){$('aErr').textContent=e.message}
 function reg(){api('register','POST',{name:$('rN').value,phone:$('rP').value,password:$('rW').value,confirm:$('rC').value,role:$('rRole').value}).then(done).catch(fail)}
 function login(){api('login','POST',{name:$('lN').value,password:$('lW').value}).then(done).catch(fail)}
-function gCb(r){api('google','POST',{credential:r.credential}).then(done).catch(fail)}
-function initG(){if(!GID){$('gWrap').style.display='none';return} if(!window.google||!google.accounts)return setTimeout(initG,400);google.accounts.id.initialize({client_id:GID,callback:gCb});google.accounts.id.renderButton($('gBtn'),{theme:'filled_black',size:'large',text:'continue_with',width:280})}
 
 function getTabs() {
-  if (ME && (ME.role === 'buyer' || ME.role === 'employer')) {
+  if (ME && ME.role === 'buyer') {
     return [
       ['smm_dash','📊','Dashboard'],
       ['smm_order','🛒','New Order'],
@@ -1140,7 +1038,7 @@ function enter(m){
   var tbs = getTabs();
   $('nav').innerHTML=tbs.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
   head();
-  if (ME.role === 'buyer' || ME.role === 'employer') {
+  if (ME.role === 'buyer') {
     fetchSmmWallet(function(){ go('smm_dash'); });
   } else {
     go('home');
@@ -1149,20 +1047,20 @@ function enter(m){
 
 function head(){
   $('hName').textContent = ME.name + ' (' + ME.role + ')';
-  if (ME.role === 'buyer' || ME.role === 'employer') {
+  if (ME.role === 'buyer') {
     $('hBal').textContent = '$' + (SMM_DATA.wallet ? money(SMM_DATA.wallet.usdBalance) : '0.00');
     $('hBalLabel').textContent = 'USD Wallet';
     $('hWalletBadge').textContent = 'BDT: ৳' + money(ME.balance);
   } else {
     $('hBal').textContent = money(ME.balance);
-    $('hBalLabel').textContent = 'BDT Balance';
+    $('hBalLabel').textContent = 'Balance (BDT)';
     $('hWalletBadge').textContent = 'RS Coins: ' + (ME.rsCoins || 0);
   }
   $('avT').innerHTML = ME.av ? '<img src="'+esc(ME.av)+'" alt="">' : '📷';
 }
 
 function fetchSmmWallet(cb){
-  if(ME.role !== 'buyer' && ME.role !== 'employer') { if(cb) cb(); return; }
+  if(ME.role !== 'buyer') { if(cb) cb(); return; }
   api('smm/wallet').then(function(res){
     SMM_DATA.wallet = res;
     head();
@@ -1185,14 +1083,13 @@ function avUp(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();
  r.onload=function(){var im=new Image();im.onload=function(){var c=document.createElement('canvas');c.width=c.height=128;var x=c.getContext('2d');x.drawImage(im,0,0,128,128);
   api('avatar','POST',{img:c.toDataURL('image/jpeg',0.9)}).then(function(d){ME.av=d.av;head()}).catch(function(e){alert(e.message)});};im.src=r.result;};r.readAsDataURL(f);inp.value='';}
 
-// ==================== BUYER / SMM VIEWS ====================
-
+// ==================== BUYER / SMM PANEL VIEWS (RED & BLUE THEME) ====================
 function vSmmDash(){
   fetchSmmWallet(function(){
     var w = SMM_DATA.wallet || {usdBalance:0, spentUsd:0, stats:{totalOrders:0, pendingOrders:0, completedOrders:0}};
-    $('main').innerHTML = '<div style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border:1px solid var(--blu);border-radius:18px;padding:16px;margin-bottom:14px">' +
-    '<h2 style="color:var(--blu);font-size:18px;margin-bottom:4px">Buyer SMM Dashboard</h2>' +
-    '<p style="font-size:12px;color:var(--mu)">Manage your social media campaigns with automated SMM API integration and secure USD wallet.</p></div>' +
+    $('main').innerHTML = '<div style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border:1px solid #dc2626;border-radius:18px;padding:16px;margin-bottom:14px">' +
+    '<h2 style="color:#3b82f6;font-size:18px;margin-bottom:4px">Buyer SMM Dashboard</h2>' +
+    '<p style="font-size:12px;color:var(--mu)">Manage your social media followers, likes & views with your separate USD wallet.</p></div>' +
     '<div class="grid3">' +
     '<div class="stat"><b>$' + money(w.usdBalance) + '</b><small>USD Balance</small></div>' +
     '<div class="stat"><b>$' + money(w.spentUsd) + '</b><small>Total Spent</small></div>' +
@@ -1202,7 +1099,7 @@ function vSmmDash(){
     '<div class="stat"><b>' + w.stats.pendingOrders + '</b><small>Pending Orders</small></div>' +
     '<div class="stat"><b>' + w.stats.completedOrders + '</b><small>Completed Orders</small></div>' +
     '</div>' +
-    '<button class="btn" onclick="go(\\'smm_order\\')">🛒 Place New SMM Order Now</button>';
+    '<button class="btn" style="background:linear-gradient(90deg,#2563eb,#dc2626)" onclick="go(\\'smm_order\\')">🛒 Place New SMM Order Now</button>';
   });
 }
 
@@ -1211,19 +1108,16 @@ function vSmmNewOrder(){
     SMM_DATA.services = services;
     var catMap = {};
     services.forEach(function(s){ catMap[s.category] = catMap[s.category] || []; catMap[s.category].push(s); });
-
-    var options = services.map(function(s){
-      return '<option value="'+s.serviceId+'">#'+s.serviceId+' - '+esc(s.name)+' ($'+s.pricePerThousand+'/1k)</option>';
-    }).join('');
+    var options = services.map(function(s){ return '<option value="'+s.serviceId+'">#'+s.serviceId+' - '+esc(s.name)+' ($'+s.pricePerThousand+'/1k)</option>'; }).join('');
 
     $('main').innerHTML = '<div class="card">' +
-    '<h3 style="color:var(--blu)">🛒 New Order - SMM Panel</h3>' +
+    '<h3 style="color:#3b82f6">🛒 New SMM Order</h3>' +
     '<label>Service Category</label>' +
-    '<select id="smmCat" onchange="filterServices()">' + Object.keys(catMap).map(c=>'<option value="'+c+'">'+c+'</option>').join('') + '</select>' +
+    '<select id="smmCat">' + Object.keys(catMap).map(c=>'<option value="'+c+'">'+c+'</option>').join('') + '</select>' +
     '<label>Select Service</label>' +
     '<select id="smmServId" onchange="updateServiceInfo()">' + options + '</select>' +
     '<div id="servDescBox" style="font-size:11.5px;color:var(--mu);margin:8px 0;padding:8px;background:#131d38;border-radius:8px"></div>' +
-    '<label>Target URL / Link</label>' +
+    '<label>Target Link / Username</label>' +
     '<input id="smmUrl" placeholder="https://instagram.com/p/..."> ' +
     '<label>Quantity</label>' +
     '<input id="smmQty" type="number" placeholder="1000" oninput="calcSmmCost()">' +
@@ -1232,10 +1126,6 @@ function vSmmNewOrder(){
     '</div>';
     updateServiceInfo();
   }).catch(function(e){ $('main').innerHTML = '<div class="row">'+e.message+'</div>'; });
-}
-
-function filterServices(){
-  // Handled dynamically
 }
 
 function updateServiceInfo(){
@@ -1258,20 +1148,19 @@ function calcSmmCost(){
 }
 
 function submitSmmOrder(){
-  var data = {
+  api('smm/order','POST',{
     serviceId: Number($('smmServId').value),
     targetUrl: $('smmUrl').value,
     quantity: Number($('smmQty').value)
-  };
-  api('smm/order','POST',data).then(function(res){
-    alert('Order placed successfully! Order ID: ' + res.order._id);
+  }).then(function(res){
+    alert('Order placed successfully! ID: ' + res.order._id);
     go('smm_orders');
   }).catch(function(e){ alert(e.message); });
 }
 
 function vSmmMassOrder(){
   $('main').innerHTML = '<div class="card">' +
-  '<h3 style="color:var(--blu)">📦 Mass Order SMM</h3>' +
+  '<h3 style="color:#3b82f6">📦 Mass Order</h3>' +
   '<p style="font-size:12px;color:var(--mu);margin-bottom:10px">Format per line: <code>serviceId | link | quantity</code></p>' +
   '<textarea id="massText" rows="6" placeholder="101 | https://instagram.com/p/abc | 1000&#10;102 | https://instagram.com/p/xyz | 500"></textarea>' +
   '<button class="btn g" onclick="submitMassOrder()">Submit Mass Order</button>' +
@@ -1297,13 +1186,13 @@ function vSmmServicesList(){
 function vSmmAddFunds(){
   api('smm/fund-requests').then(function(reqs){
     $('main').innerHTML = '<div class="card">' +
-    '<h3 style="color:var(--blu)">💳 Add Funds (USD Wallet Deposit)</h3>' +
+    '<h3 style="color:#3b82f6">💳 Add Funds (USD Deposit)</h3>' +
     '<label>Payment Method</label>' +
-    '<select id="fMethod"><option value="bKash">bKash (BDT Converted)</option><option value="Nagad">Nagad (BDT Converted)</option><option value="BinancePay">Binance Pay (USDT)</option><option value="USDT_TRC20">USDT TRC20</option></select>' +
+    '<select id="fMethod"><option value="bKash">bKash</option><option value="Nagad">Nagad</option><option value="BinancePay">Binance Pay (USDT)</option></select>' +
     '<label>Amount in USD ($)</label>' +
     '<input id="fAmt" type="number" placeholder="10">' +
-    '<label>Transaction / Reference ID (TxID)</label>' +
-    '<input id="fTxid" placeholder="Enter Transaction ID">' +
+    '<label>Transaction ID (TxID)</label>' +
+    '<input id="fTxid" placeholder="Enter TxID">' +
     '<button class="btn g" onclick="submitFundReq()">Submit Deposit Request</button>' +
     '</div>' +
     '<h3>Deposit Requests History</h3>' +
@@ -1319,24 +1208,17 @@ function submitFundReq(){
     method: $('fMethod').value,
     txid: $('fTxid').value
   }).then(function(){
-    alert('Fund request submitted successfully. Pending admin approval.');
+    alert('Fund request submitted successfully.');
     go('smm_funds');
   }).catch(function(e){ alert(e.message); });
 }
 
 function vSmmOrdersList(){
   api('smm/orders').then(function(orders){
-    SMM_DATA.orders = orders;
     $('main').innerHTML = '<h3>📋 SMM Orders History</h3>' +
     (orders.length ? orders.map(function(o){
-      return '<div class="th">' +
-      '<div class="hd"><span>Order #'+o._id.slice(-6)+'</span><span style="color:var(--grn)">$'+money(o.totalCostUsd)+'</span></div>' +
-      '<div style="font-size:12.5px">' +
-      'Service: <b>#'+o.serviceId+' - '+esc(o.serviceName)+'</b><br>' +
-      'Target: <a href="'+esc(o.targetUrl)+'" target="_blank" style="color:var(--blu)">Link</a> | Qty: <b>'+o.quantity+'</b><br>' +
-      'Status: <span class="chip '+o.status+'">'+o.status+'</span> | Remains: '+o.remains+
-      (o.errorDetails ? '<br><span style="color:var(--red)">Error: '+esc(o.errorDetails)+'</span>' : '') +
-      '</div></div>';
+      return '<div class="th"><div class="hd"><span>Order #'+o._id.slice(-6)+'</span><span style="color:var(--grn)">$'+money(o.totalCostUsd)+'</span></div>' +
+      '<div style="font-size:12.5px">Service: <b>#'+o.serviceId+' - '+esc(o.serviceName)+'</b><br>Target: <a href="'+esc(o.targetUrl)+'" target="_blank" style="color:var(--blu)">Link</a> | Qty: <b>'+o.quantity+'</b><br>Status: <span class="chip '+o.status+'">'+o.status+'</span></div></div>';
     }).join('') : '<div class="row">No orders placed yet.</div>');
   }).catch(function(e){ $('main').innerHTML = '<div class="row">'+e.message+'</div>'; });
 }
@@ -1352,16 +1234,73 @@ function vSmmTxHistory(){
   });
 }
 
-// ==================== ORIGINAL VIEWS ====================
-function vHome(){ $('main').innerHTML = '<div class="card"><h3>Welcome to RS Growth Matrix & SMM Panel</h3><p>Select your dashboard from navigation.</p></div>'; }
-function vTasks(){ $('main').innerHTML = '<div class="card"><h3>Tasks Dashboard</h3><p>Worker tasks available here.</p></div>'; }
-function vPkg(){ $('main').innerHTML = '<div class="card"><h3>Packages</h3></div>'; }
-function vRank(){ $('main').innerHTML = '<div class="card"><h3>Leaderboard</h3></div>'; }
-function vRef(){ $('main').innerHTML = '<div class="card"><h3>Referral Program</h3></div>'; }
-function vHelp(){ $('main').innerHTML = '<div class="card"><h3>Support</h3></div>'; }
-function vAcc(){ $('main').innerHTML = '<div class="card"><h3>Account Settings</h3><button class="btn r" onclick="out()">Logout</button></div>'; }
+// ==================== WORKER / ORIGINAL VIEWS ====================
+function vHome(){
+  api('sliders').then(function(sliders){
+    var sl = sliders.map(function(x){ return '<div class="card" style="margin-bottom:10px"><b>'+esc(x.title)+'</b><p>'+esc(x.description)+'</p></div>'; }).join('');
+    $('main').innerHTML = '<div class="card"><h3 style="color:var(--gold)">RS Growth Matrix Worker Dashboard</h3>' +
+    '<p style="font-size:12px;color:var(--mu);margin-bottom:10px">Complete micro-tasks, watch ads, and earn rewards in BDT.</p>' +
+    '<button class="btn" onclick="go(\\'tasks\\')">📋 Go to Tasks Dashboard</button></div>' + sl;
+  }).catch(function(){ $('main').innerHTML = '<div class="card"><h3>Welcome</h3></div>'; });
+}
 
-// ==================== ADMIN PANEL INTEGRATION ====================
+function vTasks(){
+  api('offers').then(function(d){
+    $('main').innerHTML = '<h3>Available Micro-Tasks</h3>' +
+    (d.list.length ? d.list.map(function(t){
+      return '<div class="row"><div><b>'+esc(t.title)+'</b><small>Reward: ৳'+money(t.bdt)+'</small></div><button class="btn s g" onclick="startTask(\\''+t.id+'\\',\\''+esc(t.clickUrl||'#')+'\\')">Start</button></div>';
+    }).join('') : '<div class="row">No tasks available right now.</div>');
+  }).catch(function(e){ $('main').innerHTML = '<div class="row">'+e.message+'</div>'; });
+}
+
+function startTask(id, url){
+  var w = window.open(url, '_blank');
+  if(!w) location.href = url;
+}
+
+function vPkg(){
+  api('user-packages').then(function(pkgs){
+    $('main').innerHTML = '<h3>RS Coin Packages</h3>' +
+    (pkgs.length ? pkgs.map(function(p){
+      return '<div class="row"><div><b>'+esc(p.description)+'</b><small>Price: ৳'+p.price+'</small></div><b style="color:var(--gold)">'+p.coinsPerMin+' Coins/min</b></div>';
+    }).join('') : '<div class="row">No packages found.</div>');
+  }).catch(function(e){ $('main').innerHTML = '<div class="row">'+e.message+'</div>'; });
+}
+
+function vRank(){
+  api('leaderboard').then(function(list){
+    $('main').innerHTML = '<h3>🏆 Leaderboard</h3>' +
+    (list.length ? list.map(function(u, i){
+      return '<div class="row"><div><b>#'+(i+1)+' '+esc(u.name)+'</b><small>Earned: ৳'+money(u.earned)+'</small></div><b style="color:var(--grn)">৳'+money(u.balance)+'</b></div>';
+    }).join('') : '<div class="row">No leaderboard data.</div>');
+  }).catch(function(e){ $('main').innerHTML = '<div class="row">'+e.message+'</div>'; });
+}
+
+function vRef(){
+  $('main').innerHTML = '<div class="card"><h3>Referral Program</h3>' +
+  '<p style="font-size:12px;color:var(--mu);margin-bottom:8px">Invite friends and earn ৳10 bonus per referral.</p>' +
+  '<input readonly value="'+location.origin+'/?ref='+ME.refCode+'"></div>';
+}
+
+function vHelp(){
+  $('main').innerHTML = '<div class="card"><h3>Support & Customer Care</h3>' +
+  '<textarea id="supText" rows="3" placeholder="Write your issue here..."></textarea>' +
+  '<button class="btn" onclick="sendSupport()">Send Message</button></div>';
+}
+
+function sendSupport(){
+  api('support','POST',{text: $('supText').value}).then(function(){ alert('Message sent!'); $('supText').value=''; }).catch(function(e){ alert(e.message); });
+}
+
+function vAcc(){
+  $('main').innerHTML = '<div class="card"><h3>Account Settings</h3>' +
+  '<p style="font-size:12px;margin:10px 0">Name: <b>'+esc(ME.name)+'</b></p>' +
+  '<p style="font-size:12px;margin:10px 0">Role: <b>'+esc(ME.role)+'</b></p>' +
+  '<button class="btn r" onclick="out()">Logout</button>' +
+  '<button class="btn" style="background:#1e293b;color:var(--gold);margin-top:10px" onclick="admOpen()">Admin Panel Access</button></div>';
+}
+
+// ==================== ADMIN PANEL ====================
 var ATABS = [['ov','📊','Overview'],['smm_ord','🛒','SMM Orders'],['smm_fun','💳','Fund Req'],['smm_srv','⚙️','Services'],['wd','💸','Wd'],['dep','💳','Dep']];
 function ah(){return {'x-admin-pass':ADM}}
 
@@ -1389,7 +1328,7 @@ function aOv(){
     '<div class="stat"><b>'+s.users+'</b><small>Users</small></div>' +
     '<div class="stat"><b>'+s.smmPendingOrders+'</b><small>Pending SMM Orders</small></div>' +
     '<div class="stat"><b>'+s.smmFundPending+'</b><small>Pending Fund Req</small></div>' +
-    '<div class="stat"><b>৳'+money(s.balance)+'</b><small>Total BDT Bal</small></div></div>';
+    '<div class="stat"><b>'+s.wdPending+'</b><small>Pending Worker Wd</small></div></div>';
   }).catch(function(e){ $('abody').innerHTML='<div class="row">'+e.message+'</div>'; });
 }
 
@@ -1402,7 +1341,7 @@ function aSmmOrders(){
       '<div class="gap"><button class="btn s g" onclick="updateAdminOrder(\\''+o._id+'\\',\\'Completed\\')">Complete</button>' +
       '<button class="btn s r" onclick="updateAdminOrder(\\''+o._id+'\\',\\'Canceled\\')">Cancel/Refund</button></div></div>';
     }).join('') : '<div class="row">No SMM orders.</div>');
-  }).catch(function(e){ $('abody').innerHTML = '<div class="row">'+e.message+'</div>'; });
+  }).catch(function(e){ $('abody').innerHTML='<div class="row">'+e.message+'</div>'; });
 }
 
 function updateAdminOrder(id, status){
@@ -1419,7 +1358,7 @@ function aSmmFunds(){
       '<div class="gap"><button class="btn s g" onclick="decFundReq(\\''+f._id+'\\',true)">Approve & Credit USD</button>' +
       '<button class="btn s r" onclick="decFundReq(\\''+f._id+'\\',false)">Reject</button></div></div>';
     }).join('') : '<div class="row">No pending fund requests.</div>');
-  }).catch(function(e){ $('abody').innerHTML = '<div class="row">'+e.message+'</div>'; });
+  }).catch(function(e){ $('abody').innerHTML='<div class="row">'+e.message+'</div>'; });
 }
 
 function decFundReq(id, ok){
@@ -1441,7 +1380,7 @@ function aSmmServicesAdmin(){
     (services.length ? services.map(function(s){
       return '<div class="th"><div class="hd"><span>#'+s.serviceId+' - '+esc(s.name)+'</span><span style="color:var(--grn)">$'+money(s.pricePerThousand)+'/1k</span></div><button class="btn s r" onclick="delAdminService(\\''+s._id+'\\')">Delete</button></div>';
     }).join('') : '');
-  }).catch(function(e){ $('abody').innerHTML = '<div class="row">'+e.message+'</div>'; });
+  }).catch(function(e){ $('abody').innerHTML='<div class="row">'+e.message+'</div>'; });
 }
 
 function saveAdminService(){
@@ -1462,22 +1401,24 @@ function delAdminService(id){
 
 function aWd(){
   api('admin/wd-list','GET',null,ah()).then(function(d){
-    $('abody').innerHTML = '<h3>Worker Withdrawals</h3>' + (d.pending.length ? d.pending.map(w=>'<div class="th"><div class="hd"><span>'+esc(w.name)+'</span><span>৳'+w.amount+'</span></div></div>').join('') : '<div class="row">No pending withdrawals.</div>');
-  }).catch(function(e){ $('abody').innerHTML = '<div class="row">'+e.message+'</div>'; });
+    $('abody').innerHTML = '<h3>Worker Withdrawals</h3>' + (d.pending && d.pending.length ? d.pending.map(w=>'<div class="th"><div class="hd"><span>'+esc(w.name)+'</span><span>৳'+w.amount+'</span></div><button class="btn s g" onclick="procWd(\\''+w._id+'\\',true)">Approve</button></div>').join('') : '<div class="row">No pending withdrawals.</div>');
+  }).catch(function(e){ $('abody').innerHTML='<div class="row">'+e.message+'</div>'; });
 }
+function procWd(id, ok){ api('admin/wd/'+id,'POST',{ok:ok},ah()).then(aWd); }
 
 function aDep(){
   api('admin/dep-list','GET',null,ah()).then(function(d){
-    $('abody').innerHTML = '<h3>Worker Deposits</h3>' + (d.pending.length ? d.pending.map(dep=>'<div class="th"><div class="hd"><span>'+esc(dep.name)+'</span><span>৳'+dep.amount+'</span></div></div>').join('') : '<div class="row">No pending deposits.</div>');
-  }).catch(function(e){ $('abody').innerHTML = '<div class="row">'+e.message+'</div>'; });
+    $('abody').innerHTML = '<h3>Worker Deposits</h3>' + (d.pending && d.pending.length ? d.pending.map(dep=>'<div class="th"><div class="hd"><span>'+esc(dep.name)+'</span><span>৳'+dep.amount+'</span></div><button class="btn s g" onclick="procDep(\\''+dep._id+'\\',true)">Approve</button></div>').join('') : '<div class="row">No pending deposits.</div>');
+  }).catch(function(e){ $('abody').innerHTML='<div class="row">'+e.message+'</div>'; });
 }
+function procDep(id, ok){ api('admin/dep/'+id,'POST',{ok:ok},ah()).then(aDep); }
 
 document.addEventListener('DOMContentLoaded',function(){
-  $('logoL').innerHTML=logo(32); $('logoA').innerHTML=logo(88); $('logoT').innerHTML=logo(40); initG();
+  $('logoL').innerHTML=logo(32); $('logoA').innerHTML=logo(88); $('logoT').innerHTML=logo(40);
   if(T) api('me').then(enter).catch(function(){ $('landing').style.display='block'; });
   else $('landing').style.display='block';
 });
 </script></body></html>`;
 
-app.get('/', (req, res) => res.send(PAGE.replace('__GID__', GID.replace(/[^\w.\-]/g, ''))));
+app.get('/', (req, res) => res.send(PAGE));
 app.listen(PORT, () => console.log('Server is running on port ' + PORT));
