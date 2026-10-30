@@ -1892,4 +1892,41 @@ app.get('/api/assistant/summary', h(async (q, s) => {
     totalUserBalance: totalBalance,
     offerEarningsToday: earnedToday
   });
-}));
+}));// ---------- RS Wallet-এ ডিপোজিট পাঠানো ----------
+const WALLET_URL_ENV = (process.env.WALLET_URL || '').replace(/\/$/, '');
+const WALLET_KEY_ENV = process.env.WALLET_KEY || '';
+const walletSent = new Set();
+
+async function sendDepositsToWallet() {
+  if (!WALLET_URL_ENV || !WALLET_KEY_ENV) return;
+  if (mongoose.connection.readyState !== 1) return;
+  const since = new Date(Date.now() - 3 * 24 * 36e5);
+  const list = await Deposit.find({ at: { $gte: since }, status: 'pending' }).limit(50);
+  for (const d of list) {
+    const id = String(d._id);
+    if (walletSent.has(id)) continue;
+    try {
+      const r = await fetch(WALLET_URL_ENV + '/api/site/deposit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': WALLET_KEY_ENV },
+        body: JSON.stringify({
+          amount: d.amount,
+          trxId: d.txid,
+          method: String(d.method || '').toLowerCase(),
+          lastDigits: d.lastDigits,
+          customer: d.name,
+          customerRef: String(d.uid),
+          pkgName: d.pkgName,
+          orderRef: d.serialNo
+        }),
+        signal: AbortSignal.timeout(20000)
+      });
+      if (r.ok || r.status === 409) walletSent.add(id);
+      else console.error('Wallet send failed', r.status, d.txid);
+    } catch (e) {
+      console.error('Wallet send error', e.message);
+    }
+  }
+}
+setTimeout(() => sendDepositsToWallet().catch(() => {}), 20000);
+setInterval(() => sendDepositsToWallet().catch(() => {}), 30000);
