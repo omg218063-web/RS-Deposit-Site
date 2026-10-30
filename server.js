@@ -1845,4 +1845,51 @@ document.addEventListener('DOMContentLoaded',function(){$('logoL').innerHTML=log
 </script></body></html>`;
 
 app.get('/', (req, res) => res.send(PAGE.replace('__GID__', GID.replace(/[^\w.\-]/g, '')).replace(/__AGE__/g, String(MIN_AGE | 0))));
-app.listen(PORT, () => console.log('Server is running on port ' + PORT));
+app.listen(PORT, () => console.log('Server is running on port ' + PORT));// ---------- অ্যাসিস্ট্যান্টের জন্য (শুধু দেখা, কিছু বদলায় না) ----------
+app.get('/api/assistant/summary', h(async (q, s) => {
+  const key = String(q.headers['x-assistant-key'] || '');
+  const expected = process.env.ASSISTANT_KEY || '';
+  if (!expected || !key || !same(key, expected)) return bad(s, 'অনুমতি নেই', 401);
+
+  const st = dayStart();
+  const sumOf = async (M, match, f) => {
+    const r = await M.aggregate([{ $match: match }, { $group: { _id: null, t: { $sum: '$' + f } } }]);
+    return r.length ? r[0].t : 0;
+  };
+
+  const usersTotal = await User.countDocuments();
+  const usersActive = await User.countDocuments({ lastSeen: { $gte: st.getTime() } });
+  const usersNew = await User.countDocuments({ created: { $gte: st } });
+
+  const wdPendingCount = await Wd.countDocuments({ status: 'pending' });
+  const wdPendingAmount = await sumOf(Wd, { status: 'pending' }, 'amount');
+  const wdToday = await Wd.countDocuments({ at: { $gte: st } });
+  const wdList = await Wd.find({ status: 'pending' }).sort({ at: -1 }).limit(5).select('name amount method -_id').lean();
+
+  const depPendingCount = await Deposit.countDocuments({ status: 'pending' });
+  const depPendingAmount = await sumOf(Deposit, { status: 'pending' }, 'amount');
+  const depApprovedCount = await Deposit.countDocuments({ status: 'approved', at: { $gte: st } });
+  const depApprovedAmount = await sumOf(Deposit, { status: 'approved', at: { $gte: st } }, 'amount');
+  const depListRaw = await Deposit.find({ status: 'pending' }).sort({ at: -1 }).limit(5).select('name amount method pkgName -_id').lean();
+  const depList = depListRaw.map(d => ({ name: d.name, amount: d.amount, method: d.method, package: d.pkgName }));
+
+  const tPending = await Click.countDocuments({ status: 'pending' });
+  const tSuccess = await Click.countDocuments({ status: 'success' });
+  const tCancelled = await Click.countDocuments({ status: { $in: ['cancelled', 'expired'] } });
+  const promoPending = await CustomTask.countDocuments({ status: 'pending' });
+
+  const totalBalance = await sumOf(User, {}, 'balance');
+  const earnedToday = await sumOf(Conv, { at: { $gte: st } }, 'bdt');
+
+  s.json({
+    ok: true,
+    date: new Date(Date.now() + 6 * 36e5).toISOString().slice(0, 10),
+    users: { total: usersTotal, activeToday: usersActive, newToday: usersNew },
+    withdrawals: { pendingCount: wdPendingCount, pendingAmount: wdPendingAmount, requestedToday: wdToday, pendingList: wdList },
+    deposits: { pendingCount: depPendingCount, pendingAmount: depPendingAmount, approvedTodayCount: depApprovedCount, approvedTodayAmount: depApprovedAmount, pendingList: depList },
+    tasks: { pending: tPending, success: tSuccess, cancelled: tCancelled },
+    promoTasksPending: promoPending,
+    totalUserBalance: totalBalance,
+    offerEarningsToday: earnedToday
+  });
+}));
