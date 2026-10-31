@@ -1930,3 +1930,39 @@ async function sendDepositsToWallet() {
 }
 setTimeout(() => sendDepositsToWallet().catch(() => {}), 20000);
 setInterval(() => sendDepositsToWallet().catch(() => {}), 30000);
+// ---------- অ্যাসিস্ট্যান্টের জন্য: ডিপোজিট ও উইথড্রের বিস্তারিত (শুধু দেখা) ----------
+app.get('/api/assistant/details', h(async (q, s) => {
+  const key = String(q.headers['x-assistant-key'] || '');
+  const expected = process.env.ASSISTANT_KEY || '';
+  if (!expected || !key || !same(key, expected)) return bad(s, 'অনুমতি নেই', 401);
+
+  const st = dayStart();
+  const deps = await Deposit.find({ status: 'pending' }).sort({ at: -1 }).limit(10).lean();
+  const depsToday = await Deposit.find({ at: { $gte: st } }).sort({ at: -1 }).limit(10).lean();
+  const wds = await Wd.find({ status: 'pending' }).sort({ at: -1 }).limit(10).lean();
+
+  const mapDep = d => ({
+    name: d.name,
+    amount: d.amount,
+    method: d.method,
+    trxId: d.txid,
+    lastDigits: d.lastDigits,
+    orderNo: d.serialNo,
+    package: d.pkgName,
+    status: d.status,
+    time: d.at
+  });
+
+  s.json({
+    ok: true,
+    pendingDeposits: deps.map(mapDep),
+    todayDeposits: depsToday.map(mapDep),
+    pendingWithdrawals: wds.map(x => ({
+      name: x.name,
+      amount: x.amount,
+      method: x.method,
+      number: x.phone,
+      time: x.at
+    }))
+  });
+}));
