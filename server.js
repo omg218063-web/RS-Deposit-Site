@@ -26,9 +26,9 @@ const TW_IPS = ['18.156.132.55', '51.81.120.73', '142.111.248.18'];
 
 const MIN_AGE = 18;
 const CO = {
-  N: 'RS Growth Matrix', e: 'omg218063@gmail.com', p: '01764024069', y: 2026,
-  Tg: 'rkrana33', wa: '8801764024069', fb: 'https://www.facebook.com/share/1CAK8sYqDw/', age: MIN_AGE,
-  D: 'RS Growth Matrix একটি টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম। এখানে সহজ টাস্ক, দৈনিক বোনাস, অ্যাড দেখে ইনকাম ও লাকি ড্রয়ের মাধ্যমে ব্যালেন্স জমিয়ে bKash বা Nagad-এ উত্তোলন করা যায়। এছাড়া আমাদের কোলাবোরেশন পার্টনার আর এস গ্যালারি শপ (RS Gallery Shop) থেকে আপনার জমানো ইনকামের টাকা দিয়ে খুব সহজেই দেশি-বিদেশি আকর্ষণীয় কাপড়চোপড় ও ফ্যাশন আইটেম কেনাকাটা করতে পারবেন।'
+  n: 'RS Growth Matrix', e: 'omg218063@gmail.com', p: '01764024069', y: 2026,
+  tg: 'rkrana33', wa: '8801764024069', fb: 'https://www.facebook.com/share/1CAK8sYqDw/', age: MIN_AGE,
+  d: 'RS Growth Matrix একটি টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম। এখানে সহজ টাস্ক, দৈনিক বোনাস, অ্যাড দেখে ইনকাম ও লাকি ড্রয়ের মাধ্যমে ব্যালেন্স জমিয়ে bKash বা Nagad-এ উত্তোলন করা যায়। এছাড়া আমাদের কোলাবোরেশন পার্টনার আর এস গ্যালারি শপ (RS Gallery Shop) থেকে আপনার জমানো ইনকামের টাকা দিয়ে খুব সহজেই দেশি-বিদেশি আকর্ষণীয় কাপড়চোপড় ও ফ্যাশন আইটেম কেনাকাটা করতে পারবেন।'
 };
 
 const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
@@ -40,28 +40,28 @@ const TARGETS = ['BD', 'IN', 'PK', 'NP'];
 const BLOCK_CATS = ['signup', 'signups', 'deposit', 'deposits', 'creditcard', 'creditcards', 'oneclick', 'multireward', 'freetrial', 'freetrials', 'shopping', 'extension', 'extensions'];
 app.use(express.json({ limit: '10mb' }));
 
-Let NAMES = { boys: [], girls: [] };
-Try { NAMES = require('./names.js'); } catch (e) { console.error('names.js not found:', e.message); }
+let NAMES = { boys: [], girls: [] };
+try { NAMES = require('./names.js'); } catch (e) { console.error('names.js not found:', e.message); }
 
-If (!process.env.MONGO_URI) console.error('MONGO_URI is not set: accounts cannot be saved.');
+if (!process.env.MONGO_URI) console.error('MONGO_URI is not set: accounts cannot be saved.');
 else mongoose.connect(process.env.MONGO_URI).then(async () => {
-  Console.log('MongoDB connected');
-  Try { await User.syncIndexes(); console.log('User indexes synced'); } catch (e) { console.error('Index sync error:', e.message); }
+  console.log('MongoDB connected');
+  try { await User.syncIndexes(); console.log('User indexes synced'); } catch (e) { console.error('Index sync error:', e.message); }
 }).catch(e => console.error('MongoDB error:', e.message));
 
 const User = mongoose.model('User', new mongoose.Schema({
-  Name: String, nameKey: { type: String, unique: true, sparse: true }, phone: String,
-  Email: { type: String, unique: true, sparse: true }, hash: String, salt: String,
-  Role: { type: String, default: 'worker' },
-  Balance: { type: Number, default: 0 }, earned: { type: Number, default: 0 },
-  RsCoins: { type: Number, default: 0 },
-  ActivePkg: { type: Object, default: null },
-  RefCode: { type: String, unique: true }, refBy: String,
-  RefEarn: { type: Number, default: 0 }, refCount: { type: Number, default: 0 },
-  Avatar: { type: String, default: '' },
-  LastDaily: { type: Number, default: 0 }, lastCheckin: String, lastSpin: { type: Number, default: 0 }, lastAdWatch: { type: Number, default: 0 },
-  AdRotateCount: { type: Number, default: 0 }, adCooldownUntil: { type: Number, default: 0 },
-  LastSeen: Number, created: { type: Date, default: Date.now }
+  name: String, nameKey: { type: String, unique: true, sparse: true }, phone: String,
+  email: { type: String, unique: true, sparse: true }, hash: String, salt: String,
+  role: { type: String, default: 'worker' },
+  balance: { type: Number, default: 0 }, earned: { type: Number, default: 0 },
+  rsCoins: { type: Number, default: 0 },
+  activePkg: { type: Object, default: null },
+  refCode: { type: String, unique: true }, refBy: String,
+  refEarn: { type: Number, default: 0 }, refCount: { type: Number, default: 0 },
+  avatar: { type: String, default: '' },
+  lastDaily: { type: Number, default: 0 }, lastCheckin: String, lastSpin: { type: Number, default: 0 }, lastAdWatch: { type: Number, default: 0 },
+  adRotateCount: { type: Number, default: 0 }, adCooldownUntil: { type: Number, default: 0 },
+  lastSeen: Number, created: { type: Date, default: Date.now }
 }));
 const Click = mongoose.model('Click', new mongoose.Schema({ uid: String, offerId: String, title: String, icon: String, bdt: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now }, doneAt: Number }));
 const Conv = mongoose.model('Conv', new mongoose.Schema({ key: { type: String, unique: true }, uid: String, tx: String, bdt: Number, status: String, at: { type: Date, default: Date.now } }));
@@ -71,259 +71,257 @@ const Msg = mongoose.model('Msg', new mongoose.Schema({ uid: String, name: Strin
 const CustomTask = mongoose.model('CustomTask', new mongoose.Schema({ uid: String, platform: String, title: String, link: String, reward: Number, targetWorkers: Number, totalBudget: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
 
 const PromoPackage = mongoose.model('PromoPackage', new mongoose.Schema({
-  Title: String,
-  Category: String,
-  Followers: Number,
-  Price: Number,
-  Description: String,
-  Icon: String,
-  Active: { type: Boolean, default: true }
+  title: String,
+  category: String,
+  followers: Number,
+  price: Number,
+  description: String,
+  icon: String,
+  active: { type: Boolean, default: true }
 }));
 
 const UserPackage = mongoose.model('UserPackage', new mongoose.Schema({
-  Title: String,
-  Price: Number,
-  CoinsPerMin: Number,
-  Description: String,
-  PkgImage: { type: String, default: '' },
-  Hot: { type: Boolean, default: false },
-  Active: { type: Boolean, default: true }
+  title: String,
+  price: Number,
+  coinsPerMin: Number,
+  description: String,
+  pkgImage: { type: String, default: '' },
+  hot: { type: Boolean, default: false },
+  active: { type: Boolean, default: true }
 }));
 
 const SliderSetting = mongoose.model('SliderSetting', new mongoose.Schema({
-  Title: String,
-  Subtitle: String,
-  Description: String,
-  Link: String,
-  BgImage: { type: String, default: '' },
-  BgClass: { type: String, default: 's0' },
-  Emoji: { type: String, default: '🕌' },
-  TimerSeconds: { type: Number, default: 6 },
-  Active: { type: Boolean, default: true }
+  title: String,
+  subtitle: String,
+  description: String,
+  link: String,
+  bgImage: { type: String, default: '' },
+  bgClass: { type: String, default: 's0' },
+  emoji: { type: String, default: '🕌' },
+  timerSeconds: { type: Number, default: 6 },
+  active: { type: Boolean, default: true }
 }));
 
-// নতুন প্রমোট সাইট এডিট ও কনটেন্ট മാനেজমেন্ট স্কিমা
 const SiteContent = mongoose.model('SiteContent', new mongoose.Schema({
-  Key: { type: String, unique: true },
-  Title: String,
-  Subtitle: String,
-  Description: String,
-  ImageUrl: String,
-  ExtraData: String
+  key: { type: String, unique: true },
+  title: String,
+  subtitle: String,
+  description: String,
+  imageUrl: String,
+  extraData: String
 }));
 
 const h = fn => (q, s) => fn(q, s).catch(e => {
-  Console.error('ERROR', q.method, q.path, e && e.code, e && e.message);
-  If (e && e.code === 11000) return s.status(400).json({ error: 'This name or phone is already registered. Try a different name.' });
-  S.status(500).json({ error: 'Server error. Please try again.' });
+  console.error('ERROR', q.method, q.path, e && e.code, e && e.message);
+  if (e && e.code === 11000) return s.status(400).json({ error: 'This name or phone is already registered. Try a different name.' });
+  s.status(500).json({ error: 'Server error. Please try again.' });
 });
-Const bad = (s, m, c) => s.status(c || 400).json({ error: m });
-Const hmac = b => crypto.createHmac('sha256', SECRET).update(b).digest('hex');
-Const sign = id => { const b = id + '.' + (Date.now() + 30 * 864e5); return b + '.' + hmac(b); };
-Const hashPw = (p, salt) => crypto.scryptSync(p, salt, 32).toString('hex');
-Const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
-Const today = () => new Date().toISOString().slice(0, 10);
-Const dayStart = () => { const o = 6 * 36e5, n = Date.now() + o; return new Date(n - (n % 864e5) - o); };
+const bad = (s, m, c) => s.status(c || 400).json({ error: m });
+const hmac = b => crypto.createHmac('sha256', SECRET).update(b).digest('hex');
+const sign = id => { const b = id + '.' + (Date.now() + 30 * 864e5); return b + '.' + hmac(b); };
+const hashPw = (p, salt) => crypto.scryptSync(p, salt, 32).toString('hex');
+const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+const today = () => new Date().toISOString().slice(0, 10);
+const dayStart = () => { const o = 6 * 36e5, n = Date.now() + o; return new Date(n - (n % 864e5) - o); };
 
-Const partners = () => [
+const partners = () => [
   ADGEM_APP_ID && ADGEM_POSTBACK_KEY ? 'AdGem' : '',
   CPAGRIP_USER_ID && CPAGRIP_KEY ? 'CPAGrip' : '',
   TW_SECRET && TW_URL ? 'TimeWall.io (Australian Clearing Pty Ltd)' : '',
   'RS Gallery Shop (Official Collaboration)'
 ].filter(Boolean);
 
-Const me = u => ({ id: u._id, name: u.name, phone: u.phone || '', email: u.email || '', av: u.avatar || '', role: u.role || 'worker', balance: u.balance, earned: u.earned, rsCoins: u.rsCoins || 0, activePkg: u.activePkg || null, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, lastAdWatch: u.lastAdWatch || 0, adRotateCount: u.adRotateCount || 0, adCooldownUntil: u.adCooldownUntil || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS, ct: CO, pt: partners() });
-Const bdtFor = usd => Math.round(usd * RATE * (usd > 1 ? 0.5 : 0.7) * 100) / 100;
-Const expire = uid => Click.updateMany(Object.assign({ status: 'pending', at: { $lt: new Date(Date.now() - PENDING_HOURS * 36e5) } }, uid ? { uid } : {}), { status: 'expired' });
+const me = u => ({ id: u._id, name: u.name, phone: u.phone || '', email: u.email || '', av: u.avatar || '', role: u.role || 'worker', balance: u.balance, earned: u.earned, rsCoins: u.rsCoins || 0, activePkg: u.activePkg || null, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, lastAdWatch: u.lastAdWatch || 0, adRotateCount: u.adRotateCount || 0, adCooldownUntil: u.adCooldownUntil || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS, ct: CO, pt: partners() });
+const bdtFor = usd => Math.round(usd * RATE * (usd > 1 ? 0.5 : 0.7) * 100) / 100;
+const expire = uid => Click.updateMany(Object.assign({ status: 'pending', at: { $lt: new Date(Date.now() - PENDING_HOURS * 36e5) } }, uid ? { uid } : {}), { status: 'expired' });
 
-Const auth = async (req, res, next) => {
-  Try {
-    Const [id, exp, sig] = (req.headers.authorization || '').replace('Bearer ', '').split('.');
-    If (!sig || !same(sig, hmac(id + '.' + exp)) || +exp < Date.now()) throw 0;
-    Req.user = await User.findById(id);
-    If (!req.user) throw 0;
-    If (!req.user.lastSeen || Date.now() - req.user.lastSeen > 3e5) User.updateOne({ _id: id }, { lastSeen: Date.now() }).catch(() => {});
-    Next();
+const auth = async (req, res, next) => {
+  try {
+    const [id, exp, sig] = (req.headers.authorization || '').replace('Bearer ', '').split('.');
+    if (!sig || !same(sig, hmac(id + '.' + exp)) || +exp < Date.now()) throw 0;
+    req.user = await User.findById(id);
+    if (!req.user) throw 0;
+    if (!req.user.lastSeen || Date.now() - req.user.lastSeen > 3e5) User.updateOne({ _id: id }, { lastSeen: Date.now() }).catch(() => {});
+    next();
   } catch (e) { bad(res, 'Please log in again.', 401); }
 };
-Const admin = (req, res, next) => (ADMIN_PASS && same(String(req.headers['x-admin-pass'] || ''), ADMIN_PASS)) ? next() : bad(res, 'Wrong admin password.', 403);
+const admin = (req, res, next) => (ADMIN_PASS && same(String(req.headers['x-admin-pass'] || ''), ADMIN_PASS)) ? next() : bad(res, 'Wrong admin password.', 403);
 
-Async function newUser(data, ref) {
-  Let refCode;
-  Do { refCode = crypto.randomBytes(4).toString('hex').slice(0, 6).toUpperCase(); } while (await User.exists({ refCode }));
-  Const u = await User.create({ ...data, refCode });
-  If (ref) {
-    Const r = await User.findOne({ refCode: String(ref).toUpperCase() });
-    If (r && String(r._id) !== String(u._id)) {
-      Await User.updateOne({ _id: r._id }, { $inc: { balance: REF_BONUS, earned: REF_BONUS, refEarn: REF_BONUS, refCount: 1 } });
-      U.refBy = r.refCode; await u.save();
+async function newUser(data, ref) {
+  let refCode;
+  do { refCode = crypto.randomBytes(4).toString('hex').slice(0, 6).toUpperCase(); } while (await User.exists({ refCode }));
+  const u = await User.create({ ...data, refCode });
+  if (ref) {
+    const r = await User.findOne({ refCode: String(ref).toUpperCase() });
+    if (r && String(r._id) !== String(u._id)) {
+      await User.updateOne({ _id: r._id }, { $inc: { balance: REF_BONUS, earned: REF_BONUS, refEarn: REF_BONUS, refCount: 1 } });
+      u.refBy = r.refCode; await u.save();
     }
   }
-  Return u;
+  return u;
 }
 
 app.get('/ping', (req, res) => res.send('OK'));
 app.get('/manifest.json', (req, res) => {
-  Res.json({
-    Name: "RS Growth Matrix", short_name: "RS Matrix",
-    Description: "RS Growth Matrix - Complete tasks, earn rewards, and shop at RS Gallery.",
-    Start_url: "/", display: "standalone", background_color: "#060913", theme_color: "#fbbf24",
-    Icons: [
+  res.json({
+    name: "RS Growth Matrix", short_name: "RS Matrix",
+    description: "RS Growth Matrix - Complete tasks, earn rewards, and shop at RS Gallery.",
+    start_url: "/", display: "standalone", background_color: "#060913", theme_color: "#fbbf24",
+    icons: [
       { src: "https://cdn-icons-png.flaticon.com/512/1041/1041888.png", sizes: "192x192", type: "image/png" },
       { src: "https://cdn-icons-png.flaticon.com/512/1041/1041888.png", sizes: "512x512", type: "image/png" }
     ]
   });
 });
 app.get('/sw.js', (req, res) => {
-  Res.setHeader('Content-Type', 'application/javascript');
-  Res.send(`self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));`);
+  res.setHeader('Content-Type', 'application/javascript');
+  res.send(`self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));`);
 });
 
 app.post('/api/register', h(async (q, s) => {
-  Const { name, phone, password, confirm, role, ref } = q.body || {};
-  Const n = String(name || '').trim();
-  If (n.length < 3 || n.length > 30) return bad(s, 'Name must be 3 to 30 characters.');
-  If (!/^01\d{9}$/.test(String(phone || ''))) return bad(s, 'Enter a valid 11-digit phone number.');
-  If (String(password || '').length < 6) return bad(s, 'Password must be at least 6 characters.');
-  If (password !== confirm) return bad(s, 'Passwords do not match.');
-  If (await User.exists({ nameKey: n.toLowerCase() })) return bad(s, 'This name is already taken.');
-  Const userRole = role === 'employer' ? 'employer' : 'worker';
-  Const salt = crypto.randomBytes(16).toString('hex');
-  Const u = await newUser({ name: n, nameKey: n.toLowerCase(), phone, role: userRole, salt, hash: hashPw(password, salt) }, ref);
-  S.json({ token: sign(u.id), me: me(u) });
+  const { name, phone, password, confirm, role, ref } = q.body || {};
+  const n = String(name || '').trim();
+  if (n.length < 3 || n.length > 30) return bad(s, 'Name must be 3 to 30 characters.');
+  if (!/^01\d{9}$/.test(String(phone || ''))) return bad(s, 'Enter a valid 11-digit phone number.');
+  if (String(password || '').length < 6) return bad(s, 'Password must be at least 6 characters.');
+  if (password !== confirm) return bad(s, 'Passwords do not match.');
+  if (await User.exists({ nameKey: n.toLowerCase() })) return bad(s, 'This name is already taken.');
+  const userRole = role === 'employer' ? 'employer' : 'worker';
+  const salt = crypto.randomBytes(16).toString('hex');
+  const u = await newUser({ name: n, nameKey: n.toLowerCase(), phone, role: userRole, salt, hash: hashPw(password, salt) }, ref);
+  s.json({ token: sign(u.id), me: me(u) });
 }));
 
 app.post('/api/login', h(async (q, s) => {
-  Const { name, password } = q.body || {};
-  Const u = await User.findOne({ nameKey: String(name || '').trim().toLowerCase() });
-  If (!u || !u.hash || !same(u.hash, hashPw(String(password || ''), u.salt))) return bad(s, 'Wrong name or password.', 401);
-  S.json({ token: sign(u.id), me: me(u) });
+  const { name, password } = q.body || {};
+  const u = await User.findOne({ nameKey: String(name || '').trim().toLowerCase() });
+  if (!u || !u.hash || !same(u.hash, hashPw(String(password || ''), u.salt))) return bad(s, 'Wrong name or password.', 401);
+  s.json({ token: sign(u.id), me: me(u) });
 }));
 
 app.post('/api/google', h(async (q, s) => {
-  If (!GID) return bad(s, 'Google sign-in is not set up.');
-  Const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(String((q.body || {}).credential || '')));
-  Const g = await r.json();
-  If (!r.ok || g.aud !== GID || g.email_verified !== 'true') return bad(s, 'Google verification failed.', 401);
-  Let u = await User.findOne({ email: g.email });
-  If (!u) u = await newUser({ name: (g.name || g.email.split('@')[0]).slice(0, 30), email: g.email, role: 'worker' }, (q.body || {}).ref);
-  S.json({ token: sign(u.id), me: me(u) });
+  if (!GID) return bad(s, 'Google sign-in is not set up.');
+  const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(String((q.body || {}).credential || '')));
+  const g = await r.json();
+  if (!r.ok || g.aud !== GID || g.email_verified !== 'true') return bad(s, 'Google verification failed.', 401);
+  let u = await User.findOne({ email: g.email });
+  if (!u) u = await newUser({ name: (g.name || g.email.split('@')[0]).slice(0, 30), email: g.email, role: 'worker' }, (q.body || {}).ref);
+  s.json({ token: sign(u.id), me: me(u) });
 }));
 
 app.get('/api/me', auth, h(async (q, s) => {
-  Let u = q.user;
-  If (u.activePkg && u.activePkg.expiresAt > Date.now()) {
-    Const now = Date.now();
-    Const lastClaim = u.activePkg.lastClaim || u.activePkg.startedAt;
-    Const diffMinutes = Math.floor((now - lastClaim) / 60000);
-    If (diffMinutes > 0) {
-      Const coinsToAdd = diffMinutes * (u.activePkg.coinsPerMin || 1);
-      U.rsCoins = (u.rsCoins || 0) + coinsToAdd;
-      U.activePkg.lastClaim = lastClaim + (diffMinutes * 60000);
-      Await u.save();
+  let u = q.user;
+  if (u.activePkg && u.activePkg.expiresAt > Date.now()) {
+    const now = Date.now();
+    const lastClaim = u.activePkg.lastClaim || u.activePkg.startedAt;
+    const diffMinutes = Math.floor((now - lastClaim) / 60000);
+    if (diffMinutes > 0) {
+      const coinsToAdd = diffMinutes * (u.activePkg.coinsPerMin || 1);
+      u.rsCoins = (u.rsCoins || 0) + coinsToAdd;
+      u.activePkg.lastClaim = lastClaim + (diffMinutes * 60000);
+      await u.save();
     }
   }
-  S.json(me(u));
+  s.json(me(u));
 }));
 
 app.post('/api/avatar', auth, h(async (q, s) => {
-  Const img = String((q.body || {}).img || '');
-  If (img.length > 2000000) return bad(s, 'Photo is too large.');
-  Await User.updateOne({ _id: q.user.id }, { avatar: img });
-  S.json({ av: img });
+  const img = String((q.body || {}).img || '');
+  if (img.length > 2000000) return bad(s, 'Photo is too large.');
+  await User.updateOne({ _id: q.user.id }, { avatar: img });
+  s.json({ av: img });
 }));
 
 app.get('/api/names/:t', auth, (q, s) => s.json(q.params.t === 'girls' ? NAMES.girls : NAMES.boys));
 
 app.get('/api/sliders', auth, h(async (q, s) => {
-  Let sliders = await SliderSetting.find({ active: true });
-  If (!sliders.length) {
-    Const defaultSliders = [
+  let sliders = await SliderSetting.find({ active: true });
+  if (!sliders.length) {
+    const defaultSliders = [
       { title: 'নামাজের স্মরণ', subtitle: 'নামাজ কি পড়েছেন?', description: 'নামাজ আমাদের জীবনের সবচেয়ে বড় আমানত। কাজের ফাঁকে ওয়াক্ত হলেই নামাজ আদায় করে নিন।', link: '#', bgClass: 's0', emoji: '🕌', timerSeconds: 6 },
       { title: 'আমাদের সাইট ও পার্টনার', subtitle: 'RS Growth Matrix & RS Gallery', description: 'টাস্ক সম্পন্ন করে ইনকাম করুন এবং আমাদের অফিশিয়াল পার্টনার আর এস গ্যালারি শপ থেকে পছন্দের পোশাক অর্ডার করুন।', link: 'https://www.facebook.com/share/1CAK8sYqDw/', bgClass: 's1', emoji: '🛍️', timerSeconds: 6 },
       { title: 'টাস্ক ও অ্যাড আয়', subtitle: 'ডেইলি ক্যাশ রিওয়ার্ড', description: 'Tasks ট্যাবে গিয়ে টাস্ক সম্পন্ন করুন অথবা Watch Ads অপশনে গিয়ে অ্যাড দেখে ইনস্ট্যান্ট ক্যাশ আয় করুন।', link: '#', bgClass: 's2', emoji: '📱', timerSeconds: 6 },
       { title: 'সহজে উত্তোলন', subtitle: 'বিকাশ ও নগদ পেমেন্ট', description: 'Account থেকে Withdraw চেপে bKash বা Nagad নাম্বার দিন। উত্তোলন ৩০০ থেকে ৫০০০ টাকা পর্যন্ত করা যায়।', link: '#', bgClass: 's3', emoji: '💸', timerSeconds: 6 }
     ];
-    Await SliderSetting.insertMany(defaultSliders);
-    Sliders = await SliderSetting.find({ active: true });
+    await SliderSetting.insertMany(defaultSliders);
+    sliders = await SliderSetting.find({ active: true });
   }
-  S.json(sliders);
+  s.json(sliders);
 }));
 
-// প্রমোট সাইট এডিট ও কনটেন্ট গেট API
 app.get('/api/site-contents', auth, h(async (q, s) => {
-  Let contents = await SiteContent.find({});
-  S.json(contents);
+  let contents = await SiteContent.find({});
+  s.json(contents);
 }));
 
-Const pick = (o, ks) => { for (const k of ks) if (o[k] != null && o[k] !== '') return o[k]; };
-Const arrOf = v => Array.isArray(v) ? v : [];
-Const ctxOf = q => {
-  Const ua = String(q.headers['user-agent'] || '');
-  Const device = /android/i.test(ua) ? 'android' : /iphone|ipad|ipod/i.test(ua) ? 'ios' : 'desktop';
-  Const c = String(q.headers['cf-ipcountry'] || q.headers['x-vercel-ip-country'] || '').toUpperCase();
-  Return { device, country: /^[A-Z]{2}$/.test(c) ? c : '' };
+const pick = (o, ks) => { for (const k of ks) if (o[k] != null && o[k] !== '') return o[k]; };
+const arrOf = v => Array.isArray(v) ? v : [];
+const ctxOf = q => {
+  const ua = String(q.headers['user-agent'] || '');
+  const device = /android/i.test(ua) ? 'android' : /iphone|ipad|ipod/i.test(ua) ? 'ios' : 'desktop';
+  const c = String(q.headers['cf-ipcountry'] || q.headers['x-vercel-ip-country'] || '').toUpperCase();
+  return { device, country: /^[A-Z]{2}$/.test(c) ? c : '' };
 };
-Const devOk = (list, device) => {
-  If (!list.length) return true;
-  Const words = { android: ['android'], ios: ['ios', 'iphone', 'ipad', 'apple'], desktop: ['desktop', 'web', 'windows', 'mac', 'pc', 'linux'] }[device];
-  Return list.some(d => words.some(w => String(d).toLowerCase().includes(w)));
+const devOk = (list, device) => {
+  if (!list.length) return true;
+  const words = { android: ['android'], ios: ['ios', 'iphone', 'ipad', 'apple'], desktop: ['desktop', 'web', 'windows', 'mac', 'pc', 'linux'] }[device];
+  return list.some(d => words.some(w => String(d).toLowerCase().includes(w)));
 };
 
-Async function fetchOffers(uid, ctx, dbg) {
-  Ctx = ctx || { device: '', country: '' };
-  Let combinedOffers = [];
+async function fetchOffers(uid, ctx, dbg) {
+  ctx = ctx || { device: '', country: '' };
+  let combinedOffers = [];
 
-  Const approvedCustom = await CustomTask.find({ status: 'approved' });
-  Const mappedCustom = approvedCustom.map(t => {
-    Let iconUrl = 'https://cdn-icons-png.flaticon.com/512/1041/1041888.png';
-    If(t.platform === 'youtube') iconUrl = 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png';
-    If(t.platform === 'facebook') iconUrl = 'https://cdn-icons-png.flaticon.com/512/124/124010.png';
-    If(t.platform === 'telegram') iconUrl = 'https://cdn-icons-png.flaticon.com/512/2111/2111646.png';
+  const approvedCustom = await CustomTask.find({ status: 'approved' });
+  const mappedCustom = approvedCustom.map(t => {
+    let iconUrl = 'https://cdn-icons-png.flaticon.com/512/1041/1041888.png';
+    if(t.platform === 'youtube') iconUrl = 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png';
+    if(t.platform === 'facebook') iconUrl = 'https://cdn-icons-png.flaticon.com/512/124/124010.png';
+    if(t.platform === 'telegram') iconUrl = 'https://cdn-icons-png.flaticon.com/512/2111/2111646.png';
 
-    Return {
-      Id: 'customtask:' + t._id,
-      Title: t.title + ' (' + t.platform.toUpperCase() + ')',
-      Icon: iconUrl,
-      ClickUrl: t.link,
-      Desc: 'প্রমোশন টাস্ক: ' + t.title + ' | টার্গেট ওয়ার্কার: ' + t.targetWorkers,
-      Req: 'লিংকে গিয়ে সাবস্ক্রাইব/ফলো করে প্রুফ রাখুন।',
-      Usd: t.reward / RATE,
-      Bdt: t.reward,
-      Cats: [],
-      Cnt: ['BD'],
-      Dev: []
+    return {
+      id: 'customtask:' + t._id,
+      title: t.title + ' (' + t.platform.toUpperCase() + ')',
+      icon: iconUrl,
+      clickUrl: t.link,
+      desc: 'প্রমোশন টাস্ক: ' + t.title + ' | টার্গেট ওয়ার্কার: ' + t.targetWorkers,
+      req: 'লিংকে গিয়ে সাবস্ক্রাইব/ফলো করে প্রুফ রাখুন।',
+      usd: t.reward / RATE,
+      bdt: t.reward,
+      cats: [],
+      cnt: ['BD'],
+      dev: []
     };
   });
-  CombinedOffers = combinedOffers.concat(mappedCustom);
+  combinedOffers = combinedOffers.concat(mappedCustom);
 
-  If (ADGEM_APP_ID && ADGEM_POSTBACK_KEY) {
-    Try {
-      Const adgemRes = await fetch(`https://api.adgem.com/v1/wall?appid=${ADGEM_APP_ID}&player_id=${encodeURIComponent(uid)}`);
-      Const adgemJson = await adgemRes.json();
-      Const adgemArr = Array.isArray(adgemJson) ? adgemJson : (adgemJson.offers || adgemJson.data || []);
-      Const mappedAdgem = adgemArr.map(o => {
-        Const payout = +pick(o, ['payout', 'reward', 'amount']) || 0;
-        Return {
-          Id: 'adgem:' + String(pick(o, ['campaign_id', 'id']) || ''),
-          Title: String(pick(o, ['name', 'title']) || 'AdGem Offer').slice(0, 80),
-          Icon: String(pick(o, ['icon', 'image_url']) || ''),
-          ClickUrl: pick(o, ['url', 'click_url']),
-          Desc: String(o.description || '').slice(0, 300),
-          Req: String(o.requirements || '').slice(0, 300),
-          Usd: payout,
-          Bdt: bdtFor(payout),
-          Cats: arrOf(o.categories).map(c => String(c).toLowerCase().replace(/[^a-z]/g, '')),
-          Cnt: arrOf(o.countries).map(c => String(c).toUpperCase()),
-          Dev: arrOf(o.devices)
+  if (ADGEM_APP_ID && ADGEM_POSTBACK_KEY) {
+    try {
+      const adgemRes = await fetch(`https://api.adgem.com/v1/wall?appid=${ADGEM_APP_ID}&player_id=${encodeURIComponent(uid)}`);
+      const adgemJson = await adgemRes.json();
+      const adgemArr = Array.isArray(adgemJson) ? adgemJson : (adgemJson.offers || adgemJson.data || []);
+      const mappedAdgem = adgemArr.map(o => {
+        const payout = +pick(o, ['payout', 'reward', 'amount']) || 0;
+        return {
+          id: 'adgem:' + String(pick(o, ['campaign_id', 'id']) || ''),
+          title: String(pick(o, ['name', 'title']) || 'AdGem Offer').slice(0, 80),
+          icon: String(pick(o, ['icon', 'image_url']) || ''),
+          clickUrl: pick(o, ['url', 'click_url']),
+          desc: String(o.description || '').slice(0, 300),
+          req: String(o.requirements || '').slice(0, 300),
+          usd: payout,
+          bdt: bdtFor(payout),
+          cats: arrOf(o.categories).map(c => String(c).toLowerCase().replace(/[^a-z]/g, '')),
+          cnt: arrOf(o.countries).map(c => String(c).toUpperCase()),
+          dev: arrOf(o.devices)
         };
       }).filter(o => o.id && o.clickUrl);
-      CombinedOffers = combinedOffers.concat(mappedAdgem);
+      combinedOffers = combinedOffers.concat(mappedAdgem);
     } catch (err) { console.error('AdGem fetch error:', err.message); }
   }
 
-  If (combinedOffers.length === 0) {
-    CombinedOffers = [
+  if (combinedOffers.length === 0) {
+    combinedOffers = [
       { id: 'custom:1', title: 'Subscribe Official YouTube Channel', icon: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png', clickUrl: 'https://www.youtube.com/@rkrana33', desc: 'আমাদের অফিসিয়াল ইউটিউব চ্যানেলে গিয়ে Subscribe করুন।', req: 'স্ক্রিনশট রাখুন।', usd: 0.10, bdt: 12, cats: [], cnt: ['BD'], dev: [] },
       { id: 'custom:2', title: 'Follow Facebook Official Page', icon: 'https://cdn-icons-png.flaticon.com/512/124/124010.png', clickUrl: 'https://www.facebook.com/share/1CAK8sYqDw/', desc: 'আমাদের ফেসবুক পেজটি লাইক ও ফলো করুন।', req: 'পেজ লাইক দিন।', usd: 0.08, bdt: 10, cats: [], cnt: ['BD'], dev: [] },
       { id: 'custom:3', title: 'Join Official Telegram Channel', icon: 'https://cdn-icons-png.flaticon.com/512/2111/2111646.png', clickUrl: 'https://t.me/rkrana33', desc: 'আমাদের অফিসিয়াল টেলিগ্রাম চ্যানেলে জয়েন করুন।', req: 'চ্যানেলে জয়েন থাকুন।', usd: 0.08, bdt: 10, cats: [], cnt: ['BD'], dev: [] },
@@ -331,48 +329,48 @@ Async function fetchOffers(uid, ctx, dbg) {
     ];
   }
 
-  Let l = combinedOffers;
-  If (dbg) { dbg.total = l.length; dbg.cn = {}; l.forEach(o => (o.cnt.length ? o.cnt : ['ALL']).forEach(c => { dbg.cn[c] = (dbg.cn[c] || 0) + 1; })); }
-  L = l.filter(o => o.usd <= MAX_USD); if (dbg) dbg.price = l.length;
-  L = l.filter(o => !o.cats.some(c => BLOCK_CATS.includes(c))); if (dbg) dbg.cat = l.length;
-  L = l.filter(o => !COUNTRY_FILTER || !o.cnt.length || o.cnt.some(c => TARGETS.includes(c))); if (dbg) dbg.country = l.length;
-  L = l.filter(o => !ctx.device || devOk(o.dev, ctx.device)); if (dbg) dbg.device = l.length;
-  Return l;
+  let l = combinedOffers;
+  if (dbg) { dbg.total = l.length; dbg.cn = {}; l.forEach(o => (o.cnt.length ? o.cnt : ['ALL']).forEach(c => { dbg.cn[c] = (dbg.cn[c] || 0) + 1; })); }
+  l = l.filter(o => o.usd <= MAX_USD); if (dbg) dbg.price = l.length;
+  l = l.filter(o => !o.cats.some(c => BLOCK_CATS.includes(c))); if (dbg) dbg.cat = l.length;
+  l = l.filter(o => !COUNTRY_FILTER || !o.cnt.length || o.cnt.some(c => TARGETS.includes(c))); if (dbg) dbg.country = l.length;
+  l = l.filter(o => !ctx.device || devOk(o.dev, ctx.device)); if (dbg) dbg.device = l.length;
+  return l;
 }
 
 app.get('/api/offers', auth, h(async (q, s) => {
-  Await expire(q.user.id);
-  Const now = Date.now(), day = 864e5;
-  Const clicks = await Click.find({ uid: q.user.id });
-  Const used = clicks.filter(c => c.status === 'pending' || (c.status === 'success' && c.doneAt > now - day && !String(c.offerId).startsWith('tw:')));
-  Const blocked = new Set(clicks.filter(c => c.status === 'success' || c.status === 'pending').map(c => c.offerId));
-  Const offers = await fetchOffers(q.user.id, ctxOf(q));
-  Const free = offers.filter(o => !blocked.has(o.id)).slice(0, Math.max(0, SLOTS - used.length));
-  Const list = used.map(c => ({ id: c.offerId, title: c.title, icon: c.icon, bdt: c.bdt, status: c.status })).concat(free.map(o => ({ id: o.id, title: o.title, icon: o.icon, bdt: o.bdt, status: 'open', desc: o.desc, req: o.req, cnt: o.cnt, dev: o.dev })));
-  Const n = st => clicks.filter(c => c.status === st).length;
-  S.json({ stats: { pending: n('pending'), success: n('success'), cancelled: n('cancelled') + n('expired'), total: list.length }, list });
+  await expire(q.user.id);
+  const now = Date.now(), day = 864e5;
+  const clicks = await Click.find({ uid: q.user.id });
+  const used = clicks.filter(c => c.status === 'pending' || (c.status === 'success' && c.doneAt > now - day && !String(c.offerId).startsWith('tw:')));
+  const blocked = new Set(clicks.filter(c => c.status === 'success' || c.status === 'pending').map(c => c.offerId));
+  const offers = await fetchOffers(q.user.id, ctxOf(q));
+  const free = offers.filter(o => !blocked.has(o.id)).slice(0, Math.max(0, SLOTS - used.length));
+  const list = used.map(c => ({ id: c.offerId, title: c.title, icon: c.icon, bdt: c.bdt, status: c.status })).concat(free.map(o => ({ id: o.id, title: o.title, icon: o.icon, bdt: o.bdt, status: 'open', desc: o.desc, req: o.req, cnt: o.cnt, dev: o.dev })));
+  const n = st => clicks.filter(c => c.status === st).length;
+  s.json({ stats: { pending: n('pending'), success: n('success'), cancelled: n('cancelled') + n('expired'), total: list.length }, list });
 }));
 
 app.post('/api/offers/:id/start', auth, h(async (q, s) => {
-  Await expire(q.user.id);
-  Const clicks = await Click.find({ uid: q.user.id });
-  Const now = Date.now();
-  Const used = clicks.filter(c => c.status === 'pending' || (c.status === 'success' && c.doneAt > now - 864e5 && !String(c.offerId).startsWith('tw:')));
-  If (clicks.some(c => c.offerId === q.params.id && (c.status === 'success'))) return bad(s, 'You already completed this task.');
-  Const o = (await fetchOffers(q.user.id, ctxOf(q))).find(x => x.id === q.params.id);
-  If (!o) return bad(s, 'This task is no longer available.', 404);
-  Const mine = used.find(c => c.offerId === o.id);
-  If (!mine) {
-    If (used.length >= SLOTS) return bad(s, 'Daily task limit reached.');
-    Await Click.create({ uid: q.user.id, offerId: o.id, title: o.title, icon: o.icon, bdt: o.bdt });
+  await expire(q.user.id);
+  const clicks = await Click.find({ uid: q.user.id });
+  const now = Date.now();
+  const used = clicks.filter(c => c.status === 'pending' || (c.status === 'success' && c.doneAt > now - 864e5 && !String(c.offerId).startsWith('tw:')));
+  if (clicks.some(c => c.offerId === q.params.id && (c.status === 'success'))) return bad(s, 'You already completed this task.');
+  const o = (await fetchOffers(q.user.id, ctxOf(q))).find(x => x.id === q.params.id);
+  if (!o) return bad(s, 'This task is no longer available.', 404);
+  const mine = used.find(c => c.offerId === o.id);
+  if (!mine) {
+    if (used.length >= SLOTS) return bad(s, 'Daily task limit reached.');
+    await Click.create({ uid: q.user.id, offerId: o.id, title: o.title, icon: o.icon, bdt: o.bdt });
   }
-  S.json({ url: o.clickUrl });
+  s.json({ url: o.clickUrl });
 }));
 
 app.get('/api/user-packages', auth, h(async (q, s) => {
-  Let pkgs = await UserPackage.find({ active: true });
-  If (!pkgs.length) {
-    Const defaultUserPkgs = [
+  let pkgs = await UserPackage.find({ active: true });
+  if (!pkgs.length) {
+    const defaultUserPkgs = [
       { price: 200, coinsPerMin: 10, description: 'Basic RS Coin Package', hot: false },
       { price: 500, coinsPerMin: 25, description: 'Bronze RS Coin Package', hot: false },
       { price: 800, coinsPerMin: 50, description: 'Silver RS Coin Package', hot: false },
@@ -382,176 +380,175 @@ app.get('/api/user-packages', auth, h(async (q, s) => {
       { price: 2500, coinsPerMin: 220, description: 'Master RS Coin Package', hot: true },
       { price: 3000, coinsPerMin: 300, description: 'Elite RS Coin Package', hot: true }
     ];
-    Await UserPackage.insertMany(defaultUserPkgs);
-    Pkgs = await UserPackage.find({ active: true });
+    await UserPackage.insertMany(defaultUserPkgs);
+    pkgs = await UserPackage.find({ active: true });
   }
-  S.json(pkgs);
+  s.json(pkgs);
 }));
 
 app.get('/api/promo-packages', auth, h(async (q, s) => {
-  Let pkgs = await PromoPackage.find({ active: true });
-  If (!pkgs.length) {
-    Const defaultPkgs = [
+  let pkgs = await PromoPackage.find({ active: true });
+  if (!pkgs.length) {
+    const defaultPkgs = [
       { title: '200 Facebook Followers', category: 'Facebook', followers: 200, price: 80, description: 'আপনার ফেসবুক পেজ বা আইডিতে ইনস্ট্যান্ট রিয়েল ফলোয়ার নিন।', icon: 'https://cdn-icons-png.flaticon.com/512/124/124010.png' },
       { title: '1,000 YouTube Subscribers', category: 'YouTube', followers: 1000, price: 650, description: 'আপনার ইউটিউব চ্যানেলে গ্রোথ ও সাবস্ক্রাইবার বৃদ্ধি করুন।', icon: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png' },
       { title: '5,000 Telegram Members', category: 'Telegram', followers: 5000, price: 2500, description: 'টেলিগ্রাম গ্রুপ বা চ্যানেলে একটিভ মেম্বার যুক্ত করুন।', icon: 'https://cdn-icons-png.flaticon.com/512/2111/2111646.png' },
       { title: 'RS Gallery Shop Featured Item', category: 'RS Gallery', followers: 10000, price: 5000, description: 'আর এস গ্যালারি শপ কোলাবোরেশন ও প্রোডাক্ট প্রমোশন প্যাকেজ।', icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041888.png' }
     ];
-    Await PromoPackage.insertMany(defaultPkgs);
-    Pkgs = await PromoPackage.find({ active: true });
+    await PromoPackage.insertMany(defaultPkgs);
+    pkgs = await PromoPackage.find({ active: true });
   }
-  S.json(pkgs);
+  s.json(pkgs);
 }));
 
 app.post('/api/employer/task', auth, h(async (q, s) => {
-  If (q.user.role !== 'employer') return bad(s, 'Only employers can post tasks.');
-  Const { platform, title, link, reward, targetWorkers, packageId } = q.body || {};
+  if (q.user.role !== 'employer') return bad(s, 'Only employers can post tasks.');
+  const { platform, title, link, reward, targetWorkers, packageId } = q.body || {};
   
-  Let r = Number(reward), tw = Number(targetWorkers), totalBudget = 0;
+  let r = Number(reward), tw = Number(targetWorkers), totalBudget = 0;
 
-  If (packageId) {
-    Const pkg = await PromoPackage.findById(packageId);
-    If (!pkg) return bad(s, 'Selected package not found.');
-    TotalBudget = pkg.price;
-    Platform = pkg.category.toLowerCase().includes('face') ? 'facebook' : (pkg.category.toLowerCase().includes('you') ? 'youtube' : 'telegram');
-    Title = pkg.title;
-    Reward = Math.round((pkg.price / pkg.followers) * 100) / 100;
-    TargetWorkers = pkg.followers;
+  if (packageId) {
+    const pkg = await PromoPackage.findById(packageId);
+    if (!pkg) return bad(s, 'Selected package not found.');
+    totalBudget = pkg.price;
+    platform = pkg.category.toLowerCase().includes('face') ? 'facebook' : (pkg.category.toLowerCase().includes('you') ? 'youtube' : 'telegram');
+    title = pkg.title;
+    reward = Math.round((pkg.price / pkg.followers) * 100) / 100;
+    targetWorkers = pkg.followers;
   } else {
-    If (!platform || !title || !link || isNaN(r) || isNaN(tw) || r <= 0 || tw <= 0) return bad(s, 'Invalid task details.');
-    TotalBudget = r * tw;
+    if (!platform || !title || !link || isNaN(r) || isNaN(tw) || r <= 0 || tw <= 0) return bad(s, 'Invalid task details.');
+    totalBudget = r * tw;
   }
 
-  If (q.user.balance < totalBudget) return bad(s, 'Insufficient balance. Required: ' + totalBudget + ' BDT');
+  if (q.user.balance < totalBudget) return bad(s, 'Insufficient balance. Required: ' + totalBudget + ' BDT');
 
-  Await User.updateOne({ _id: q.user.id }, { $inc: { balance: -totalBudget } });
-  Await CustomTask.create({ uid: q.user.id, platform: platform || 'general', title: String(title).trim(), link: String(link || '#').trim(), reward: Number(reward || 1), targetWorkers: Number(targetWorkers || 100), totalBudget, status: 'pending' });
-  Const updatedUser = await User.findById(q.user.id);
-  S.json({ ok: true, me: me(updatedUser) });
+  await User.updateOne({ _id: q.user.id }, { $inc: { balance: -totalBudget } });
+  await CustomTask.create({ uid: q.user.id, platform: platform || 'general', title: String(title).trim(), link: String(link || '#').trim(), reward: Number(reward || 1), targetWorkers: Number(targetWorkers || 100), totalBudget, status: 'pending' });
+  const updatedUser = await User.findById(q.user.id);
+  s.json({ ok: true, me: me(updatedUser) });
 }));
 
 app.get('/api/employer/tasks', auth, h(async (q, s) => {
-  If (q.user.role !== 'employer') return bad(s, 'Access denied.');
-  S.json(await CustomTask.find({ uid: q.user.id }).sort({ at: -1 }));
+  if (q.user.role !== 'employer') return bad(s, 'Access denied.');
+  s.json(await CustomTask.find({ uid: q.user.id }).sort({ at: -1 }));
 }));
 
 app.post('/api/watch-ad', auth, h(async (q, s) => {
-  Const now = Date.now();
-  Let user = q.user;
+  const now = Date.now();
+  let user = q.user;
   
-  If (user.adCooldownUntil && now < user.adCooldownUntil) {
-    Const remainMin = Math.ceil((user.adCooldownUntil - now) / 60000);
-    Return bad(s, `আপনার ২০ মিনিটের বিরতি চলছে। আরও ${remainMin} মিনিট পর চেষ্টা করুন।`);
+  if (user.adCooldownUntil && now < user.adCooldownUntil) {
+    const remainMin = Math.ceil((user.adCooldownUntil - now) / 60000);
+    return bad(s, `আপনার ২০ মিনিটের বিরতি চলছে। আরও ${remainMin} মিনিট পর চেষ্টা করুন।`);
   }
 
-  If (user.lastAdWatch && now - user.lastAdWatch < 10000) return bad(s, 'অনুগ্রহ করে ১০ সেকেন্ড অপেক্ষা করুন।');
+  if (user.lastAdWatch && now - user.lastAdWatch < 10000) return bad(s, 'অনুগ্রহ করে ১০ সেকেন্ড অপেক্ষা করুন।');
   
-  Const adReward = 0.50;
-  Let newRotateCount = (user.adRotateCount || 0) + 1;
-  Let cooldownUntil = 0;
+  const adReward = 0.50;
+  let newRotateCount = (user.adRotateCount || 0) + 1;
+  let cooldownUntil = 0;
 
-  If (newRotateCount >= 10) {
-    CooldownUntil = now + (20 * 60 * 1000);
-    NewRotateCount = 0;
+  if (newRotateCount >= 10) {
+    cooldownUntil = now + (20 * 60 * 1000);
+    newRotateCount = 0;
   }
 
-  Const u = await User.findOneAndUpdate({ _id: user.id }, { 
+  const u = await User.findOneAndUpdate({ _id: user.id }, { 
     $set: { lastAdWatch: now, adRotateCount: newRotateCount, adCooldownUntil: cooldownUntil }, 
     $inc: { balance: adReward, earned: adReward } 
   }, { new: true });
 
-  S.json({ reward: adReward, me: me(u), cooldown: cooldownUntil > 0 });
+  s.json({ reward: adReward, me: me(u), cooldown: cooldownUntil > 0 });
 }));
 
 app.get('/api/timewall', auth, (q, s) => s.json({ url: TW_URL ? TW_URL.replace(/\{uid\}/g, encodeURIComponent(q.user.id)) : '' }));
 
 app.post('/api/daily', auth, h(async (q, s) => {
-  Const r = await User.findOneAndUpdate({ _id: q.user.id, lastDaily: { $lte: Date.now() - 864e5 } }, { $set: { lastDaily: Date.now() }, $inc: { balance: DAILY, earned: DAILY } }, { new: true });
-  If (!r) return bad(s, 'You already claimed today.');
-  S.json(me(r));
+  const r = await User.findOneAndUpdate({ _id: q.user.id, lastDaily: { $lte: Date.now() - 864e5 } }, { $set: { lastDaily: Date.now() }, $inc: { balance: DAILY, earned: DAILY } }, { new: true });
+  if (!r) return bad(s, 'You already claimed today.');
+  s.json(me(r));
 }));
 
 app.post('/api/checkin', auth, h(async (q, s) => {
-  Const r = await User.findOneAndUpdate({ _id: q.user.id, lastCheckin: { $ne: today() } }, { $set: { lastCheckin: today() }, $inc: { balance: CHECKIN, earned: CHECKIN } }, { new: true });
-  If (!r) return bad(s, 'You already checked in today.');
-  S.json(me(r));
+  const r = await User.findOneAndUpdate({ _id: q.user.id, lastCheckin: { $ne: today() } }, { $set: { lastCheckin: today() }, $inc: { balance: CHECKIN, earned: CHECKIN } }, { new: true });
+  if (!r) return bad(s, 'You already checked in today.');
+  s.json(me(r));
 }));
 
 app.post('/api/spin', auth, h(async (q, s) => {
-  Const tot = SPIN.reduce((a, x) => a + x[1], 0);
-  Let r = crypto.randomInt(tot), prize = SPIN[0][0];
-  For (const x of SPIN) { if (r < x[1]) { prize = x[0]; break; } r -= x[1]; }
-  Const u = await User.findOneAndUpdate({ _id: q.user.id, $or: [{ lastSpin: { $exists: false } }, { lastSpin: {$lte: Date.now() - 864e5 } }] }, { $set: { lastSpin: Date.now() }, $inc: { balance: prize, earned: prize } }, { new: true });
-  If (!u) return bad(s, 'You already spun today.');
-  S.json({ prize, me: me(u) });
+  const tot = SPIN.reduce((a, x) => a + x[1], 0);
+  let r = crypto.randomInt(tot), prize = SPIN[0][0];
+  for (const x of SPIN) { if (r < x[1]) { prize = x[0]; break; } r -= x[1]; }
+  const u = await User.findOneAndUpdate({ _id: q.user.id, $or: [{ lastSpin: { $exists: false } }, { lastSpin: {$lte: Date.now() - 864e5 } }] }, { $set: { lastSpin: Date.now() }, $inc: { balance: prize, earned: prize } }, { new: true });
+  if (!u) return bad(s, 'You already spun today.');
+  s.json({ prize, me: me(u) });
 }));
 
 app.get('/api/leaderboard', auth, h(async (q, s) => {
-  Const realTop = await User.find({ earned: { $gt: 0 } }).sort({ rsCoins: -1, earned: -1 }).limit(20).select('name balance earned rsCoins avatar');
-  Const demoNames = ['Tanvir Ahmed', 'Rakibul Islam', 'Sumaiya Akter', 'Farhan Hossain', 'Nusrat Jahan', 'Mehedi Hasan', 'Ayesha Siddika', 'Imran Khan', 'Sadia Afrin', 'Nazmul Huda'];
-  Const demoAvatars = [
+  const realTop = await User.find({ earned: { $gt: 0 } }).sort({ rsCoins: -1, earned: -1 }).limit(20).select('name balance earned rsCoins avatar');
+  const demoNames = ['Tanvir Ahmed', 'Rakibul Islam', 'Sumaiya Akter', 'Farhan Hossain', 'Nusrat Jahan', 'Mehedi Hasan', 'Ayesha Siddika', 'Imran Khan', 'Sadia Afrin', 'Nazmul Huda'];
+  const demoAvatars = [
     'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=80'
   ];
-  Let demoTop = [];
-  Let baseEarn = 45000;
-  Let baseCoins = 150000;
+  let demoTop = [];
+  let baseEarn = 45000;
+  let baseCoins = 150000;
   
-  Const randomShift = Math.floor(Date.now() / 10000) % 7;
+  const randomShift = Math.floor(Date.now() / 10000) % 7;
   
-  For (let i = 0; i < 100; i++) {
-    Let flucBal = Math.max(500, baseEarn - (i * 300) + ((i * 13 + randomShift * 41) % 1500) - 750);
-    Let flucCoins = Math.max(500, baseCoins - (i * 1200) + ((i * 29 + randomShift * 67) % 5000) - 2500);
-    DemoTop.push({
-      Name: i === 0 ? '👑 Al-Amin (Top 1)' : (i === 1 ? '⭐ Shanto Mahmud (Top 2)' : (demoNames[i % demoNames.length] + ' ' + (i + 1))),
-      Balance: flucBal,
-      Earned: flucBal + 2000,
-      RsCoins: flucCoins,
-      Avatar: demoAvatars[i % demoAvatars.length]
+  for (let i = 0; i < 100; i++) {
+    let flucBal = Math.max(500, baseEarn - (i * 300) + ((i * 13 + randomShift * 41) % 1500) - 750);
+    let flucCoins = Math.max(500, baseCoins - (i * 1200) + ((i * 29 + randomShift * 67) % 5000) - 2500);
+    demoTop.push({
+      name: i === 0 ? '👑 Al-Amin (Top 1)' : (i === 1 ? '⭐ Shanto Mahmud (Top 2)' : (demoNames[i % demoNames.length] + ' ' + (i + 1))),
+      balance: flucBal,
+      earned: flucBal + 2000,
+      rsCoins: flucCoins,
+      avatar: demoAvatars[i % demoAvatars.length]
     });
   }
-  Let combined = realTop.map(u => ({ name: u.name, balance: u.balance || 0, earned: u.earned, rsCoins: u.rsCoins || 0, avatar: u.avatar || '' })).concat(demoTop);
-  Combined.sort((a, b) => b.rsCoins - a.rsCoins || b.earned - a.earned);
-  S.json(combined.slice(0, 100));
+  let combined = realTop.map(u => ({ name: u.name, balance: u.balance || 0, earned: u.earned, rsCoins: u.rsCoins || 0, avatar: u.avatar || '' })).concat(demoTop);
+  combined.sort((a, b) => b.rsCoins - a.rsCoins || b.earned - a.earned);
+  s.json(combined.slice(0, 100));
 }));
 
-// উইথড্র API (ইউজারের জন্য রাখা হলো যদিও বাটন সড়ানো হয়েছে)
 app.post('/api/withdraw', auth, h(async (q, s) => {
-  If (q.user.role === 'employer') return bad(s, 'Employers cannot withdraw funds.');
-  Const { amount, method, phone } = q.body || {};
-  Const a = Math.floor(+amount);
-  If (!(a >= MIN_WD && a <= MAX_WD)) return bad(s, 'Withdraw amount must be between ' + MIN_WD + ' and ' + MAX_WD + '.');
-  If (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
-  If (!phone || String(phone).trim().length < 11) return bad(s, 'Enter a valid phone number.');
-  Const r = await User.findOneAndUpdate({ _id: q.user.id, balance: { $gte: a } }, { $inc: { balance: -a } }, { new: true });
-  If (!r) return bad(s, 'Not enough balance.');
-  Await Wd.create({ uid: q.user.id, name: q.user.name, amount: a, method, phone: String(phone).trim() });
-  S.json(me(r));
+  if (q.user.role === 'employer') return bad(s, 'Employers cannot withdraw funds.');
+  const { amount, method, phone } = q.body || {};
+  const a = Math.floor(+amount);
+  if (!(a >= MIN_WD && a <= MAX_WD)) return bad(s, 'Withdraw amount must be between ' + MIN_WD + ' and ' + MAX_WD + '.');
+  if (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
+  if (!phone || String(phone).trim().length < 11) return bad(s, 'Enter a valid phone number.');
+  const r = await User.findOneAndUpdate({ _id: q.user.id, balance: { $gte: a } }, { $inc: { balance: -a } }, { new: true });
+  if (!r) return bad(s, 'Not enough balance.');
+  await Wd.create({ uid: q.user.id, name: q.user.name, amount: a, method, phone: String(phone).trim() });
+  s.json(me(r));
 }));
 
 app.get('/api/withdrawals', auth, h(async (q, s) => s.json(await Wd.find({ uid: q.user.id }).sort({ at: -1 }).limit(30))));
 
 app.post('/api/deposit', auth, h(async (q, s) => {
-  Const { amount, method, txid, lastDigits, pkgName } = q.body || {};
-  Const a = Math.floor(+amount);
-  If (!(a >= 200 && a <= 15000)) return bad(s, 'Deposit amount must be between 200 and 15000 BDT.');
-  If (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
-  If (!txid || txid.trim().length < 10) return bad(s, 'Transaction ID must be at least 10 characters.');
-  If (!lastDigits || String(lastDigits).trim().length !== 3) return bad(s, 'Please provide the last 3 digits of TrxID.');
-  Const lDigits = String(lastDigits).trim();
-  Const serialNo = '#D-' + Math.floor(100000 + Math.random() * 900000);
+  const { amount, method, txid, lastDigits, pkgName } = q.body || {};
+  const a = Math.floor(+amount);
+  if (!(a >= 200 && a <= 15000)) return bad(s, 'Deposit amount must be between 200 and 15000 BDT.');
+  if (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
+  if (!txid || txid.trim().length < 10) return bad(s, 'Transaction ID must be at least 10 characters.');
+  if (!lastDigits || String(lastDigits).trim().length !== 3) return bad(s, 'Please provide the last 3 digits of TrxID.');
+  const lDigits = String(lastDigits).trim();
+  const serialNo = '#D-' + Math.floor(100000 + Math.random() * 900000);
 
-  Const newDep = await Deposit.create({ uid: q.user.id, name: q.user.name, amount: a, method, txid: txid.trim(), lastDigits: lDigits, pkgName: pkgName || 'Custom Deposit', serialNo });
-  S.json({ ok: true, serialNo, time: new Date().toLocaleString(), balance: q.user.balance, depositDetails: newDep });
+  const newDep = await Deposit.create({ uid: q.user.id, name: q.user.name, amount: a, method, txid: txid.trim(), lastDigits: lDigits, pkgName: pkgName || 'Custom Deposit', serialNo });
+  s.json({ ok: true, serialNo, time: new Date().toLocaleString(), balance: q.user.balance, depositDetails: newDep });
 }));
 
 app.get('/api/deposits', auth, h(async (q, s) => s.json(await Deposit.find({ uid: q.user.id }).sort({ at: -1 }).limit(30))));
 
 app.get('/api/global-feed', auth, h(async (q, s) => {
-  Const feedItems = [
+  const feedItems = [
     { name: 'Tanvir Ahmed', action: 'bKash-এ ৳500 ডিপোজিট সফল হয়েছে', type: 'dep', time: 'মাত্রই' },
     { name: 'Rakibul Islam', action: 'Nagad-এ ৳1,000 উত্তোলন করেছেন', type: 'wd', time: '১ মিনিট আগে' },
     { name: 'Sumaiya Akter', action: 'আর এস গ্যালারি শপ থেকে ৳850 দিয়ে শার্ট অর্ডার করেছেন', type: 'shop', time: '২ মিনিট আগে' },
@@ -559,18 +556,18 @@ app.get('/api/global-feed', auth, h(async (q, s) => {
     { name: 'Nusrat Jahan', action: 'প্রিমিয়াম RS Coin Package (৳1,500) কিনেছেন', type: 'shop', time: '৪ মিনিট আগে' },
     { name: 'Mehedi Hasan', action: 'bKash-এ ৳1,200 ডিপোজিট সফল হয়েছে', type: 'dep', time: '৫ মিনিট আগে' }
   ];
-  S.json(feedItems);
+  s.json(feedItems);
 }));
 
 app.get('/api/support', auth, h(async (q, s) => s.json(await Msg.find({ uid: q.user.id }).sort({ at: 1 }).limit(100))));
 app.post('/api/support', auth, h(async (q, s) => {
-  Const text = String((q.body || {}).text || '').trim().slice(0, 500);
-  If (!text) return bad(s, 'Write your message first.');
-  Await Msg.create({ uid: q.user.id, name: q.user.name, from: 'user', text });
+  const text = String((q.body || {}).text || '').trim().slice(0, 500);
+  if (!text) return bad(s, 'Write your message first.');
+  await Msg.create({ uid: q.user.id, name: q.user.name, from: 'user', text });
   
-  Let botReply = 'আপনার মেসেজটি আমরা পেয়েছি। আমাদের সাপোর্ট টিম শীঘ্রই এটি চেক করে আপনাকে সহযোগিতা করবে।';
-  Const lower = text.toLowerCase();
-  If(lower.includes('ডিপোজিট') || lower.includes('deposit')) {
+  let botReply = 'আপনার মেসেজটি আমরা পেয়েছি। আমাদের সাপোর্ট টিম শীঘ্রই এটি চেক করে আপনাকে সহযোগিতা করবে।';
+  const lower = text.toLowerCase();
+  if(lower.includes('ডিপোজিট') || lower.includes('deposit')) {
     botReply = 'ডিপোজিট সমস্যার জন্য অনুগ্রহ করে সঠিক TrxID ও সঠিক লাস্ট ডিজিট প্রদান করুন। সাধারণত ১০-১৫ মিনিটের মধ্যে ডিপোজিটের ব্যালেন্স আপডেট হয়।';
   } else if(lower.includes('উইথড্র') || lower.includes('withdrawal') || lower.includes('টাকা পাব')) {
     botReply = 'আপনার উইথড্র রিকোয়েস্ট ওয়ালেটের মাধ্যমে প্রসেস করা হয়। বিস্তারিত আপনার ই-ওয়ালেট ড্যাশবোর্ডে দেখতে পাবেন।';
@@ -580,146 +577,145 @@ app.post('/api/support', auth, h(async (q, s) => {
     botReply = 'আর এস গ্যালারি শপ (RS Gallery Shop) আমাদের অফিশিয়াল পার্টনার। এখানে আপনি ইনকামের টাকা দিয়ে খুব সহজেই সাশ্রয়ী মূল্যে সেরা পোশাক ও ফ্যাশন আইটেম অর্ডার করতে পারবেন!';
   }
   
-  Await Msg.create({ uid: q.user.id, name: 'Support Bot', from: 'support', text: botReply });
-  S.json({ ok: true });
+  await Msg.create({ uid: q.user.id, name: 'Support Bot', from: 'support', text: botReply });
+  s.json({ ok: true });
 }));
 
 app.get('/api/admin/user-packages', admin, h(async (q, s) => {
-  S.json(await UserPackage.find({}));
+  s.json(await UserPackage.find({}));
 }));
 app.post('/api/admin/user-packages', admin, h(async (q, s) => {
-  Const { title, price, coinsPerMin, description, pkgImage, hot } = q.body || {};
-  If (!price || !coinsPerMin) return bad(s, 'Price and coins per min are required.');
-  Await UserPackage.create({ title: title || 'RS Coin Package', price: Number(price), coinsPerMin: Number(coinsPerMin), description: description || '', pkgImage: pkgImage || '', hot: !!hot });
-  S.json({ ok: true });
+  const { title, price, coinsPerMin, description, pkgImage, hot } = q.body || {};
+  if (!price || !coinsPerMin) return bad(s, 'Price and coins per min are required.');
+  await UserPackage.create({ title: title || 'RS Coin Package', price: Number(price), coinsPerMin: Number(coinsPerMin), description: description || '', pkgImage: pkgImage || '', hot: !!hot });
+  s.json({ ok: true });
 }));
 app.post('/api/admin/user-packages/delete/:id', admin, h(async (q, s) => {
-  Await UserPackage.findByIdAndDelete(q.params.id);
-  S.json({ ok: true });
+  await UserPackage.findByIdAndDelete(q.params.id);
+  s.json({ ok: true });
 }));
 
 app.get('/api/admin/promo-packages', admin, h(async (q, s) => {
-  S.json(await PromoPackage.find({}));
+  s.json(await PromoPackage.find({}));
 }));
 app.post('/api/admin/promo-packages', admin, h(async (q, s) => {
-  Const { title, category, followers, price, description, icon } = q.body || {};
-  If (!title || !price) return bad(s, 'Title and price are required.');
-  Await PromoPackage.create({ title, category: category || 'Social Media', followers: Number(followers) || 100, price: Number(price) || 100, description: description || '', icon: icon || 'https://cdn-icons-png.flaticon.com/512/1041/1041888.png' });
-  S.json({ ok: true });
+  const { title, category, followers, price, description, icon } = q.body || {};
+  if (!title || !price) return bad(s, 'Title and price are required.');
+  await PromoPackage.create({ title, category: category || 'Social Media', followers: Number(followers) || 100, price: Number(price) || 100, description: description || '', icon: icon || 'https://cdn-icons-png.flaticon.com/512/1041/1041888.png' });
+  s.json({ ok: true });
 }));
 app.post('/api/admin/promo-packages/delete/:id', admin, h(async (q, s) => {
-  Await PromoPackage.findByIdAndDelete(q.params.id);
-  S.json({ ok: true });
+  await PromoPackage.findByIdAndDelete(q.params.id);
+  s.json({ ok: true });
 }));
 
 app.get('/api/admin/sliders', admin, h(async (q, s) => {
-  S.json(await SliderSetting.find({}));
+  s.json(await SliderSetting.find({}));
 }));
 app.post('/api/admin/sliders', admin, h(async (q, s) => {
-  Const { title, subtitle, description, link, bgImage, bgClass, emoji, timerSeconds } = q.body || {};
-  Await SliderSetting.create({ title, subtitle, description, link, bgImage: bgImage || '', bgClass: bgClass || 's0', emoji: emoji || '🌟', timerSeconds: Number(timerSeconds) || 6 });
-  S.json({ ok: true });
+  const { title, subtitle, description, link, bgImage, bgClass, emoji, timerSeconds } = q.body || {};
+  await SliderSetting.create({ title, subtitle, description, link, bgImage: bgImage || '', bgClass: bgClass || 's0', emoji: emoji || '🌟', timerSeconds: Number(timerSeconds) || 6 });
+  s.json({ ok: true });
 }));
 app.post('/api/admin/sliders/delete/:id', admin, h(async (q, s) => {
-  Await SliderSetting.findByIdAndDelete(q.params.id);
-  S.json({ ok: true });
+  await SliderSetting.findByIdAndDelete(q.params.id);
+  s.json({ ok: true });
 }));
 
-// এডমিন প্রমোট সাইট এডিট API (সেভ করার জন্য)
 app.get('/api/admin/site-contents', admin, h(async (q, s) => {
-  S.json(await SiteContent.find({}));
+  s.json(await SiteContent.find({}));
 }));
 app.post('/api/admin/site-contents', admin, h(async (q, s) => {
-  Const { key, title, subtitle, description, imageUrl, extraData } = q.body || {};
-  If (!key) return bad(s, 'Key is required.');
-  Await SiteContent.findOneAndUpdate(
+  const { key, title, subtitle, description, imageUrl, extraData } = q.body || {};
+  if (!key) return bad(s, 'Key is required.');
+  await SiteContent.findOneAndUpdate(
     { key: key },
     { key, title, subtitle, description, imageUrl, extraData },
     { upsert: true, new: true }
   );
-  S.json({ ok: true });
+  s.json({ ok: true });
 }));
 
 app.get('/api/admin/data', admin, h(async (q, s) => {
-  Await expire();
-  Const start = dayStart();
-  Const sum = async (M, match, f) => { const r = await M.aggregate([{ $match: match }, {$group: { _id: null, t: { $sum: '$' + f } } }]); return r.length ? r[0].t : 0; };
-  S.json({
+  await expire();
+  const start = dayStart();
+  const sum = async (M, match, f) => { const r = await M.aggregate([{ $match: match }, {$group: { _id: null, t: { $sum: '$' + f } } }]); return r.length ? r[0].t : 0; };
+  s.json({
     stats: {
-      Users: await User.countDocuments(), active: await User.countDocuments({ lastSeen: { $gte: start.getTime() } }),
-      NewToday: await User.countDocuments({ created: { $gte: start } }),
-      Pending: await Click.countDocuments({ status: 'pending' }), success: await Click.countDocuments({ status: 'success' }), cancelled: await Click.countDocuments({ status: { $in: ['cancelled', 'expired'] } }),
-      Today: await sum(Conv, { at: { $gte: start } }, 'bdt'), balance: await sum(User, {}, 'balance'),
-      PendingTasks: await CustomTask.countDocuments({ status: 'pending' })
+      users: await User.countDocuments(), active: await User.countDocuments({ lastSeen: { $gte: start.getTime() } }),
+      newToday: await User.countDocuments({ created: { $gte: start } }),
+      pending: await Click.countDocuments({ status: 'pending' }), success: await Click.countDocuments({ status: 'success' }), cancelled: await Click.countDocuments({ status: { $in: ['cancelled', 'expired'] } }),
+      today: await sum(Conv, { at: { $gte: start } }, 'bdt'), balance: await sum(User, {}, 'balance'),
+      pendingTasks: await CustomTask.countDocuments({ status: 'pending' })
     }
   });
 }));
 
 app.get('/api/admin/custom-tasks', admin, h(async (q, s) => {
-  S.json(await CustomTask.find({ status: 'pending' }).sort({ at: 1 }));
+  s.json(await CustomTask.find({ status: 'pending' }).sort({ at: 1 }));
 }));
 app.post('/api/admin/custom-tasks/:id', admin, h(async (q, s) => {
-  Const t = await CustomTask.findById(q.params.id);
-  If (!t) return bad(s, 'Task not found.');
-  If (q.body.ok) {
-    T.status = 'approved';
-    Await t.save();
+  const t = await CustomTask.findById(q.params.id);
+  if (!t) return bad(s, 'Task not found.');
+  if (q.body.ok) {
+    t.status = 'approved';
+    await t.save();
   } else {
-    T.status = 'rejected';
-    Await t.save();
-    Await User.updateOne({ _id: t.uid }, { $inc: { balance: t.totalBudget } });
+    t.status = 'rejected';
+    await t.save();
+    await User.updateOne({ _id: t.uid }, { $inc: { balance: t.totalBudget } });
   }
-  S.json({ ok: true });
+  s.json({ ok: true });
 }));
 
 app.get('/api/admin/support', admin, h(async (q, s) => {
-  Const all = await Msg.find().sort({ at: -1 }).limit(400);
-  Const map = {};
-  All.reverse().forEach(m => { (map[m.uid] = map[m.uid] || { uid: m.uid, name: m.name, msgs: [] }).msgs.push({ from: m.from, text: m.text, at: m.at }); });
-  Const th = Object.values(map).map(t => { const l = t.msgs[t.msgs.length - 1]; return { uid: t.uid, name: t.name, msgs: t.msgs.slice(-30), needs: l.from === 'user', last: +new Date(l.at) }; });
-  Th.sort((a, b) => (b.needs - a.needs) || (b.last - a.last));
-  S.json(th);
+  const all = await Msg.find().sort({ at: -1 }).limit(400);
+  const map = {};
+  all.reverse().forEach(m => { (map[m.uid] = map[m.uid] || { uid: m.uid, name: m.name, msgs: [] }).msgs.push({ from: m.from, text: m.text, at: m.at }); });
+  const th = Object.values(map).map(t => { const l = t.msgs[t.msgs.length - 1]; return { uid: t.uid, name: t.name, msgs: t.msgs.slice(-30), needs: l.from === 'user', last: +new Date(l.at) }; });
+  th.sort((a, b) => (b.needs - a.needs) || (b.last - a.last));
+  s.json(th);
 }));
 
 app.get('/api/admin/users', admin, h(async (q, s) => {
-  Const st = dayStart();
-  Const act = await User.find({ lastSeen: { $gte: st.getTime() } }).sort({ lastSeen: -1 }).limit(200).select('name phone email lastSeen balance earned role');
-  Const ag = await Conv.aggregate([{ $match: { at: {$gte: st } } }, { $group: { _id: '$uid', t: { $sum: '$bdt' } } }]);
-  Const em = {}; ag.forEach(x => { em[x._id] = x.t; });
-  Const ids = ag.map(x => x._id).filter(x => mongoose.isValidObjectId(x));
-  Const eu = ids.length ? await User.find({ _id: { $in: ids } }).select('name phone email') : [];
-  Const earners = eu.map(u => ({ name: u.name, phone: u.phone || u.email || '', t: em[String(u._id)] || 0 })).sort((a, b) => b.t - a.t);
-  Const top = await User.find({ earned: { $gt: 0 } }).sort({ earned: -1 }).limit(30).select('name phone email earned balance');
-  S.json({
-    NewToday: await User.countDocuments({ created: { $gte: st } }),
-    Active: act.map(u => ({ name: u.name, phone: u.phone || u.email || '', role: u.role || 'worker', seen: u.lastSeen, balance: u.balance, today: em[String(u._id)] || 0 })),
-    Earners,
-    Top: top.map(u => ({ name: u.name, phone: u.phone || u.email || '', earned: u.earned, balance: u.balance }))
+  const st = dayStart();
+  const act = await User.find({ lastSeen: { $gte: st.getTime() } }).sort({ lastSeen: -1 }).limit(200).select('name phone email lastSeen balance earned role');
+  const ag = await Conv.aggregate([{ $match: { at: {$gte: st } } }, { $group: { _id: '$uid', t: { $sum: '$bdt' } } }]);
+  const em = {}; ag.forEach(x => { em[x._id] = x.t; });
+  const ids = ag.map(x => x._id).filter(x => mongoose.isValidObjectId(x));
+  const eu = ids.length ? await User.find({ _id: { $in: ids } }).select('name phone email') : [];
+  const earners = eu.map(u => ({ name: u.name, phone: u.phone || u.email || '', t: em[String(u._id)] || 0 })).sort((a, b) => b.t - a.t);
+  const top = await User.find({ earned: { $gt: 0 } }).sort({ earned: -1 }).limit(30).select('name phone email earned balance');
+  s.json({
+    newToday: await User.countDocuments({ created: { $gte: st } }),
+    active: act.map(u => ({ name: u.name, phone: u.phone || u.email || '', role: u.role || 'worker', seen: u.lastSeen, balance: u.balance, today: em[String(u._id)] || 0 })),
+    earners,
+    top: top.map(u => ({ name: u.name, phone: u.phone || u.email || '', earned: u.earned, balance: u.balance }))
   });
 }));
 
 app.post('/api/admin/bonus', admin, h(async (q, s) => {
-  Const { phone, amount } = q.body || {};
-  Const a = Number(amount);
-  If (!phone || isNaN(a) || a <= 0) return bad(s, 'Invalid phone or amount.');
-  Const u = await User.findOneAndUpdate({ phone: String(phone).trim() }, { $inc: { balance: a, earned: a } });
-  If (!u) return bad(s, 'User not found.');
-  S.json({ ok: true });
+  const { phone, amount } = q.body || {};
+  const a = Number(amount);
+  if (!phone || isNaN(a) || a <= 0) return bad(s, 'Invalid phone or amount.');
+  const u = await User.findOneAndUpdate({ phone: String(phone).trim() }, { $inc: { balance: a, earned: a } });
+  if (!u) return bad(s, 'User not found.');
+  s.json({ ok: true });
 }));
 
 app.post('/api/admin/reply', admin, h(async (q, s) => {
-  Const u = await User.findById(q.body.uid);
-  If (u && q.body.text) await Msg.create({ uid: u.id, name: u.name, from: 'support', text: String(q.body.text).slice(0, 500) });
-  S.json({ ok: true });
+  const u = await User.findById(q.body.uid);
+  if (u && q.body.text) await Msg.create({ uid: u.id, name: u.name, from: 'support', text: String(q.body.text).slice(0, 500) });
+  s.json({ ok: true });
 }));
 
 app.get('/api/admin/offers-raw', admin, h(async (q, s) => {
-  Const dbg = {};
-  Await fetchOffers('admin-test', ctxOf(q), dbg);
-  S.json({ text: 'Offers fetched successfully.' });
+  const dbg = {};
+  await fetchOffers('admin-test', ctxOf(q), dbg);
+  s.json({ text: 'Offers fetched successfully.' });
 }));
 
-Const PAGE = `<!DOCTYPE html>
+const PAGE = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="google-site-verification" content="LFCR_Ofi-3uqR900pf2ntTa2io3ymE1PRv4jlyWoX28" />
 <link rel="manifest" href="/manifest.json">
@@ -1187,7 +1183,6 @@ function vEmp(){
   api('promo-packages').then(packages => {
     var usdBal = (ME.balance / 120).toFixed(2);
     $('main').innerHTML=
-    // SMM Welcome Banner & USD Balance Header
     '<div class="smm-welcome">' +
       '<div>' +
         '<b style="color:#fff;font-size:14px">Welcome Back, '+esc(ME.name)+' 👋</b>' +
@@ -1202,7 +1197,6 @@ function vEmp(){
       '</div>' +
     '</div>' +
 
-    // Quick Connect Telegram & Support links
     '<div class="row" style="cursor:pointer;background:linear-gradient(135deg,#0c2350,#0b1224)" onclick="window.open(\x27https://t.me/rkrana33\x27,\x27_blank\x27)">' +
       '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:22px">✈️</span><div><b>Join Our Telegram Channel to Get Update</b><small style="color:var(--blu)">Connect Telegram &rsaquo;</small></div></div>' +
     '</div>' +
@@ -1210,7 +1204,6 @@ function vEmp(){
       '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:22px">💬</span><div><b>For Any Kind of Customer Support</b><small style="color:var(--grn)">Talk with us &rsaquo;</small></div></div>' +
     '</div>' +
 
-    // SMM Services Icons Grid
     '<h3 style="margin:10px 0 6px">All SMM Services</h3>' +
     '<div class="smm-services-grid">' +
       '<div class="smm-service-icon" title="Facebook">📘</div>' +
@@ -1221,13 +1214,11 @@ function vEmp(){
       '<div class="smm-service-icon" title="Telegram">✈️</div>' +
     '</div>' +
 
-    // Action buttons: New Order & Add Fund ($)
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
       '<button class="btn r" style="margin-top:0;font-size:13px;background:linear-gradient(90deg,var(--gold),#f59e0b);color:#000" onclick="toast(\x27Already in New Order section\x27)">🛒 New Order</button>' +
       '<button class="btn g" style="margin-top:0;font-size:13px" onclick="go(\x27acc\x27)">💳 Add Fund ($)</button>' +
     '</div>' +
 
-    // Services Selection Card (SMM Style)
     '<div class="card" style="margin-bottom:12px">' +
       '<h3 style="color:var(--gold);margin-bottom:8px">⚙️ Services Order Form</h3>' +
       '<label>Type services ID / Search</label>' +
@@ -1244,7 +1235,6 @@ function vEmp(){
       '</select>' +
     '</div>' +
 
-    // Order Details Card
     '<div class="card">' +
       '<h3 style="color:var(--gold);margin-bottom:8px">📦 Order Details</h3>' +
       '<label>Link (URL)</label><input id="smmLink" placeholder="https://www.facebook.com/xxxx">' +
@@ -1255,7 +1245,6 @@ function vEmp(){
       '<button class="btn r" style="margin-top:14px;background:linear-gradient(90deg,var(--gold),#f59e0b);color:#000" onclick="submitSmmOrder()">Submit Order</button>' +
     '</div>' +
 
-    // Service Info & Description Box
     '<div class="card" style="margin-top:12px">' +
       '<div class="seg"><div class="on">Service Info</div></div>' +
       '<div style="font-size:12px;line-height:1.7;color:var(--mu)" id="smmServiceDescBox">' +
@@ -1473,7 +1462,6 @@ function vAcc(){
     }, 2000);
   }).catch(function(){});
 
-  // নির্দেশ অনুযায়ী ইউজার অ্যাকাউন্ট থেকে উইথড্র (Withdraw) অপশন পুরোপুরি কেটে দেওয়া হয়েছে
   $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স ও পপআপ হিস্ট্রি।')+
   '<div class="row"><div>'+esc(ME.name)+' ('+(isEmp?'Employer SMM':'Worker')+')<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
   '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance (BDT)</small></div><div class="stat"><b>$'+(ME.balance/120).toFixed(2)+'</b><small>Balance (USD)</small></div></div>'+
@@ -1643,7 +1631,6 @@ function bk(p){var h='';
  else if(p==='hadith'){h=bkBack('menu')+'<h3>হাদিস</h3>'+HD.map(function(x){return '<div class="bkc">'+esc(x[0])+'<small>সূত্র: '+esc(x[1])+'</small></div>'}).join('')}
  $('main').innerHTML=h;$('main').scrollTop=0}
 
-// এডমিন প্যানেল থেকে উইথড্র ও ডিপোজিট কেটে নতুন "প্রমোট সাইট এডিট" (edit) যুক্ত করা হলো
 var ATABS=[['ov','📊','ওভারভিউ'],['edit','✏️','প্রমোট সাইট এডিট'],['ctask','📢','প্রমোশন'],['shop','🛍️','প্যাকেজ ও শপ'],['slider','🖼️','স্লাইডার কন্ট্রোল'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ']];
 function ah(){return{'x-admin-pass':ADM}}
 
@@ -1678,7 +1665,6 @@ function sc(a){return a.map(function(x){return '<div class="stat"><b>'+x[1]+'</b
 function aOv(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
  $('abody').innerHTML='<h3>আজকের হিসাব</h3><div class="grid">'+sc([['মোট ইউজার',s.users],['আজ ঢুকেছে',s.active],['অপেক্ষমাণ টাস্ক',s.pendingTasks]])+'</div>'}).catch(aErr)}
 
-// নতুন প্রমোট সাইট এডিট ফাংশন (এডমিন প্যানেলের জন্য)
 function aEditSite(){
   api('admin/site-contents','GET',null,ah()).then(function(contents){
     var map = {};
@@ -1879,36 +1865,36 @@ app.get('/', (req, res) => res.send(PAGE.replace('__GID__', GID.replace(/[^\w.\-
 app.listen(PORT, () => console.log('Server is running on port ' + PORT));
 
 app.get('/api/assistant/summary', h(async (q, s) => {
-  Const key = String(q.headers['x-assistant-key'] || '');
-  Const expected = process.env.ASSISTANT_KEY || '';
-  If (!expected || !key || !same(key, expected)) return bad(s, 'অনুমতি নেই', 401);
+  const key = String(q.headers['x-assistant-key'] || '');
+  const expected = process.env.ASSISTANT_KEY || '';
+  if (!expected || !key || !same(key, expected)) return bad(s, 'অনুমতি নেই', 401);
 
-  Const st = dayStart();
-  Const sumOf = async (M, match, f) => {
-    Const r = await M.aggregate([{ $match: match }, { $group: { _id: null, t: { $sum: '$' + f } } }]);
-    Return r.length ? r[0].t : 0;
+  const st = dayStart();
+  const sumOf = async (M, match, f) => {
+    const r = await M.aggregate([{ $match: match }, { $group: { _id: null, t: { $sum: '$' + f } } }]);
+    return r.length ? r[0].t : 0;
   };
 
-  Const usersTotal = await User.countDocuments();
-  Const usersActive = await User.countDocuments({ lastSeen: { $gte: st.getTime() } });
-  Const usersNew = await User.countDocuments({ created: { $gte: st } });
+  const usersTotal = await User.countDocuments();
+  const usersActive = await User.countDocuments({ lastSeen: { $gte: st.getTime() } });
+  const usersNew = await User.countDocuments({ created: { $gte: st } });
 
-  Const depPendingCount = await Deposit.countDocuments({ status: 'pending' });
-  Const depPendingAmount = await sumOf(Deposit, { status: 'pending' }, 'amount');
-  Const depApprovedCount = await Deposit.countDocuments({ status: 'approved', at: { $gte: st } });
-  Const depApprovedAmount = await sumOf(Deposit, { status: 'approved', at: { $gte: st } }, 'amount');
-  Const depListRaw = await Deposit.find({ status: 'pending' }).sort({ at: -1 }).limit(5).select('name amount method pkgName -_id').lean();
-  Const depList = depListRaw.map(d => ({ name: d.name, amount: d.amount, method: d.method, package: d.pkgName }));
+  const depPendingCount = await Deposit.countDocuments({ status: 'pending' });
+  const depPendingAmount = await sumOf(Deposit, { status: 'pending' }, 'amount');
+  const depApprovedCount = await Deposit.countDocuments({ status: 'approved', at: { $gte: st } });
+  const depApprovedAmount = await sumOf(Deposit, { status: 'approved', at: { $gte: st } }, 'amount');
+  const depListRaw = await Deposit.find({ status: 'pending' }).sort({ at: -1 }).limit(5).select('name amount method pkgName -_id').lean();
+  const depList = depListRaw.map(d => ({ name: d.name, amount: d.amount, method: d.method, package: d.pkgName }));
 
-  Const tPending = await Click.countDocuments({ status: 'pending' });
-  Const tSuccess = await Click.countDocuments({ status: 'success' });
-  Const tCancelled = await Click.countDocuments({ status: { $in: ['cancelled', 'expired'] } });
-  Const promoPending = await CustomTask.countDocuments({ status: 'pending' });
+  const tPending = await Click.countDocuments({ status: 'pending' });
+  const tSuccess = await Click.countDocuments({ status: 'success' });
+  const tCancelled = await Click.countDocuments({ status: { $in: ['cancelled', 'expired'] } });
+  const promoPending = await CustomTask.countDocuments({ status: 'pending' });
 
-  Const totalBalance = await sumOf(User, {}, 'balance');
-  Const earnedToday = await sumOf(Conv, { at: { $gte: st } }, 'bdt');
+  const totalBalance = await sumOf(User, {}, 'balance');
+  const earnedToday = await sumOf(Conv, { at: { $gte: st } }, 'bdt');
 
-  S.json({
+  s.json({
     ok: true,
     date: new Date(Date.now() + 6 * 36e5).toISOString().slice(0, 10),
     users: { total: usersTotal, activeToday: usersActive, newToday: usersNew },
@@ -1920,20 +1906,20 @@ app.get('/api/assistant/summary', h(async (q, s) => {
   });
 }));
 
-Const WALLET_URL_ENV = (process.env.WALLET_URL || '').replace(/\/$/, '');
-Const WALLET_KEY_ENV = process.env.WALLET_KEY || '';
-Const walletSent = new Set();
+const WALLET_URL_ENV = (process.env.WALLET_URL || '').replace(/\/$/, '');
+const WALLET_KEY_ENV = process.env.WALLET_KEY || '';
+const walletSent = new Set();
 
 async function sendDepositsToWallet() {
-  If (!WALLET_URL_ENV || !WALLET_KEY_ENV) return;
-  If (mongoose.connection.readyState !== 1) return;
-  Const since = new Date(Date.now() - 3 * 24 * 36e5);
-  Const list = await Deposit.find({ at: { $gte: since }, status: 'pending' }).limit(50);
-  For (const d of list) {
-    Const id = String(d._id);
-    If (walletSent.has(id)) continue;
-    Try {
-      Const r = await fetch(WALLET_URL_ENV + '/api/site/deposit', {
+  if (!WALLET_URL_ENV || !WALLET_KEY_ENV) return;
+  if (mongoose.connection.readyState !== 1) return;
+  const since = new Date(Date.now() - 3 * 24 * 36e5);
+  const list = await Deposit.find({ at: { $gte: since }, status: 'pending' }).limit(50);
+  for (const d of list) {
+    const id = String(d._id);
+    if (walletSent.has(id)) continue;
+    try {
+      const r = await fetch(WALLET_URL_ENV + '/api/site/deposit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': WALLET_KEY_ENV },
         body: JSON.stringify({
@@ -1948,12 +1934,48 @@ async function sendDepositsToWallet() {
         }),
         signal: AbortSignal.timeout(20000)
       });
-      If (r.ok || r.status === 409) walletSent.add(id);
-      Else console.error('Wallet send failed', r.status, d.txid);
+      if (r.ok || r.status === 409) walletSent.add(id);
+      else console.error('Wallet send failed', r.status, d.txid);
     } catch (e) {
-      Console.error('Wallet send error', e.message);
+      console.error('Wallet send error', e.message);
     }
   }
 }
 setTimeout(() => sendDepositsToWallet().catch(() => {}), 20000);
 setInterval(() => sendDepositsToWallet().catch(() => {}), 30000);
+
+app.get('/api/assistant/details', h(async (q, s) => {
+  const key = String(q.headers['x-assistant-key'] || '');
+  const expected = process.env.ASSISTANT_KEY || '';
+  if (!expected || !key || !same(key, expected)) return bad(s, 'অনুমতি নেই', 401);
+
+  const st = dayStart();
+  const deps = await Deposit.find({ status: 'pending' }).sort({ at: -1 }).limit(10).lean();
+  const depsToday = await Deposit.find({ at: { $gte: st } }).sort({ at: -1 }).limit(10).lean();
+  const wds = await Wd.find({ status: 'pending' }).sort({ at: -1 }).limit(10).lean();
+
+  const mapDep = d => ({
+    name: d.name,
+    amount: d.amount,
+    method: d.method,
+    trxId: d.txid,
+    lastDigits: d.lastDigits,
+    orderNo: d.serialNo,
+    package: d.pkgName,
+    status: d.status,
+    time: d.at
+  });
+
+  s.json({
+    ok: true,
+    pendingDeposits: deps.map(mapDep),
+    todayDeposits: depsToday.map(mapDep),
+    pendingWithdrawals: wds.map(x => ({
+      name: x.name,
+      amount: x.amount,
+      method: x.method,
+      number: x.phone,
+      time: x.at
+    }))
+  });
+}));
