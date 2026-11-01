@@ -728,86 +728,72 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--orange)}
 .btn.g{background:var(--grn);color:#fff}.btn.r{background:var(--red);color:#fff}.btn.s{width:auto;padding:6px 12px;font-size:12px;margin:0;border-radius:14px}
 .or{font-size:11px;color:var(--mu);margin:14px 0 8px;text-align:center}
 .agn{font-size:10.5px;color:var(--mu);margin-top:8px;text-align:center;line-height:1.5}
-.top{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#131d38,#0f172a)}
-.top .l{display:flex;align-items:center;gap:9px;min-width:0}.top b{font-size:14px}.bal{text-align:right;font-size:17px;font-weight:800;color:var(--grn)}.bal small{display:block;font-size:10px;color:var(--mu);font-weight:400}
-.av{width:40px;height:40px;border-radius:50%;border:2px solid var(--orange);background:#16213f;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;overflow:hidden;flex-shrink:0;box-shadow:0 0 10px rgba(249,115,22,.3)}
-.av img{width:100%;height:100%;object-fit:contain;display:block}
-nav{display:flex;gap:2px;padding:7px 3px 9px;background:#0b1224;box-shadow:0 10px 20px rgba(0,0,0,.6);position:relative;z-index:5}
-nav div{flex:1;text-align:center;font-size:9px;color:var(--mu);padding:6px 0;cursor:pointer;border-radius:11px;background:linear-gradient(180deg,#18244a,#0e1730)}
-nav div i{display:block;font-style:normal;font-size:14px;position:relative;width:22px;height:22px;line-height:22px;margin:0 auto}
-nav .on{color:var(--orange);transform:translateY(-1px);background:linear-gradient(180deg,#2a1508,#13100a);box-shadow:0 0 0 1px var(--orange)}
-main{flex:1;overflow-y:auto;padding:14px}
-.row{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;box-shadow:0 4px 10px rgba(0,0,0,.35)}
-.row small{display:block;color:var(--mu);font-size:11px;margin-top:2px}
-h3{font-size:13px;color:var(--mu);margin:4px 0 10px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
-.stat{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}.stat b{display:block;font-size:16px;color:var(--orange)}.stat small{font-size:11px;color:var(--mu)}
-.pod{display:flex;gap:8px;align-items:flex-end;margin-bottom:14px}
-.pod div{flex:1;text-align:center;border-radius:16px;padding:14px 6px;background:#131d38;border:1px solid var(--line);font-size:12px}
-.pod .p1{border-color:var(--orange);padding-bottom:26px;background:linear-gradient(180deg,rgba(249,115,22,.18),#131d38)}
-.pod b{display:block;color:var(--orange);font-size:14px;margin-top:4px}
-.chip{font-size:10px;padding:3px 8px;border-radius:10px;background:#1e293b;color:var(--orange)}
-.chip.approved,.chip.paid,.chip.Success{color:var(--grn)}.chip.rejected,.chip.cancelled{color:var(--red)}.chip.pending{color:var(--orange)}
-.chat{max-height:40vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
-.m{padding:8px 12px;border-radius:12px;font-size:13px;max-width:85%}.m.user{background:#1e293b;align-self:flex-end}.m.support{background:#172554;color:var(--blu);align-self:flex-start}
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:130;align-items:center;justify-content:center;padding:14px}
-.modal>div{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;width:100%;max-width:410px;max-height:90vh;overflow-y:auto}
-pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-height:1.5;margin:8px 0}
-.err{color:var(--red);font-size:12px;margin-top:8px;min-height:14px}
-.mq{overflow:hidden;white-space:nowrap;border-radius:14px;background:linear-gradient(90deg,#2b1f04,#4a3508,#2b1f04);border:1px solid rgba(249,115,22,.55);padding:10px 0;margin-bottom:12px}
-.mq span{display:inline-block;padding-left:100%;animation:mq 26s linear infinite;color:var(--orange);font-size:12.5px;font-weight:700}
-@keyframes mq{to{transform:translateX(-100%)}}
-.ar{font-size:20px;line-height:2.1;direction:rtl;text-align:right;color:var(--orange);font-family:'Amiri',serif;margin:6px 0}
-.bkc{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;font-size:13px;line-height:1.7}
-.bkc b{color:var(--orange)}.bkc small{display:block;color:var(--mu);font-size:11px;margin-top:4px}
-.nm{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;margin-bottom:8px}
-.nm .ar2{font-size:26px;color:var(--orange);font-family:'Amiri',serif;direction:rtl;text-align:right;white-space:nowrap}
-.bkh{text-align:center;margin-bottom:14px;border-radius:20px;padding:10px;border:1px solid rgba(249,115,22,.45);background:linear-gradient(180deg,#14263f,#0b1224)}
-.bkh .t{font-size:20px;font-weight:700;color:var(--orange);margin-top:6px}
-.bkh .u{font-size:12px;color:var(--mu)}
-.adm{display:none;position:fixed;inset:0;z-index:120;background:var(--bg);flex-direction:column;max-width:440px;margin:0 auto}
-.adm.on{display:flex}
-.ah{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#131d38,#0f172a)}
-.ah b{color:var(--orange);font-size:15px}
-#abody{flex:1;overflow-y:auto;padding:14px}
-#anav{display:flex;gap:4px;padding:8px 5px 10px;background:#0b1224}
-#anav div{flex:1;text-align:center;font-size:9.5px;color:var(--mu);padding:7px 0;cursor:pointer;border-radius:13px;background:linear-gradient(180deg,#18244a,#0e1730)}
-#anav div i{display:block;font-style:normal;font-size:16px}
-#anav .on{color:var(--orange);background:linear-gradient(180deg,#2a1508,#13100a);box-shadow:0 0 0 1px var(--orange)}
-.th{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
-.th .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:700}
-.gap{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-.hs{position:relative;height:200px;border-radius:24px;overflow:hidden;margin-bottom:10px;border:1px solid rgba(249,115,22,.45);cursor:pointer;background-size:contain;background-repeat:no-repeat;background-position:center}
-.sl{position:absolute;inset:0;padding:18px 16px;opacity:0;transform:scale(.96);transition:opacity .7s,transform .7s;display:flex;flex-direction:column;justify-content:center;pointer-events:none;background-size:contain;background-repeat:no-repeat;background-position:center}
-.sl.on{opacity:1;transform:none;pointer-events:auto}
-.sl .tag{display:inline-block;align-self:flex-start;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.5);color:#fed7aa;margin-bottom:8px}
-.sl h4{font-size:18px;color:#fff;margin-bottom:6px;max-width:72%;text-shadow:0 2px 4px rgba(0,0,0,.8)}
-.sl p{font-size:12.5px;line-height:1.65;color:#f1f5f9;max-width:74%;text-shadow:0 2px 4px rgba(0,0,0,.8)}
-.sl .em{position:absolute;right:8px;bottom:6px;font-size:76px}
-.s0{background:linear-gradient(135deg,#0f3d2e,#14532d 55%,#052e1a)}
-.s1{background:linear-gradient(135deg,#1e1b4b,#312e81 55%,#0f172a)}
-.s2{background:linear-gradient(135deg,#0c4a6e,#075985 55%,#082f49)}
-.s3{background:linear-gradient(135deg,#78350f,#92400e 55%,#451a03)}
-.dots{display:flex;justify-content:center;gap:6px;margin-bottom:14px}
-.dots i{width:7px;height:7px;border-radius:50%;background:#334155;cursor:pointer;transition:all .3s}
-.dots i.on{background:var(--orange);width:22px;border-radius:6px}
-.bn{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.bo{border-radius:22px;padding:3px;background:linear-gradient(135deg,#fed7aa,#c2410c 50%,#f97316)}
-.bi{border-radius:19px;background:linear-gradient(180deg,#16213f,#0b1224);padding:14px 10px;text-align:center;border:1px solid rgba(249,115,22,.25)}
-.bi .ic{font-size:34px;display:block}
-.bi b{display:block;font-size:13px;margin:6px 0 2px;color:#fff}
-.bi small{display:block;font-size:10.5px;color:var(--mu);margin-bottom:10px}
-.bi .btn{margin-top:0;padding:9px;font-size:12px}
-.bi .btn.dn{background:#1e293b;color:var(--mu)}
-.lk{display:flex;align-items:center;gap:12px;text-align:left}
-.wheel{position:relative;width:320px;margin:14px auto 6px}
-.wheel .pt{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:28px;color:#f97316;z-index:3}
-.tdw{font-size:12.5px;line-height:1.7;color:#e2e8f0;background:#131d38;border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0}
-.tdw b{color:var(--orange)}
-.stp{font-size:12.5px;line-height:1.9;color:#cbd5e1;margin:8px 0 4px;padding-left:4px}
-.thero{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,#0c2a4a,#0b1224);border:1px solid rgba(56,189,248,.35);border-radius:20px;padding:14px;margin-bottom:12px}
-.thero b{font-size:16px;color:#fff}.thero small{display:block;color:var(--mu);font-size:11.5px;margin-top:4px}
+app.get('/api/assistant/details', h(async (q, s) => {
+  const key = String(q.headers['x-assistant-key'] || '');
+  const expected = process.env.ASSISTANT_KEY || '';
+  if (!expected || !key || !same(key, expected)) return bad(s, 'অনুমতি নেই', 401);
+
+  const st = dayStart();
+  const deps = await Deposit.find({ status: 'pending' }).sort({ at: -1 }).limit(10).lean();
+  const depsToday = await Deposit.find({ at: { $gte: st } }).sort({ at: -1 }).limit(10).lean();
+
+  const mapDep = d => ({
+    name: d.name,
+    amount: d.amount,
+    method: d.method,
+    trxId: d.txid,
+    lastDigits: d.lastDigits,
+    orderNo: d.serialNo,
+    package: d.pkgName,
+    status: d.status,
+    time: d.at
+  });
+
+  s.json({
+    ok: true,
+    pendingDeposits: deps.map(mapDep),
+    todayDeposits: depsToday.map(mapDep)
+  });
+}));
+
+const WALLET_URL_ENV = (process.env.WALLET_URL || '').replace(/\/$/, '');
+const WALLET_KEY_ENV = process.env.WALLET_KEY || '';
+const walletSent = new Set();
+
+async function sendDepositsToWallet() {
+  if (!WALLET_URL_ENV || !WALLET_KEY_ENV) return;
+  if (mongoose.connection.readyState !== 1) return;
+  const since = new Date(Date.now() - 3 * 24 * 36e5);
+  const list = await Deposit.find({ at: { $gte: since }, status: 'pending' }).limit(50);
+  for (const d of list) {
+    const id = String(d._id);
+    if (walletSent.has(id)) continue;
+    try {
+      const r = await fetch(WALLET_URL_ENV + '/api/site/deposit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': WALLET_KEY_ENV },
+        body: JSON.stringify({
+          amount: d.amount,
+          trxId: d.txid,
+          method: String(d.method || '').toLowerCase(),
+          lastDigits: d.lastDigits,
+          customer: d.name,
+          customerRef: String(d.uid),
+          pkgName: d.pkgName,
+          orderRef: d.serialNo
+        }),
+        signal: AbortSignal.timeout(20000)
+      });
+      if (r.ok || r.status === 409) walletSent.add(id);
+      else console.error('Wallet send failed', r.status, d.txid);
+    } catch (e) {
+      console.error('Wallet send error', e.message);
+    }
+  }
+}
+setTimeout(() => sendDepositsToWallet().catch(() => {}), 20000);
+setInterval(() => sendDepositsToWallet().catch(() => {}), 30000);
+
 .rg{position:relative;width:78px;height:78px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:30px}
 .rg .r{position:absolute;border-radius:50%;border:2px solid transparent}
 .rg .r1{inset:0;border-top-color:#f97316;border-bottom-color:#f97316;animation:rot 3.2s linear infinite}
