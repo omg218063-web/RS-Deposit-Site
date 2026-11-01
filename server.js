@@ -1856,9 +1856,18 @@ function aSp(){api('admin/support','GET',null,ah()).then(function(d){AD.th=d;
 function aUs(){api('admin/users','GET',null,ah()).then(function(d){
  $('abody').innerHTML='<h3>অ্যাক্টিভ ইউজার</h3>'+(d.active.map(function(u){return '<div class="row"><div>'+esc(u.name)+' ('+esc(u.role)+')<small>'+esc(u.phone)+'</small></div></div>'}).join('')||'<div class="row">কেউ নেই</div>')}).catch(aErr)}
 
-document.addEventListener('DOMContentLoaded',function(){$('logoL').innerHTML=logo(32);$('logoA').innerHTML=logo(88);$('logoT').innerHTML=logo(40);initG();
- if(REF){$('landing').style.display='none';mode('reg');}
- if(T)api('me').then(enter).catch(function(){$('landing').style.display='block'});else $('landing').style.display='block'});
+document.addEventListener('DOMContentLoaded',function(){
+  $('logoL').innerHTML=logo(32);
+  $('logoA').innerHTML=logo(88);
+  $('logoT').innerHTML=logo(40);
+  initG();
+  if(REF){$('landing').style.display='none';mode('reg');}
+  if(T){
+    api('me').then(enter).catch(function(){$('landing').style.display='block'});
+  } else {
+    $('landing').style.display='block';
+  }
+});
 </script></body></html>`;
 
 app.get('/', (req, res) => res.send(PAGE.replace('__GID__', GID.replace(/[^\w.\-]/g, '')).replace(/__AGE__/g, String(MIN_AGE | 0))));
