@@ -213,7 +213,7 @@ app.get('/api/sliders', auth, h(async (q, s) => {
   if (!sliders.length) {
     const defaultSliders = [
       { title: 'নামাজের স্মরণ', subtitle: 'নামাজ কি পড়েছেন?', description: 'নামাজ আমাদের জীবনের সবচেয়ে বড় আমানত। কাজের ফাঁকে ওয়াক্ত হলেই নামাজ আদায় করে নিন।', link: '#', bgClass: 's0', emoji: '🕌', timerSeconds: 6 },
-      { title: 'আমাদের সাইট ও পার্টনার', subtitle: 'RS Growth Matrix & RS Gallery', description: 'টাস্ক সম্পন্ন করে ইনকাম করুন এবং আমাদের অফিশিয়াল পার্টনার আর এস গ্যালারি শপ থেকে পছন্দের পোশাক অর্ডার করুন।', link: 'https://www.facebook.com/share/1CAK8sYqDw/', bgClass: 's1', emoji: '🛍️', timerSeconds: 6 },
+      { title: 'আমাদের সাইট ও পার্টনার', subtitle: 'RS Growth Matrix & RS Gallery', description: 'টাস্ক সম্পন্ন করে ইনকাম করুন এবং আমাদের অফিসিয়াল পার্টনার আর এস গ্যালারি শপ থেকে পছন্দের পোশাক অর্ডার করুন।', link: 'https://www.facebook.com/share/1CAK8sYqDw/', bgClass: 's1', emoji: '🛍️', timerSeconds: 6 },
       { title: 'টাস্ক ও অ্যাড আয়', subtitle: 'ডেইলি ক্যাশ রিওয়ার্ড', description: 'Tasks ট্যাবে গিয়ে টাস্ক সম্পন্ন করুন অথবা Watch Ads অপশনে গিয়ে অ্যাড দেখে ইনস্ট্যান্ট ক্যাশ আয় করুন।', link: '#', bgClass: 's2', emoji: '📱', timerSeconds: 6 },
       { title: 'সহজে উত্তোলন', subtitle: 'বিকাশ ও নগদ পেমেন্ট', description: 'Account থেকে Withdraw চেপে bKash বা Nagad নাম্বার দিন। উত্তোলন ৩০০ থেকে ৫০০০ টাকা পর্যন্ত করা যায়।', link: '#', bgClass: 's3', emoji: '💸', timerSeconds: 6 }
     ];
@@ -1549,7 +1549,7 @@ var DUA=[
 ["১. সানা","سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ","সুবহানাকাল্লাহুম্মা ওয়া বিহামদিকা...","হে আল্লাহ, আপনি পবিত্র।"],
 ["২. সূরা ফাতিহা","بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ","বিসমিল্লাহির রাহমানির রাহিম...","পরম করুণাময় আল্লাহর নামে।"],
 ["৩. আত্তাহিয়্যাতু","التَّحِيَّاتُ لِلَّهِ","আত্তাহিয়্যাতু লিল্লাহি...","সমস্ত সম্মান আল্লাহর জন্য।"]];
-var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
+var RK=[["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
 var HD=[["কাজ নিয়তের ওপর নির্ভরশীল।","সহিহ বুখারি ১"]];
 function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\x27'+p+'\x27)"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
 function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\x27'+p+'\x27)">&lsaquo; ফিরে যান</button>'}
