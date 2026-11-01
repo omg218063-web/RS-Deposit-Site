@@ -1,43 +1,43 @@
-Const express = require('express');
-Const mongoose = require('mongoose');
-Const crypto = require('crypto');
+const express = require('express');
+const mongoose = require('mongoose');
+const crypto = require('crypto');
 
-Const app = express();
-Const PORT = process.env.PORT || 10000;
+const app = express();
+const PORT = process.env.PORT || 10000;
 
-Const SECRET = process.env.SECRET || crypto.randomBytes(32).toString('hex');
-Const ADMIN_PASS = process.env.ADMIN_PASSWORD || '';
-Const GID = process.env.GOOGLE_CLIENT_ID || '';
+const SECRET = process.env.SECRET || crypto.randomBytes(32).toString('hex');
+const ADMIN_PASS = process.env.ADMIN_PASSWORD || '';
+const GID = process.env.GOOGLE_CLIENT_ID || '';
 
-Const ADGEM_APP_ID = process.env.ADGEM_APP_ID || '';
-Const ADGEM_POSTBACK_KEY = process.env.ADGEM_POSTBACK_KEY || '';
+const ADGEM_APP_ID = process.env.ADGEM_APP_ID || '';
+const ADGEM_POSTBACK_KEY = process.env.ADGEM_POSTBACK_KEY || '';
 
-Const CPAGRIP_USER_ID = process.env.CPAGRIP_USER_ID || '';
-Const CPAGRIP_KEY = process.env.CPAGRIP_KEY || '';
-Const CPAGRIP_FEED_URL = process.env.CPAGRIP_FEED_URL || '';
+const CPAGRIP_USER_ID = process.env.CPAGRIP_USER_ID || '';
+const CPAGRIP_KEY = process.env.CPAGRIP_KEY || '';
+const CPAGRIP_FEED_URL = process.env.CPAGRIP_FEED_URL || '';
 
-Const RATE = Number(process.env.BDT_PER_USD) || 120;
+const RATE = Number(process.env.BDT_PER_USD) || 120;
 
-Const TW_SECRET = process.env.TIMEWALL_SECRET || '';
-Const TW_RATE = Number(process.env.TIMEWALL_RATE) || 65;
-Const TW_URL = process.env.TIMEWALL_URL || '';
-Const TW_IP_CHECK = false;
-Const TW_IPS = ['18.156.132.55', '51.81.120.73', '142.111.248.18'];
+const TW_SECRET = process.env.TIMEWALL_SECRET || '';
+const TW_RATE = Number(process.env.TIMEWALL_RATE) || 65;
+const TW_URL = process.env.TIMEWALL_URL || '';
+const TW_IP_CHECK = false;
+const TW_IPS = ['18.156.132.55', '51.81.120.73', '142.111.248.18'];
 
-Const MIN_AGE = 18;
-Const CO = {
+const MIN_AGE = 18;
+const CO = {
   N: 'RS Growth Matrix', e: 'omg218063@gmail.com', p: '01764024069', y: 2026,
   Tg: 'rkrana33', wa: '8801764024069', fb: 'https://www.facebook.com/share/1CAK8sYqDw/', age: MIN_AGE,
   D: 'RS Growth Matrix একটি টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম। এখানে সহজ টাস্ক, দৈনিক বোনাস, অ্যাড দেখে ইনকাম ও লাকি ড্রয়ের মাধ্যমে ব্যালেন্স জমিয়ে bKash বা Nagad-এ উত্তোলন করা যায়। এছাড়া আমাদের কোলাবোরেশন পার্টনার আর এস গ্যালারি শপ (RS Gallery Shop) থেকে আপনার জমানো ইনকামের টাকা দিয়ে খুব সহজেই দেশি-বিদেশি আকর্ষণীয় কাপড়চোপড় ও ফ্যাশন আইটেম কেনাকাটা করতে পারবেন।'
 };
 
-Const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
-Const PENDING_HOURS = 48;
-Const SPIN = [[1, 40], [2, 30], [3, 20], [5, 10]];
-Const MAX_USD = 5;
-Const COUNTRY_FILTER = true;
-Const TARGETS = ['BD', 'IN', 'PK', 'NP'];
-Const BLOCK_CATS = ['signup', 'signups', 'deposit', 'deposits', 'creditcard', 'creditcards', 'oneclick', 'multireward', 'freetrial', 'freetrials', 'shopping', 'extension', 'extensions'];
+const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
+const PENDING_HOURS = 48;
+const SPIN = [[1, 40], [2, 30], [3, 20], [5, 10]];
+const MAX_USD = 5;
+const COUNTRY_FILTER = true;
+const TARGETS = ['BD', 'IN', 'PK', 'NP'];
+const BLOCK_CATS = ['signup', 'signups', 'deposit', 'deposits', 'creditcard', 'creditcards', 'oneclick', 'multireward', 'freetrial', 'freetrials', 'shopping', 'extension', 'extensions'];
 app.use(express.json({ limit: '10mb' }));
 
 Let NAMES = { boys: [], girls: [] };
@@ -49,7 +49,7 @@ else mongoose.connect(process.env.MONGO_URI).then(async () => {
   Try { await User.syncIndexes(); console.log('User indexes synced'); } catch (e) { console.error('Index sync error:', e.message); }
 }).catch(e => console.error('MongoDB error:', e.message));
 
-Const User = mongoose.model('User', new mongoose.Schema({
+const User = mongoose.model('User', new mongoose.Schema({
   Name: String, nameKey: { type: String, unique: true, sparse: true }, phone: String,
   Email: { type: String, unique: true, sparse: true }, hash: String, salt: String,
   Role: { type: String, default: 'worker' },
@@ -63,14 +63,14 @@ Const User = mongoose.model('User', new mongoose.Schema({
   AdRotateCount: { type: Number, default: 0 }, adCooldownUntil: { type: Number, default: 0 },
   LastSeen: Number, created: { type: Date, default: Date.now }
 }));
-Const Click = mongoose.model('Click', new mongoose.Schema({ uid: String, offerId: String, title: String, icon: String, bdt: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now }, doneAt: Number }));
-Const Conv = mongoose.model('Conv', new mongoose.Schema({ key: { type: String, unique: true }, uid: String, tx: String, bdt: Number, status: String, at: { type: Date, default: Date.now } }));
-Const Wd = mongoose.model('Wd', new mongoose.Schema({ uid: String, name: String, amount: Number, method: String, phone: String, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
-Const Deposit = mongoose.model('Deposit', new mongoose.Schema({ uid: String, name: String, amount: Number, method: String, txid: String, lastDigits: String, pkgName: String, serialNo: String, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
-Const Msg = mongoose.model('Msg', new mongoose.Schema({ uid: String, name: String, from: String, text: String, at: { type: Date, default: Date.now } }));
-Const CustomTask = mongoose.model('CustomTask', new mongoose.Schema({ uid: String, platform: String, title: String, link: String, reward: Number, targetWorkers: Number, totalBudget: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
+const Click = mongoose.model('Click', new mongoose.Schema({ uid: String, offerId: String, title: String, icon: String, bdt: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now }, doneAt: Number }));
+const Conv = mongoose.model('Conv', new mongoose.Schema({ key: { type: String, unique: true }, uid: String, tx: String, bdt: Number, status: String, at: { type: Date, default: Date.now } }));
+const Wd = mongoose.model('Wd', new mongoose.Schema({ uid: String, name: String, amount: Number, method: String, phone: String, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
+const Deposit = mongoose.model('Deposit', new mongoose.Schema({ uid: String, name: String, amount: Number, method: String, txid: String, lastDigits: String, pkgName: String, serialNo: String, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
+const Msg = mongoose.model('Msg', new mongoose.Schema({ uid: String, name: String, from: String, text: String, at: { type: Date, default: Date.now } }));
+const CustomTask = mongoose.model('CustomTask', new mongoose.Schema({ uid: String, platform: String, title: String, link: String, reward: Number, targetWorkers: Number, totalBudget: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
 
-Const PromoPackage = mongoose.model('PromoPackage', new mongoose.Schema({
+const PromoPackage = mongoose.model('PromoPackage', new mongoose.Schema({
   Title: String,
   Category: String,
   Followers: Number,
@@ -80,7 +80,7 @@ Const PromoPackage = mongoose.model('PromoPackage', new mongoose.Schema({
   Active: { type: Boolean, default: true }
 }));
 
-Const UserPackage = mongoose.model('UserPackage', new mongoose.Schema({
+const UserPackage = mongoose.model('UserPackage', new mongoose.Schema({
   Title: String,
   Price: Number,
   CoinsPerMin: Number,
@@ -90,7 +90,7 @@ Const UserPackage = mongoose.model('UserPackage', new mongoose.Schema({
   Active: { type: Boolean, default: true }
 }));
 
-Const SliderSetting = mongoose.model('SliderSetting', new mongoose.Schema({
+const SliderSetting = mongoose.model('SliderSetting', new mongoose.Schema({
   Title: String,
   Subtitle: String,
   Description: String,
@@ -103,7 +103,7 @@ Const SliderSetting = mongoose.model('SliderSetting', new mongoose.Schema({
 }));
 
 // নতুন প্রমোট সাইট এডিট ও কনটেন্ট മാനেজমেন্ট স্কিমা
-Const SiteContent = mongoose.model('SiteContent', new mongoose.Schema({
+const SiteContent = mongoose.model('SiteContent', new mongoose.Schema({
   Key: { type: String, unique: true },
   Title: String,
   Subtitle: String,
@@ -112,7 +112,7 @@ Const SiteContent = mongoose.model('SiteContent', new mongoose.Schema({
   ExtraData: String
 }));
 
-Const h = fn => (q, s) => fn(q, s).catch(e => {
+const h = fn => (q, s) => fn(q, s).catch(e => {
   Console.error('ERROR', q.method, q.path, e && e.code, e && e.message);
   If (e && e.code === 11000) return s.status(400).json({ error: 'This name or phone is already registered. Try a different name.' });
   S.status(500).json({ error: 'Server error. Please try again.' });
