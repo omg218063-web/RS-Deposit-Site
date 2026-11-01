@@ -21,8 +21,6 @@ const RATE = Number(process.env.BDT_PER_USD) || 120;
 const TW_SECRET = process.env.TIMEWALL_SECRET || '';
 const TW_RATE = Number(process.env.TIMEWALL_RATE) || 65;
 const TW_URL = process.env.TIMEWALL_URL || '';
-const TW_IP_CHECK = false;
-const TW_IPS = ['18.156.132.55', '51.81.120.73', '142.111.248.18'];
 
 const MIN_AGE = 18;
 const CO = {
@@ -31,7 +29,7 @@ const CO = {
   d: 'RS Growth Matrix একটি টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম। এখানে সহজ টাস্ক, দৈনিক বোনাস, অ্যাড দেখে ইনকাম ও লাকি ড্রয়ের মাধ্যমে ব্যালেন্স জমিয়ে bKash বা Nagad-এ উত্তোলন করা যায়। এছাড়া আমাদের কোলাবোরেশন পার্টনার আর এস গ্যালারি শপ (RS Gallery Shop) থেকে আপনার জমানো ইনকামের টাকা দিয়ে খুব সহজেই দেশি-বিদেশি আকর্ষণীয় কাপড়চোপড় ও ফ্যাশন আইটেম কেনাকাটা করতে পারবেন।'
 };
 
-const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
+const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, SLOTS = 50;
 const PENDING_HOURS = 48;
 const SPIN = [[1, 40], [2, 30], [3, 20], [5, 10]];
 const MAX_USD = 5;
@@ -1800,83 +1798,3 @@ document.addEventListener('DOMContentLoaded',function(){$('logoL').innerHTML=log
 
 app.get('/', (req, res) => res.send(PAGE.replace('__GID__', GID.replace(/[^\w.\-]/g, '')).replace(/__AGE__/g, String(MIN_AGE | 0))));
 app.listen(PORT, () => console.log('Server is running on port ' + PORT));
-
-app.get('/api/assistant/summary', h(async (q, s) => {
-  const key = String(q.headers['x-assistant-key'] || '');
-  const expected = process.env.ASSISTANT_KEY || '';
-  if (!expected || !key || !same(key, expected)) return bad(s, 'অনুমতি নেই', 401);
-
-  const st = dayStart();
-  const sumOf = async (M, match, f) => {
-    const r = await M.aggregate([{ $match: match }, { $group: { _id: null, t: { $sum: '$' + f } } }]);
-    return r.length ? r[0].t : 0;
-  };
-
-  const usersTotal = await User.countDocuments();
-  const usersActive = await User.countDocuments({ lastSeen: { $gte: st.getTime() } });
-  const usersNew = await User.countDocuments({ created: { $gte: st } });
-
-  const depPendingCount = await Deposit.countDocuments({ status: 'pending' });
-  const depPendingAmount = await sumOf(Deposit, { status: 'pending' }, 'amount');
-  const depApprovedCount = await Deposit.countDocuments({ status: 'approved', at: { $gte: st } });
-  const depApprovedAmount = await sumOf(Deposit, { status: 'approved', at: { $gte: st } }, 'amount');
-  const depListRaw = await Deposit.find({ status: 'pending' }).sort({ at: -1 }).limit(5).select('name amount method pkgName -_id').lean();
-  const depList = depListRaw.map(d => ({ name: d.name, amount: d.amount, method: d.method, package: d.pkgName }));
-
-  const tPending = await Click.countDocuments({ status: 'pending' });
-  const tSuccess = await Click.countDocuments({ status: 'success' });
-  const tCancelled = await Click.countDocuments({ status: { $in: ['cancelled', 'expired'] } });
-  const promoPending = await CustomTask.countDocuments({ status: 'pending' });
-
-  const totalBalance = await sumOf(User, {}, 'balance');
-  const earnedToday = await sumOf(Conv, { at: { $gte: st } }, 'bdt');
-
-  s.json({
-    ok: true,
-    date: new Date(Date.now() + 6 * 36e5).toISOString().slice(0, 10),
-    users: { total: usersTotal, activeToday: usersActive, newToday: usersNew },
-    deposits: { pendingCount: depPendingCount, pendingAmount: depPendingAmount, approvedTodayCount: depApprovedCount, approvedTodayAmount: depApprovedAmount, pendingList: depList },
-    tasks: { pending: tPending, success: tSuccess, cancelled: tCancelled },
-    promoTasksPending: promoPending,
-    totalUserBalance: totalBalance,
-    offerEarningsToday: earnedToday
-  });
-}));
-
-const WALLET_URL_ENV = (process.env.WALLET_URL || '').replace(/\/$/, '');
-const WALLET_KEY_ENV = process.env.WALLET_KEY || '';
-const walletSent = new Set();
-
-async function sendDepositsToWallet() {
-  if (!WALLET_URL_ENV || !WALLET_KEY_ENV) return;
-  if (mongoose.connection.readyState !== 1) return;
-  const since = new Date(Date.now() - 3 * 24 * 36e5);
-  const list = await Deposit.find({ at: { $gte: since }, status: 'pending' }).limit(50);
-  for (const d of list) {
-    const id = String(d._id);
-    if (walletSent.has(id)) continue;
-    try {
-      const r = await fetch(WALLET_URL_ENV + '/api/site/deposit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': WALLET_KEY_ENV },
-        body: JSON.stringify({
-          amount: d.amount,
-          trxId: d.txid,
-          method: String(d.method || '').toLowerCase(),
-          lastDigits: d.lastDigits,
-          customer: d.name,
-          customerRef: String(d.uid),
-          pkgName: d.pkgName,
-          orderRef: d.serialNo
-        }),
-        signal: AbortSignal.timeout(20000)
-      });
-      if (r.ok || r.status === 409) walletSent.add(id);
-      else console.error('Wallet send failed', r.status, d.txid);
-    } catch (e) {
-      console.error('Wallet send error', e.message);
-    }
-  }
-}
-setTimeout(() => sendDepositsToURL().catch(() => {}), 20000);
-setInterval(() => sendDepositsToWallet().catch(() => {}), 30000);
