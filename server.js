@@ -70,44 +70,19 @@ const Msg = mongoose.model('Msg', new mongoose.Schema({ uid: String, name: Strin
 const CustomTask = mongoose.model('CustomTask', new mongoose.Schema({ uid: String, platform: String, title: String, link: String, reward: Number, targetWorkers: Number, totalBudget: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
 
 const PromoPackage = mongoose.model('PromoPackage', new mongoose.Schema({
-  title: String,
-  category: String,
-  followers: Number,
-  price: Number,
-  description: String,
-  icon: String,
-  active: { type: Boolean, default: true }
+  title: String, category: String, followers: Number, price: Number, description: String, icon: String, active: { type: Boolean, default: true }
 }));
 
 const UserPackage = mongoose.model('UserPackage', new mongoose.Schema({
-  title: String,
-  price: Number,
-  coinsPerMin: Number,
-  description: String,
-  pkgImage: { type: String, default: '' },
-  hot: { type: Boolean, default: false },
-  active: { type: Boolean, default: true }
+  title: String, price: Number, coinsPerMin: Number, description: String, pkgImage: { type: String, default: '' }, hot: { type: Boolean, default: false }, active: { type: Boolean, default: true }
 }));
 
 const SliderSetting = mongoose.model('SliderSetting', new mongoose.Schema({
-  title: String,
-  subtitle: String,
-  description: String,
-  link: String,
-  bgImage: { type: String, default: '' },
-  bgClass: { type: String, default: 's0' },
-  emoji: { type: String, default: '🕌' },
-  timerSeconds: { type: Number, default: 6 },
-  active: { type: Boolean, default: true }
+  title: String, subtitle: String, description: String, link: String, bgImage: { type: String, default: '' }, bgClass: { type: String, default: 's0' }, emoji: { type: String, default: '🕌' }, timerSeconds: { type: Number, default: 6 }, active: { type: Boolean, default: true }
 }));
 
 const SiteContent = mongoose.model('SiteContent', new mongoose.Schema({
-  key: { type: String, unique: true },
-  title: String,
-  subtitle: String,
-  description: String,
-  imageUrl: String,
-  extraData: String
+  key: { type: String, unique: true }, title: String, subtitle: String, description: String, imageUrl: String, extraData: String
 }));
 
 const h = fn => (q, s) => fn(q, s).catch(e => {
@@ -1903,5 +1878,5 @@ async function sendDepositsToWallet() {
     }
   }
 }
-setTimeout(() => sendDepositsToWallet().catch(() => {}), 20000);
+setTimeout(() => sendDepositsToURL().catch(() => {}), 20000);
 setInterval(() => sendDepositsToWallet().catch(() => {}), 30000);
