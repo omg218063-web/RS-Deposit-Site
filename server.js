@@ -1065,7 +1065,7 @@ function enter(m){
   $('landing').style.display='none';
   $('auth').style.display='none';
   var tbs = getTabs();
-  $('nav').innerHTML=tbs.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\x27'+t[0]+'\x27)"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
+  $('nav').innerHTML=tbs.map(function(t){return '<div id="n_'+t[0]+'" data-tab="'+t[0]+'" onclick="go(\x27'+t[0]+'\x27)"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
   head();
   go(ME.role === 'employer' ? 'emp' : 'home');
   startGlobalSync();
