@@ -693,9 +693,7 @@ app.post('/api/admin/reply', admin, h(async (q, s) => {
 app.get('/api/admin/offers-raw', admin, h(async (q, s) => {
   const dbg = {};
   await fetchOffers('admin-test', ctxOf(q), dbg);
-  s.json({ text: 'Offers fetched successfully.' }));
-}));
-
+  s.json({ text: 'Offers fetched successfully.' });
 const PAGE = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="google-site-verification" content="LFCR_Ofi-3uqR900pf2ntTa2io3ymE1PRv4jlyWoX28" />
