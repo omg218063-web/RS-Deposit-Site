@@ -1,4 +1,4 @@
-const express = require('express');
+Const express = require('express');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 
@@ -231,7 +231,7 @@ app.get('/api/sliders', auth, h(async (q, s) => {
     const defaultSliders = [
       { title: 'নামাজের স্মরণ', subtitle: 'নামাজ কি পড়েছেন?', description: 'নামাজ আমাদের জীবনের সবচেয়ে বড় আমানত। কাজের ফাঁকে ওয়াক্ত হলেই নামাজ আদায় করে নিন।', link: '#', bgClass: 's0', emoji: '🕌', timerSeconds: 6 },
       { title: 'আমাদের সাইট ও পার্টনার', subtitle: 'RS Growth Matrix & RS Gallery', description: 'টাস্ক সম্পন্ন করে ইনকাম করুন এবং আমাদের অফিশিয়াল পার্টনার আর এস গ্যালারি শপ থেকে পছন্দের পোশাক অর্ডার করুন।', link: 'https://www.facebook.com/share/1CAK8sYqDw/', bgClass: 's1', emoji: '🛍️', timerSeconds: 6 },
-      { title: 'টাস্ক ও অ্যাড আয়', subtitle: 'ডেইলি ক্যাশ রিওয়ার্ড', description: 'Tasks ট্যাবে গিয়ে টাস্ক সম্পন্ন করুন অথবা Watch Ads অপশনে গিয়ে অ্যাড দেখে ইনস্ট্যান্ট ক্যাশ আয় করুন।', link: '#', bgClass: 's2', emoji: '📱', timerSeconds: 6 },
+      { title: 'টাস্ক ও অ্যাড আয়', subtitle: 'ডেইলি ক্যাশ রিওয়ার্ড', description: 'Tasks ট্যাবে গিয়ে টাস্ক সম্পন্ন করুন অথবা Watch Ads অপশনে গিয়ে অ্যাড দেখে ইনস্ট্যান্ট ক্যাশ আয় করুন।', link: '#', bgClass: 's2', emoji: '📱', timerSeconds: 6 },
       { title: 'সহজে উত্তোলন', subtitle: 'বিকাশ ও নগদ পেমেন্ট', description: 'Account থেকে Withdraw চেপে bKash বা Nagad নাম্বার দিন। উত্তোলন ৩০০ থেকে ৫০০০ টাকা পর্যন্ত করা যায়।', link: '#', bgClass: 's3', emoji: '💸', timerSeconds: 6 }
     ];
     await SliderSetting.insertMany(defaultSliders);
@@ -435,7 +435,7 @@ app.post('/api/watch-ad', auth, h(async (q, s) => {
   let cooldownUntil = 0;
 
   if (newRotateCount >= 10) {
-    cooldownUntil = now + (20 * 60 * 1000); // ২০ মিনিট বিরতি
+    cooldownUntil = now + (20 * 60 * 1000);
     newRotateCount = 0;
   }
 
@@ -890,6 +890,15 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .fc{font-size:10.5px;color:#64748b;text-align:center;margin-top:12px;border-top:1px solid #1e293b;padding-top:10px}
 .img-upload-btn{display:flex;align-items:center;justify-content:center;gap:6px;background:#1e293b;border:1px dashed var(--gold);color:var(--gold);padding:10px;border-radius:10px;cursor:pointer;font-size:13px;margin-top:6px;font-weight:bold}
 
+/* SMM Style Dashboard & Sidebar */
+.smm-welcome{background:linear-gradient(135deg,#311026,#131d38);border:1px solid rgba(239,68,68,0.4);border-radius:18px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.smm-services-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:14px}
+.smm-service-icon{background:#131d38;border:1px solid var(--line);border-radius:10px;padding:8px 4px;text-align:center;font-size:18px;cursor:pointer;transition:0.2s}
+.smm-service-icon:hover{border-color:var(--gold)}
+.smm-sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:150}
+.smm-sidebar{position:fixed;top:0;left:-280px;width:280px;height:100%;background:#0b1224;border-right:1px solid var(--line);z-index:160;transition:left 0.3s;padding:16px;overflow-y:auto}
+.smm-sidebar.on{left:0}
+
 /* Premium Animated Ad Button */
 .premium-ad-btn{position:relative;width:100%;background:linear-gradient(135deg,#38bdf8,#22c55e,#fbbf24);background-size:200% 200%;color:#000;font-weight:800;font-size:15px;padding:14px;border:none;border-radius:16px;cursor:pointer;box-shadow:0 0 20px rgba(56,189,248,0.5);animation:premiumGlow 3s ease infinite;transition:transform 0.2s;text-align:center;margin-top:12px}
 .premium-ad-btn:active{transform:scale(0.97)}
@@ -906,6 +915,21 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .admin-copy-btn{background:#1e293b;color:var(--gold);border:1px solid var(--gold);padding:3px 8px;border-radius:6px;font-size:10px;cursor:pointer;margin-left:6px}
 </style></head><body>
 <div class="app">
+
+<!-- SMM Style Sidebar for Employer/Promotion -->
+<div id="smmOverlay" class="smm-sidebar-overlay" onclick="toggleSmmSidebar()"></div>
+<div id="smmSidebar" class="smm-sidebar">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <b style="color:var(--gold);font-size:16px">SMM Menu</b>
+    <span style="font-size:18px;cursor:pointer" onclick="toggleSmmSidebar()">✕</span>
+  </div>
+  <div style="font-size:12px;color:var(--mu);margin-bottom:14px">Navigation & Services</div>
+  <div class="row" style="cursor:pointer" onclick="toggleSmmSidebar();go('emp')">🛒 New Order / Services</div>
+  <div class="row" style="cursor:pointer" onclick="toggleSmmSidebar();go('home')">🏠 Home Dashboard</div>
+  <div class="row" style="cursor:pointer" onclick="toggleSmmSidebar();go('tasks')">📋 Micro Tasks</div>
+  <div class="row" style="cursor:pointer" onclick="toggleSmmSidebar();go('acc')">👤 Account & Deposit ($)</div>
+</div>
+
 <div id="landing">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
     <div style="display:flex;align-items:center;gap:10px"><div id="logoL"></div><b style="color:var(--gold);font-size:16px">RS Growth Matrix & RS Gallery</b></div>
@@ -949,7 +973,7 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
       <label>Account Type</label>
       <select id="rRole">
         <option value="worker">Worker (কাজ করতে চাই)</option>
-        <option value="employer">Employer (প্রোমোশন ও প্যাকেজ কিনতে চাই)</option>
+        <option value="employer">Employer (SMM প্রমোশন ও অর্ডার করতে চাই)</option>
       </select>
       <label>Name</label><input id="rN" autocomplete="username" placeholder="Your name">
       <label>Phone number</label><input id="rP" inputmode="numeric" maxlength="11" placeholder="01XXXXXXXXX">
@@ -967,7 +991,15 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
     <div id="gWrap"><div class="or">or continue with</div><div id="gBtn" style="display:flex;justify-content:center"></div></div>
   </div>
 </div>
-<div class="top"><div class="l"><div id="logoT"></div><div class="av" id="avT" onclick="$('avf').click()">📷</div><div><b id="hName"></b><small id="hRsCoins" style="display:block;color:var(--gold);font-size:11px">RS Coins: 0</small></div></div><div class="bal"><span id="hBal">0.00</span><small>Balance (BDT)</small></div></div>
+<div class="top">
+  <div class="l">
+    <span style="font-size:22px;cursor:pointer;margin-right:4px" onclick="toggleSmmSidebar()">☰</span>
+    <div id="logoT"></div>
+    <div class="av" id="avT" onclick="$('avf').click()">📷</div>
+    <div><b id="hName"></b><small id="hRsCoins" style="display:block;color:var(--gold);font-size:11px">RS Coins: 0</small></div>
+  </div>
+  <div class="bal"><span id="hBal">0.00</span><small id="balUnitLabel">Balance (BDT)</small></div>
+</div>
 <input type="file" id="avf" accept="image/*" style="display:none" onchange="avUp(this)">
 <nav id="nav"></nav>
 
@@ -990,6 +1022,19 @@ function installPWA() {
     deferredPrompt.userChoice.then(function(choice) { if (choice.outcome === 'accepted') { var b = $('pwaBanner'); if (b) b.style.display = 'none'; } deferredPrompt = null; });
   } else {
     modal('<h3 style="color:var(--gold)">📱 অ্যাপ ইনস্টল করার নিয়ম</h3><div class="tdw">আপনার ব্রাউজারের ডানপাশের <b>৩-ডট (⋮) মেনুতে</b> ক্লিক করে <b>Add to Home screen</b> বা <b>Install app</b> অপশনটিতে চাপ দিন।</div><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">বুঝেছি</button>');
+  }
+}
+
+function toggleSmmSidebar(){
+  var sb = $('smmSidebar');
+  var ov = $('smmOverlay');
+  if(!sb || !ov) return;
+  if(sb.className.indexOf('on') >= 0){
+    sb.className = 'smm-sidebar';
+    ov.style.display = 'none';
+  } else {
+    sb.className = 'smm-sidebar on';
+    ov.style.display = 'block';
   }
 }
 
@@ -1034,7 +1079,7 @@ function initG(){if(!GID){$('gWrap').style.display='none';return}
 
 function getTabs() {
   if (ME && ME.role === 'employer') {
-    return [['emp','🛍️','Promote Shop'],['help','💬','Support'],['acc','👤','Account']];
+    return [['emp','🛒','New Order'],['help','💬','Support'],['acc','👤','Account ($)']];
   }
   return [['home','🏠','Home'],['tasks','📋','Tasks'],['pkg','📦','Package'],['rank','🏆','Ranking'],['ref','👥','Refer'],['help','💬','Support'],['acc','👤','Account'],['book','🕌','Islam']];
 }
@@ -1051,8 +1096,11 @@ function enter(m){
 }
 
 function head(){
-  $('hName').textContent=ME.name + (ME.role === 'employer' ? ' (Employer)' : '');
-  $('hBal').textContent=money(ME.balance);
+  $('hName').textContent=ME.name + (ME.role === 'employer' ? ' (Employer SMM)' : '');
+  var usdBal = (ME.balance / 120).toFixed(2);
+  $('hBal').textContent = ME.role === 'employer' ? '$' + usdBal : money(ME.balance);
+  var unitLabel = $('balUnitLabel');
+  if(unitLabel) unitLabel.textContent = ME.role === 'employer' ? 'Balance (USD $)' : 'Balance (BDT)';
   $('hRsCoins').textContent='RS Coins: '+formatCompact(ME.rsCoins||0);
   $('avT').innerHTML=ME.av?'<img src="'+esc(ME.av)+'" alt="">':'📷';
 }
@@ -1157,56 +1205,108 @@ function closeSpin(){closeM();if(TAB==='home')vHome()}
 
 function vEmp(){
   api('promo-packages').then(packages => {
-    $('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>🛍️</div><div><b>Promote Shop (RS Gallery Collaboration)</b><small>আপনার সোশ্যাল মিডিয়া প্রমোট করুন অথবা আর এস গ্যালারি শপের ফিচার্ড প্যাকেজ নিন।</small></div></div>' +
-    '<h3 style="margin-bottom:10px">উপলব্ধ প্রমোশন ও শপ প্যাকেজসমূহ</h3>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
-    (packages.length ? packages.map(p => {
-      return '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:1px solid rgba(251,191,36,0.4);border-radius:16px;padding:12px;display:flex;flex-direction:column;justify-content:space-between">' +
-      '<div><img src="'+esc(p.icon)+'" width="36" height="36" style="border-radius:8px;margin-bottom:6px;object-fit:cover" alt="">' +
-      '<b style="color:#fff;font-size:13px;display:block;margin-bottom:2px">'+esc(p.title)+'</b>' +
-      '<small style="color:var(--mu);display:block;font-size:10.5px;margin-bottom:6px">'+esc(p.description)+'</small></div>' +
-      '<div><div style="color:var(--gold);font-weight:800;font-size:14px;margin-bottom:6px">৳'+money(p.price)+'</div>' +
-      '<button class="btn s g" style="width:100%" onclick="buyPromoPkg(\\''+p._id+'\\',\\''+esc(p.title)+'\\','+p.price+')">Buy Now</button></div>' +
-      '</div>';
-    }).join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>') +
+    var usdBal = (ME.balance / 120).toFixed(2);
+    $('main').innerHTML=
+    // SMM Welcome Banner & USD Balance Header
+    '<div class="smm-welcome">' +
+      '<div>' +
+        '<b style="color:#fff;font-size:14px">Welcome Back, '+esc(ME.name)+' 👋</b>' +
+        '<small style="display:block;color:var(--mu);font-size:11px;margin-top:2px">Username: '+esc(ME.name.toLowerCase().replace(/\s+/g,''))+'</small>' +
+        '<small style="display:block;color:var(--mu);font-size:11px">Email: '+esc(ME.email || 'omg218063@gmail.com')+'</small>' +
+      '</div>' +
+      '<div style="text-align:right">' +
+        '<div style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.5);border-radius:12px;padding:6px 12px;display:flex;align-items:center;gap:6px">' +
+          '<span style="font-size:16px">👤</span>' +
+          '<div><b style="color:var(--gold);font-size:13px">$'+usdBal+'</b><small style="display:block;font-size:9px;color:var(--mu)">USD Funds</small></div>' +
+        '</div>' +
+      '</div>' +
     '</div>' +
-    '<div class="card" style="margin-top:10px">' +
-    '<h3 style="color:var(--gold);margin-bottom:8px">বা কাস্টম প্রমোশন টাস্ক দিন</h3>' +
-    '<label>প্লাটফর্ম নির্বাচন করুন</label>' +
-    '<select id="etPlatform"><option value="youtube">YouTube</option><option value="facebook">Facebook</option><option value="telegram">Telegram</option><option value="rsgallery">RS Gallery Shop</option></select>' +
-    '<label>চ্যানেল বা পেজের নাম/টাইটেল</label><input id="etTitle" placeholder="যেমন: RS Gallery Shirt Promo">' +
-    '<label>লিংক (URL)</label><input id="etLink" placeholder="https://...">' +
-    '<label>প্রতি ওয়ার্কারের পেমেন্ট (BDT)</label><input id="etReward" type="number" placeholder="2">' +
-    '<label>কতজন ওয়ার্কার কাজ করবে (Target Workers)</label><input id="etWorkers" type="number" placeholder="100">' +
-    '<button class="btn g" onclick="submitCustomTask()">Submit Custom Task</button>' +
+
+    // Quick Connect Telegram & Support links
+    '<div class="row" style="cursor:pointer;background:linear-gradient(135deg,#0c2350,#0b1224)" onclick="window.open(\\'https://t.me/rkrana33\\',\\'_blank\\')">' +
+      '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:22px">✈️</span><div><b>Join Our Telegram Channel to Get Update</b><small style="color:var(--blu)">Connect Telegram &rsaquo;</small></div></div>' +
+    '</div>' +
+    '<div class="row" style="cursor:pointer;background:linear-gradient(135deg,#0b3a1e,#0b1224)" onclick="go(\\'help\\')">' +
+      '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:22px">💬</span><div><b>For Any Kind of Customer Support</b><small style="color:var(--grn)">Talk with us &rsaquo;</small></div></div>' +
+    '</div>' +
+
+    // SMM Services Icons Grid
+    '<h3 style="margin:10px 0 6px">All SMM Services</h3>' +
+    '<div class="smm-services-grid">' +
+      '<div class="smm-service-icon" title="Facebook">📘</div>' +
+      '<div class="smm-service-icon" title="TikTok">🎵</div>' +
+      '<div class="smm-service-icon" title="Instagram">📸</div>' +
+      '<div class="smm-service-icon" title="YouTube">▶️</div>' +
+      '<div class="smm-service-icon" title="Twitter/X">✖️</div>' +
+      '<div class="smm-service-icon" title="Telegram">✈️</div>' +
+    '</div>' +
+
+    // Action buttons: New Order & Add Fund ($)
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
+      '<button class="btn r" style="margin-top:0;font-size:13px" onclick="toast(\\'Already in New Order section\\')">🛍️ New Order</button>' +
+      '<button class="btn g" style="margin-top:0;font-size:13px" onclick="go(\\'acc\\')">💳 Add Fund ($)</button>' +
+    '</div>' +
+
+    // Services Selection Card (SMM Style)
+    '<div class="card" style="margin-bottom:12px">' +
+      '<h3 style="color:var(--gold);margin-bottom:8px">⚙️ Services Order Form</h3>' +
+      '<label>Type services ID / Search</label>' +
+      '<input id="smmSearch" placeholder="Type services id..." oninput="filterSmmService(this.value)">' +
+      '<label>Category</label>' +
+      '<select id="smmCat" onchange="updateSmmServiceDropdown()">' +
+        '<option value="facebook">📘 Facebook Followers (Page / Profile) | Cheapest RM</option>' +
+        '<option value="youtube">▶️ YouTube Subscribers & Views</option>' +
+        '<option value="telegram">✈️ Telegram Members & Views</option>' +
+      '</select>' +
+      '<label>Service</label>' +
+      '<select id="smmServSelect" onchange="updateSmmPricing()">' +
+        (packages.length ? packages.map((p, idx) => '<option value="'+idx+'" data-price="'+p.price+'" data-desc="'+esc(p.description)+'">'+esc(p.title)+' - ৳'+p.price+'</option>').join('') : '<option>No services</option>') +
+      '</select>' +
+    '</div>' +
+
+    // Order Details Card
+    '<div class="card">' +
+      '<h3 style="color:var(--gold);margin-bottom:8px">📦 Order Details</h3>' +
+      '<label>Link (URL)</label><input id="smmLink" placeholder="https://www.facebook.com/xxxx">' +
+      '<label>Quantity</label><input id="smmQty" type="number" placeholder="Min: 100 - Max: 100,000" value="100">' +
+      '<label>Average Time</label><input disabled value="4 hours 41 minutes" style="color:var(--mu)">' +
+      '<label>Charge ($ USD / ৳ BDT)</label>' +
+      '<div id="smmChargeBox" style="background:#0b1224;border:1px solid var(--line);border-radius:10px;padding:11px;color:var(--gold);font-weight:bold;margin-top:4px">৳80.00 ($0.67 USD)</div>' +
+      '<button class="btn r" style="margin-top:14px" onclick="submitSmmOrder()">Submit Order</button>' +
+    '</div>' +
+
+    // Service Info & Description Box
+    '<div class="card" style="margin-top:12px">' +
+      '<div class="seg"><div class="on">Service Info</div></div>' +
+      '<div style="font-size:12px;line-height:1.7;color:var(--mu)" id="smmServiceDescBox">' +
+        '<b>Quality:</b> High / Real<br><b>Start time:</b> Instant / 0-30 mins<br><b>Speed:</b> 10K-20K/day<br><b>Refill:</b> Yes (30 Days)<br><b>Example Link:</b> https://www.facebook.com/xxxx' +
+      '</div>' +
     '</div>';
   });
 }
 
-function buyPromoPkg(id, title, price){
-  modal('<h3 style="color:var(--gold)">প্যাকেজ অর্ডার নিশ্চিত করুন</h3>' +
-  '<div class="tdw">প্যাকেজ: <b>'+title+'</b><br>মূল্য: <b style="color:var(--grn)">'+price+' BDT</b></div>' +
-  '<label>আপনার প্রমোশন লিংক (YouTube/Facebook/RS Gallery URL)</label><input id="buyLink" placeholder="https://...">' +
-  '<button class="btn g" onclick="confirmBuyPkg(\\''+id+'\\')">Confirm & Pay</button>' +
-  '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Cancel</button>');
+var globalSmmPkgs = [];
+function filterSmmService(val){
+  // Quick filter simulation
+}
+function updateSmmPricing(){
+  // Update charge calculation
 }
 
-function confirmBuyPkg(id){
-  api('employer/task','POST',{ packageId: id, link: $('buyLink').value }).then(r => {
-    ME = r.me; head(); closeM(); toast('প্যাকেজটি সফলভাবে অর্ডার করা হয়েছে!'); vEmp();
-  }).catch(e => toast(e.message));
-}
-
-function submitCustomTask(){
+function submitSmmOrder(){
+  var link = $('smmLink').value;
+  var qty = $('smmQty').value;
+  if(!link) { toast('দয়া করে সঠিক লিংক দিন।'); return; }
+  
   api('employer/task','POST',{
-    platform: $('etPlatform').value,
-    title: $('etTitle').value,
-    link: $('etLink').value,
-    reward: $('etReward').value,
-    targetWorkers: $('etWorkers').value
-  }).then(r=>{
-    ME = r.me; head(); toast('টাস্কটি সফলভাবে সাবমিট হয়েছে।'); vEmp();
-  }).catch(e=>toast(e.message));
+    platform: 'facebook',
+    title: 'SMM Order: ' + qty + ' Followers',
+    link: link,
+    reward: 1,
+    targetWorkers: Number(qty) || 100
+  }).then(r => {
+    ME = r.me; head(); toast('অর্ডার সফলভাবে সাবমিট হয়েছে!'); vEmp();
+  }).catch(e => toast(e.message));
 }
 
 function vTasks(){
@@ -1242,7 +1342,6 @@ function switchTaskSub(sub){
   }
 }
 
-// Direct Links Rotation Array (12 Links provided)
 var directLinksRotation = [
   "https://uplcm.com/4/12120000",
   "https://uplcm.com/4/12120002",
@@ -1268,7 +1367,6 @@ function startWatchAdRotation(){
   var sec = 10;
   box.innerHTML = 'অ্যাড লোড হচ্ছে... অনুগ্রহ করে <b style="color:var(--gold)">'+sec+'</b> সেকেন্ড অপেক্ষা করুন';
 
-  // Get link based on rotation index
   var linkIndex = (ME.adRotateCount || 0) % directLinksRotation.length;
   var targetUrl = directLinksRotation[linkIndex];
 
@@ -1279,7 +1377,6 @@ function startWatchAdRotation(){
     } else {
       clearInterval(int);
       
-      // Open the rotated direct link
       var w = window.open(targetUrl, '_blank');
       if(!w) location.href = targetUrl;
 
@@ -1402,9 +1499,9 @@ function vAcc(){
   }).catch(function(){});
 
   $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স ও পপআপ হিস্ট্রি।')+
-  '<div class="row"><div>'+esc(ME.name)+' ('+(isEmp?'Employer':'Worker')+')<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
-  '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
-  '<div style="display:flex;gap:8px"><button class="btn g" style="flex:1" onclick="depForm()">Deposit</button>'+(isEmp?'':'<button class="btn r" style="flex:1" onclick="wdForm()">Withdraw</button>')+'</div>'+
+  '<div class="row"><div>'+esc(ME.name)+' ('+(isEmp?'Employer SMM':'Worker')+')<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
+  '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance (BDT)</small></div><div class="stat"><b>$'+(ME.balance/120).toFixed(2)+'</b><small>Balance (USD)</small></div></div>'+
+  '<div style="display:flex;gap:8px"><button class="btn g" style="flex:1" onclick="depForm()">Deposit ($ USD / BDT)</button>'+(isEmp?'':'<button class="btn r" style="flex:1" onclick="wdForm()">Withdraw</button>')+'</div>'+
   
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">' +
   '<button class="btn" style="background:#1e293b;color:var(--gold);margin-top:0" onclick="openWdPopup()">💸 Withdrawal History</button>' +
@@ -1518,11 +1615,12 @@ function doWd(){
 }
 
 function depForm(presetAmount, pkgName){
-  modal('<h3 style="color:var(--gold);text-align:center">Deposit Form</h3>' +
+  var presetUsd = presetAmount ? (presetAmount / 120).toFixed(2) : '';
+  modal('<h3 style="color:var(--gold);text-align:center">Deposit Fund ($ USD / BDT)</h3>' +
   '<div class="row" style="background:#0b1224;display:block;margin-bottom:10px">' +
   '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Username:</span><b>'+esc(ME.name)+'</b></div>' +
   '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">User ID:</span><b>RSGM-'+ME.id.slice(-6).toUpperCase()+'</b></div>' +
-  '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Current Balance:</span><b style="color:var(--grn)">৳'+money(ME.balance)+'</b></div>' +
+  '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Current USD Balance:</span><b style="color:var(--gold)">$'+(ME.balance/120).toFixed(2)+'</b></div>' +
   '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Date:</span><b>'+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</b></div>' +
   '</div>' +
   '<div style="display:flex;gap:10px;margin-bottom:10px">' +
@@ -1530,7 +1628,8 @@ function depForm(presetAmount, pkgName){
   '<div id="payNagad" style="flex:1;background:#131d38;border:2px solid var(--line);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\\'Nagad\\')"><b style="color:#f97316">Nagad</b></div>' +
   '</div>' +
   '<div class="tdw" style="text-align:center"><b>Official Number:</b> <span style="color:var(--grn);font-weight:bold" id="offNumText">01951639460</span> <button class="copy-btn-inline" onclick="copyDepNum()">Copy</button><br><small>1. Send money to this number.<br>2. Enter TrxID and Last 3 Digits below.</small></div>' +
-  '<label>Deposit Amount (৳)</label><input id="da" type="number" value="'+(presetAmount||'')+'" placeholder="200 - 15000">' +
+  '<label>Deposit Amount (৳ BDT)</label><input id="da" type="number" value="'+(presetAmount||'')+'" placeholder="200 - 15000" oninput="calcUsdDep(this.value)">' +
+  '<label>Equivalent USD ($)</label><input id="dau" readonly value="'+(presetUsd? '$'+presetUsd : '$0.00')+'" style="color:var(--gold);font-weight:bold">' +
   '<label>Transaction ID (TrxID)</label><input id="dtx" placeholder="Enter Transaction ID">' +
   '<label>Last 3 Digits (Mandatory)</label><input id="dlast" maxlength="3" placeholder="123">' +
   
@@ -1540,6 +1639,13 @@ function depForm(presetAmount, pkgName){
   '</div>' +
   
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:6px" onclick="closeM()">Close</button>');
+}
+
+function calcUsdDep(val){
+  var bdt = Number(val) || 0;
+  var usd = (bdt / 120).toFixed(2);
+  var el = $('dau');
+  if(el) el.value = '$' + usd;
 }
 
 function copyDepNum(){
@@ -1568,10 +1674,10 @@ function executeDeposit(pkgName){
     '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Username:</span><b>'+esc(ME.name)+'</b></div>' +
     '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">User ID:</span><b>RSGM-'+ME.id.slice(-6).toUpperCase()+'</b></div>' +
     '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Order No:</span><b style="color:var(--gold)">'+esc(dep.serialNo||'#D-772391')+'</b></div>' +
-    '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Deposit Amount:</span><b style="color:var(--grn)">৳'+money(dep.amount)+'</b></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Deposit Amount:</span><b style="color:var(--grn)">৳'+money(dep.amount)+' ($'+(dep.amount/120).toFixed(2)+' USD)</b></div>' +
     '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Status:</span><b style="color:var(--gold)">Pending (Verification in progress)</b></div>' +
     '</div>' +
-    '<div class="tdw" style="text-align:center">⏱️ এডমিন অনুমোদন করলে প্যাকেজ ও ব্যালেন্স যুক্ত হবে।</div>' +
+    '<div class="tdw" style="text-align:center">⏱️ এডমিন অনুমোদন করলে ব্যালেন্স ডলারে যুক্ত হবে।</div>' +
     '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM();vAcc()">OK, Go Back</button>');
   }).catch(function(e){
     toast(e.message);
@@ -1664,7 +1770,7 @@ function aDep(){
     (d.pending.length ? d.pending.map(function(dep, i){
       var timeStr = new Date(dep.at).toLocaleTimeString();
       return '<div class="th">' +
-      '<div class="hd"><span>'+esc(dep.name)+'</span><span style="color:var(--gold)">৳'+money(dep.amount)+'</span></div>' +
+      '<div class="hd"><span>'+esc(dep.name)+'</span><span style="color:var(--gold)">৳'+money(dep.amount)+' ($'+(dep.amount/120).toFixed(2)+' USD)</span></div>' +
       '<div style="font-size:13px">' +
       'Method: <b>'+esc(dep.method)+'</b><br>' +
       'Package/Type: <b style="color:var(--grn)">'+esc(dep.pkgName || 'Custom Deposit')+'</b><br>' +
@@ -1672,7 +1778,7 @@ function aDep(){
       'Last 3 Digits: <b>'+esc(dep.lastDigits)+'</b><br>' +
       '<small style="color:var(--mu)">সময়: '+timeStr+' | Order: '+esc(dep.serialNo)+'</small>' +
       '</div>' +
-      '<div class="gap"><button class="btn s g" onclick="decDep('+i+',1)">Approve & Unlock</button><button class="btn s r" onclick="decDep('+i+',0)">Reject</button></div>' +
+      '<div class="gap"><button class="btn s g" onclick="decDep('+i+',1)">Approve & Add USD</button><button class="btn s r" onclick="decDep('+i+',0)">Reject</button></div>' +
       '</div>';
     }).join('') : '<div class="row">কোনো পেন্ডিং ডিপোজিট বা প্যাকেজ নেই।</div>');
   }).catch(aErr);
@@ -1845,7 +1951,8 @@ document.addEventListener('DOMContentLoaded',function(){$('logoL').innerHTML=log
 </script></body></html>`;
 
 app.get('/', (req, res) => res.send(PAGE.replace('__GID__', GID.replace(/[^\w.\-]/g, '')).replace(/__AGE__/g, String(MIN_AGE | 0))));
-app.listen(PORT, () => console.log('Server is running on port ' + PORT));// ---------- অ্যাসিস্ট্যান্টের জন্য (শুধু দেখা, কিছু বদলায় না) ----------
+app.listen(PORT, () => console.log('Server is running on port ' + PORT));
+
 app.get('/api/assistant/summary', h(async (q, s) => {
   const key = String(q.headers['x-assistant-key'] || '');
   const expected = process.env.ASSISTANT_KEY || '';
@@ -1892,7 +1999,8 @@ app.get('/api/assistant/summary', h(async (q, s) => {
     totalUserBalance: totalBalance,
     offerEarningsToday: earnedToday
   });
-}));// ---------- RS Wallet-এ ডিপোজিট পাঠানো ----------
+}));
+
 const WALLET_URL_ENV = (process.env.WALLET_URL || '').replace(/\/$/, '');
 const WALLET_KEY_ENV = process.env.WALLET_KEY || '';
 const walletSent = new Set();
@@ -1930,7 +2038,7 @@ async function sendDepositsToWallet() {
 }
 setTimeout(() => sendDepositsToWallet().catch(() => {}), 20000);
 setInterval(() => sendDepositsToWallet().catch(() => {}), 30000);
-// ---------- অ্যাসিস্ট্যান্টের জন্য: ডিপোজিট ও উইথড্রের বিস্তারিত (শুধু দেখা) ----------
+
 app.get('/api/assistant/details', h(async (q, s) => {
   const key = String(q.headers['x-assistant-key'] || '');
   const expected = process.env.ASSISTANT_KEY || '';
