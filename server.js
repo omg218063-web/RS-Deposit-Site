@@ -1,4 +1,4 @@
-const express = require('express');
+Const express = require('express');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 
@@ -1612,7 +1612,7 @@ var DUA=[
 ["১. সানা","سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ","সুবহানাকাল্লাহুম্মা ওয়া বিহামদিকা...","হে আল্লাহ, আপনি পবিত্র।"],
 ["২. সূরা ফাতিহা","بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ","বিসমিল্লাহির রাহমানির রাহিম...","পরম করুণাময় আল্লাহর নামে।"],
 ["৩. আত্তাহিয়্যাতু","التَّحِيَّاتُ لِلَّهِ","আত্তাহিয়্যাতু লিল্লাহি...","সমস্ত সম্মান আল্লাহর জন্য।"]];
-var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
+var RK=[["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
 var HD=[["কাজ নিয়তের ওপর নির্ভরশীল।","সহিহ বুখারি ১"]];
 function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\x27'+p+'\x27)"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
 function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\x27'+p+'\x27)">&lsaquo; ফিরে যান</button>'}
