@@ -21,8 +21,6 @@ const RATE = Number(process.env.BDT_PER_USD) || 120;
 const TW_SECRET = process.env.TIMEWALL_SECRET || '';
 const TW_RATE = Number(process.env.TIMEWALL_RATE) || 65;
 const TW_URL = process.env.TIMEWALL_URL || '';
-const TW_IP_CHECK = false;
-const TW_IPS = ['18.156.132.55', '51.81.120.73', '142.111.248.18'];
 
 const MIN_AGE = 18;
 const CO = {
@@ -677,52 +675,6 @@ app.get('/api/admin/users', admin, h(async (q, s) => {
   });
 }));
 
-app.post('/api/admin/wd/:id', admin, h(async (q, s) => {
-  const statusVal = q.body.ok ? 'Success' : 'Rejected';
-  const x = await Wd.findOneAndUpdate({ _id: q.params.id, status: 'pending' }, { status: statusVal });
-  if (x && !q.body.ok) await User.updateOne({ _id: x.uid }, { $inc: { balance: x.amount } });
-  s.json({ ok: true });
-}));
-
-app.post('/api/admin/dep/:id', admin, h(async (q, s) => {
-  const dep = await Deposit.findOne({ _id: q.params.id, status: 'pending' });
-  if (!dep) return bad(s, 'Deposit not found or already processed.');
-  
-  if (q.body.ok) {
-    dep.status = 'approved';
-    await dep.save();
-    
-    let coinsPerMin = 10;
-    const a = dep.amount;
-    if (a >= 3000) coinsPerMin = 300;
-    else if (a >= 2500) coinsPerMin = 220;
-    else if (a >= 2000) coinsPerMin = 160;
-    else if (a >= 1500) coinsPerMin = 110;
-    else if (a >= 1200) coinsPerMin = 80;
-    else if (a >= 800) coinsPerMin = 50;
-    else if (a >= 500) coinsPerMin = 25;
-    else if (a >= 200) coinsPerMin = 10;
-
-    const pkgData = { 
-      name: dep.pkgName || 'RS Coin Package', 
-      amount: a, 
-      coinsPerMin, 
-      startedAt: Date.now(), 
-      lastClaim: Date.now(), 
-      expiresAt: Date.now() + (30 * 86400000) 
-    };
-
-    await User.updateOne({ _id: dep.uid }, { 
-      $inc: { balance: a, earned: a },
-      $set: { activePkg: pkgData } 
-    });
-  } else {
-    dep.status = 'rejected';
-    await dep.save();
-  }
-  s.json({ ok: true });
-}));
-
 app.post('/api/admin/bonus', admin, h(async (q, s) => {
   const { phone, amount } = q.body || {};
   const a = Number(amount);
@@ -741,7 +693,7 @@ app.post('/api/admin/reply', admin, h(async (q, s) => {
 app.get('/api/admin/offers-raw', admin, h(async (q, s) => {
   const dbg = {};
   await fetchOffers('admin-test', ctxOf(q), dbg);
-  s.json({ text: 'Offers fetched successfully.' });
+  s.json({ text: 'Offers fetched successfully.' }));
 }));
 
 const PAGE = `<!DOCTYPE html>
@@ -757,7 +709,7 @@ const PAGE = `<!DOCTYPE html>
 <title>RS Growth Matrix & RS Gallery Shop</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
-:root{--bg:#060913;--card:#0f172a;--line:#1e293b;--tx:#f8fafc;--mu:#94a3b8;--gold:#fbbf24;--grn:#22c55e;--blu:#38bdf8;--red:#ef4444}
+:root{--bg:#060913;--card:#0f172a;--line:#1e293b;--tx:#f8fafc;--mu:#94a3b8;--gold:#fbbf24;--grn:#22c55e;--blu:#38bdf8;--red:#ef4444;--orange:#f97316}
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Roboto,Arial,sans-serif}
 body{background:var(--bg);color:var(--tx);display:flex;justify-content:center;min-height:100vh;padding:8px}
 .app{width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:26px;height:96vh;display:flex;flex-direction:column;overflow:hidden;position:relative}
@@ -770,68 +722,68 @@ body{background:var(--bg);color:var(--tx);display:flex;justify-content:center;mi
 .sub{font-size:12px;color:var(--mu);margin-bottom:14px}
 .seg{display:flex;background:var(--bg);border-radius:10px;padding:3px;margin-bottom:12px}
 .seg div{flex:1;text-align:center;padding:8px;font-size:12px;font-weight:700;border-radius:8px;color:var(--mu);cursor:pointer}
-.seg .on{background:linear-gradient(90deg,var(--gold),#f59e0b);color:#000}
+.seg .on{background:linear-gradient(90deg,var(--orange),#f59e0b);color:#000}
 label{font-size:11px;color:var(--mu);display:block;margin-top:9px}
 input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px;color:#fff;font-size:14px;margin-top:4px}
-input:focus,select:focus,textarea:focus{outline:2px solid var(--gold)}
-.btn{width:100%;border:0;border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:12px;background:linear-gradient(90deg,var(--gold),#f59e0b);color:#000}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--orange)}
+.btn{width:100%;border:0;border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:12px;background:linear-gradient(90deg,var(--orange),#f59e0b);color:#000}
 .btn.g{background:var(--grn);color:#fff}.btn.r{background:var(--red);color:#fff}.btn.s{width:auto;padding:6px 12px;font-size:12px;margin:0;border-radius:14px}
 .or{font-size:11px;color:var(--mu);margin:14px 0 8px;text-align:center}
 .agn{font-size:10.5px;color:var(--mu);margin-top:8px;text-align:center;line-height:1.5}
 .top{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#131d38,#0f172a)}
 .top .l{display:flex;align-items:center;gap:9px;min-width:0}.top b{font-size:14px}.bal{text-align:right;font-size:17px;font-weight:800;color:var(--grn)}.bal small{display:block;font-size:10px;color:var(--mu);font-weight:400}
-.av{width:40px;height:40px;border-radius:50%;border:2px solid var(--gold);background:#16213f;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;overflow:hidden;flex-shrink:0;box-shadow:0 0 10px rgba(251,191,36,.3)}
+.av{width:40px;height:40px;border-radius:50%;border:2px solid var(--orange);background:#16213f;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;overflow:hidden;flex-shrink:0;box-shadow:0 0 10px rgba(249,115,22,.3)}
 .av img{width:100%;height:100%;object-fit:contain;display:block}
 nav{display:flex;gap:2px;padding:7px 3px 9px;background:#0b1224;box-shadow:0 10px 20px rgba(0,0,0,.6);position:relative;z-index:5}
 nav div{flex:1;text-align:center;font-size:9px;color:var(--mu);padding:6px 0;cursor:pointer;border-radius:11px;background:linear-gradient(180deg,#18244a,#0e1730)}
 nav div i{display:block;font-style:normal;font-size:14px;position:relative;width:22px;height:22px;line-height:22px;margin:0 auto}
-nav .on{color:var(--gold);transform:translateY(-1px);background:linear-gradient(180deg,#2a2208,#13100a);box-shadow:0 0 0 1px var(--gold)}
+nav .on{color:var(--orange);transform:translateY(-1px);background:linear-gradient(180deg,#2a1508,#13100a);box-shadow:0 0 0 1px var(--orange)}
 main{flex:1;overflow-y:auto;padding:14px}
 .row{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;box-shadow:0 4px 10px rgba(0,0,0,.35)}
 .row small{display:block;color:var(--mu);font-size:11px;margin-top:2px}
 h3{font-size:13px;color:var(--mu);margin:4px 0 10px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
-.stat{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}.stat b{display:block;font-size:16px;color:var(--gold)}.stat small{font-size:11px;color:var(--mu)}
+.stat{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}.stat b{display:block;font-size:16px;color:var(--orange)}.stat small{font-size:11px;color:var(--mu)}
 .pod{display:flex;gap:8px;align-items:flex-end;margin-bottom:14px}
 .pod div{flex:1;text-align:center;border-radius:16px;padding:14px 6px;background:#131d38;border:1px solid var(--line);font-size:12px}
-.pod .p1{border-color:var(--gold);padding-bottom:26px;background:linear-gradient(180deg,rgba(251,191,36,.18),#131d38)}
-.pod b{display:block;color:var(--gold);font-size:14px;margin-top:4px}
-.chip{font-size:10px;padding:3px 8px;border-radius:10px;background:#1e293b;color:var(--gold)}
-.chip.approved,.chip.paid,.chip.Success{color:var(--grn)}.chip.rejected,.chip.cancelled{color:var(--red)}.chip.pending{color:var(--gold)}
+.pod .p1{border-color:var(--orange);padding-bottom:26px;background:linear-gradient(180deg,rgba(249,115,22,.18),#131d38)}
+.pod b{display:block;color:var(--orange);font-size:14px;margin-top:4px}
+.chip{font-size:10px;padding:3px 8px;border-radius:10px;background:#1e293b;color:var(--orange)}
+.chip.approved,.chip.paid,.chip.Success{color:var(--grn)}.chip.rejected,.chip.cancelled{color:var(--red)}.chip.pending{color:var(--orange)}
 .chat{max-height:40vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .m{padding:8px 12px;border-radius:12px;font-size:13px;max-width:85%}.m.user{background:#1e293b;align-self:flex-end}.m.support{background:#172554;color:var(--blu);align-self:flex-start}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:130;align-items:center;justify-content:center;padding:14px}
 .modal>div{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;width:100%;max-width:410px;max-height:90vh;overflow-y:auto}
 pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-height:1.5;margin:8px 0}
 .err{color:var(--red);font-size:12px;margin-top:8px;min-height:14px}
-.mq{overflow:hidden;white-space:nowrap;border-radius:14px;background:linear-gradient(90deg,#2b1f04,#4a3508,#2b1f04);border:1px solid rgba(251,191,36,.55);padding:10px 0;margin-bottom:12px}
-.mq span{display:inline-block;padding-left:100%;animation:mq 26s linear infinite;color:var(--gold);font-size:12.5px;font-weight:700}
+.mq{overflow:hidden;white-space:nowrap;border-radius:14px;background:linear-gradient(90deg,#2b1f04,#4a3508,#2b1f04);border:1px solid rgba(249,115,22,.55);padding:10px 0;margin-bottom:12px}
+.mq span{display:inline-block;padding-left:100%;animation:mq 26s linear infinite;color:var(--orange);font-size:12.5px;font-weight:700}
 @keyframes mq{to{transform:translateX(-100%)}}
-.ar{font-size:20px;line-height:2.1;direction:rtl;text-align:right;color:var(--gold);font-family:'Amiri',serif;margin:6px 0}
+.ar{font-size:20px;line-height:2.1;direction:rtl;text-align:right;color:var(--orange);font-family:'Amiri',serif;margin:6px 0}
 .bkc{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;font-size:13px;line-height:1.7}
-.bkc b{color:var(--gold)}.bkc small{display:block;color:var(--mu);font-size:11px;margin-top:4px}
+.bkc b{color:var(--orange)}.bkc small{display:block;color:var(--mu);font-size:11px;margin-top:4px}
 .nm{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;margin-bottom:8px}
-.nm .ar2{font-size:26px;color:var(--gold);font-family:'Amiri',serif;direction:rtl;text-align:right;white-space:nowrap}
-.bkh{text-align:center;margin-bottom:14px;border-radius:20px;padding:10px;border:1px solid rgba(251,191,36,.45);background:linear-gradient(180deg,#14263f,#0b1224)}
-.bkh .t{font-size:20px;font-weight:700;color:var(--gold);margin-top:6px}
+.nm .ar2{font-size:26px;color:var(--orange);font-family:'Amiri',serif;direction:rtl;text-align:right;white-space:nowrap}
+.bkh{text-align:center;margin-bottom:14px;border-radius:20px;padding:10px;border:1px solid rgba(249,115,22,.45);background:linear-gradient(180deg,#14263f,#0b1224)}
+.bkh .t{font-size:20px;font-weight:700;color:var(--orange);margin-top:6px}
 .bkh .u{font-size:12px;color:var(--mu)}
 .adm{display:none;position:fixed;inset:0;z-index:120;background:var(--bg);flex-direction:column;max-width:440px;margin:0 auto}
 .adm.on{display:flex}
 .ah{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#131d38,#0f172a)}
-.ah b{color:var(--gold);font-size:15px}
+.ah b{color:var(--orange);font-size:15px}
 #abody{flex:1;overflow-y:auto;padding:14px}
 #anav{display:flex;gap:4px;padding:8px 5px 10px;background:#0b1224}
 #anav div{flex:1;text-align:center;font-size:9.5px;color:var(--mu);padding:7px 0;cursor:pointer;border-radius:13px;background:linear-gradient(180deg,#18244a,#0e1730)}
 #anav div i{display:block;font-style:normal;font-size:16px}
-#anav .on{color:var(--gold);background:linear-gradient(180deg,#2a2208,#13100a);box-shadow:0 0 0 1px var(--gold)}
+#anav .on{color:var(--orange);background:linear-gradient(180deg,#2a1508,#13100a);box-shadow:0 0 0 1px var(--orange)}
 .th{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
 .th .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:700}
 .gap{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-.hs{position:relative;height:200px;border-radius:24px;overflow:hidden;margin-bottom:10px;border:1px solid rgba(251,191,36,.45);cursor:pointer;background-size:contain;background-repeat:no-repeat;background-position:center}
+.hs{position:relative;height:200px;border-radius:24px;overflow:hidden;margin-bottom:10px;border:1px solid rgba(249,115,22,.45);cursor:pointer;background-size:contain;background-repeat:no-repeat;background-position:center}
 .sl{position:absolute;inset:0;padding:18px 16px;opacity:0;transform:scale(.96);transition:opacity .7s,transform .7s;display:flex;flex-direction:column;justify-content:center;pointer-events:none;background-size:contain;background-repeat:no-repeat;background-position:center}
 .sl.on{opacity:1;transform:none;pointer-events:auto}
-.sl .tag{display:inline-block;align-self:flex-start;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.5);color:#fde68a;margin-bottom:8px}
+.sl .tag{display:inline-block;align-self:flex-start;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.5);color:#fed7aa;margin-bottom:8px}
 .sl h4{font-size:18px;color:#fff;margin-bottom:6px;max-width:72%;text-shadow:0 2px 4px rgba(0,0,0,.8)}
 .sl p{font-size:12.5px;line-height:1.65;color:#f1f5f9;max-width:74%;text-shadow:0 2px 4px rgba(0,0,0,.8)}
 .sl .em{position:absolute;right:8px;bottom:6px;font-size:76px}
@@ -841,10 +793,10 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .s3{background:linear-gradient(135deg,#78350f,#92400e 55%,#451a03)}
 .dots{display:flex;justify-content:center;gap:6px;margin-bottom:14px}
 .dots i{width:7px;height:7px;border-radius:50%;background:#334155;cursor:pointer;transition:all .3s}
-.dots i.on{background:var(--gold);width:22px;border-radius:6px}
+.dots i.on{background:var(--orange);width:22px;border-radius:6px}
 .bn{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.bo{border-radius:22px;padding:3px;background:linear-gradient(135deg,#fde68a,#b45309 50%,#fbbf24)}
-.bi{border-radius:19px;background:linear-gradient(180deg,#16213f,#0b1224);padding:14px 10px;text-align:center;border:1px solid rgba(251,191,36,.25)}
+.bo{border-radius:22px;padding:3px;background:linear-gradient(135deg,#fed7aa,#c2410c 50%,#f97316)}
+.bi{border-radius:19px;background:linear-gradient(180deg,#16213f,#0b1224);padding:14px 10px;text-align:center;border:1px solid rgba(249,115,22,.25)}
 .bi .ic{font-size:34px;display:block}
 .bi b{display:block;font-size:13px;margin:6px 0 2px;color:#fff}
 .bi small{display:block;font-size:10.5px;color:var(--mu);margin-bottom:10px}
@@ -852,15 +804,15 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .bi .btn.dn{background:#1e293b;color:var(--mu)}
 .lk{display:flex;align-items:center;gap:12px;text-align:left}
 .wheel{position:relative;width:320px;margin:14px auto 6px}
-.wheel .pt{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:28px;color:#fbbf24;z-index:3}
+.wheel .pt{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:28px;color:#f97316;z-index:3}
 .tdw{font-size:12.5px;line-height:1.7;color:#e2e8f0;background:#131d38;border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0}
-.tdw b{color:var(--gold)}
+.tdw b{color:var(--orange)}
 .stp{font-size:12.5px;line-height:1.9;color:#cbd5e1;margin:8px 0 4px;padding-left:4px}
 .thero{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,#0c2a4a,#0b1224);border:1px solid rgba(56,189,248,.35);border-radius:20px;padding:14px;margin-bottom:12px}
 .thero b{font-size:16px;color:#fff}.thero small{display:block;color:var(--mu);font-size:11.5px;margin-top:4px}
 .rg{position:relative;width:78px;height:78px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:30px}
 .rg .r{position:absolute;border-radius:50%;border:2px solid transparent}
-.rg .r1{inset:0;border-top-color:#fbbf24;border-bottom-color:#fbbf24;animation:rot 3.2s linear infinite}
+.rg .r1{inset:0;border-top-color:#f97316;border-bottom-color:#f97316;animation:rot 3.2s linear infinite}
 .rg .r2{inset:9px;border-left-color:#38bdf8;border-right-color:#38bdf8;animation:rot 2.2s linear infinite reverse}
 .rg .r3{inset:18px;border-top-color:#22c55e;border-right-color:#22c55e;animation:rot 1.4s linear infinite}
 .hbn{display:flex;align-items:center;gap:14px;border-radius:20px;padding:14px;margin-bottom:12px;border:1px solid}
@@ -871,11 +823,11 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .hb-help{background:linear-gradient(135deg,#0c2350,#0b1224);border-color:rgba(59,130,246,.45)}
 .hb-acc{background:linear-gradient(135deg,#4a1d08,#0b1224);border-color:rgba(249,115,22,.45)}
 @keyframes rot{to{transform:rotate(360deg)}}
-.ft{margin-top:6px;border-radius:22px;padding:18px 16px;background:linear-gradient(180deg,#0d1a2e,#070d1a);border:1px solid rgba(251,191,36,.35)}
-.ftl{display:flex;align-items:center;gap:12px;margin-bottom:10px}.ftl b{font-size:16px;color:var(--gold)}.ftl small{display:block;font-size:11px;color:var(--mu)}
+.ft{margin-top:6px;border-radius:22px;padding:18px 16px;background:linear-gradient(180deg,#0d1a2e,#070d1a);border:1px solid rgba(249,115,22,.35)}
+.ftl{display:flex;align-items:center;gap:12px;margin-bottom:10px}.ftl b{font-size:16px;color:var(--orange)}.ftl small{display:block;font-size:11px;color:var(--mu)}
 .fd{font-size:12px;line-height:1.75;color:#94a3b8;margin-bottom:14px}
 .fcols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.fcols h5{font-size:12px;color:var(--gold);margin-bottom:6px}
+.fcols h5{font-size:12px;color:var(--orange);margin-bottom:6px}
 .fcols a{display:block;font-size:12.5px;color:#94a3b8;padding:5px 0;cursor:pointer;text-decoration:none}
 .fsoc{display:flex;align-items:center;justify-content:center;gap:14px;padding:14px 0;border-top:1px solid #1e293b;border-bottom:1px solid #1e293b;margin-bottom:12px}
 .fsoc a{display:block;width:46px;height:46px;border-radius:50%}
@@ -888,19 +840,19 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .fr{display:flex;align-items:center;gap:10px;font-size:12.5px;color:#cbd5e1;padding:7px 0;border-top:1px solid #1e293b}
 .fr a{color:#7dd3fc;text-decoration:none}
 .fc{font-size:10.5px;color:#64748b;text-align:center;margin-top:12px;border-top:1px solid #1e293b;padding-top:10px}
-.img-upload-btn{display:flex;align-items:center;justify-content:center;gap:6px;background:#1e293b;border:1px dashed var(--gold);color:var(--gold);padding:10px;border-radius:10px;cursor:pointer;font-size:13px;margin-top:6px;font-weight:bold}
+.img-upload-btn{display:flex;align-items:center;justify-content:center;gap:6px;background:#1e293b;border:1px dashed var(--orange);color:var(--orange);padding:10px;border-radius:10px;cursor:pointer;font-size:13px;margin-top:6px;font-weight:bold}
 
-/* SMM Style Dashboard & Sidebar */
+/* SMM Style Dashboard & Orange Sidebar */
 .smm-welcome{background:linear-gradient(135deg,#311026,#131d38);border:1px solid rgba(239,68,68,0.4);border-radius:18px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .smm-services-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:14px}
 .smm-service-icon{background:#131d38;border:1px solid var(--line);border-radius:10px;padding:8px 4px;text-align:center;font-size:18px;cursor:pointer;transition:0.2s}
-.smm-service-icon:hover{border-color:var(--gold)}
+.smm-service-icon:hover{border-color:var(--orange)}
 .smm-sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:150}
-.smm-sidebar{position:fixed;top:0;left:-280px;width:280px;height:100%;background:#0b1224;border-right:1px solid var(--line);z-index:160;transition:left 0.3s;padding:16px;overflow-y:auto}
+.smm-sidebar{position:fixed;top:0;left:-280px;width:280px;height:100%;background:#0b1224;border-right:2px solid var(--orange);z-index:160;transition:left 0.3s;padding:16px;overflow-y:auto}
 .smm-sidebar.on{left:0}
 
 /* Premium Animated Ad Button */
-.premium-ad-btn{position:relative;width:100%;background:linear-gradient(135deg,#38bdf8,#22c55e,#fbbf24);background-size:200% 200%;color:#000;font-weight:800;font-size:15px;padding:14px;border:none;border-radius:16px;cursor:pointer;box-shadow:0 0 20px rgba(56,189,248,0.5);animation:premiumGlow 3s ease infinite;transition:transform 0.2s;text-align:center;margin-top:12px}
+.premium-ad-btn{position:relative;width:100%;background:linear-gradient(135deg,#38bdf8,#22c55e,#f97316);background-size:200% 200%;color:#000;font-weight:800;font-size:15px;padding:14px;border:none;border-radius:16px;cursor:pointer;box-shadow:0 0 20px rgba(56,189,248,0.5);animation:premiumGlow 3s ease infinite;transition:transform 0.2s;text-align:center;margin-top:12px}
 .premium-ad-btn:active{transform:scale(0.97)}
 @keyframes premiumGlow{0%{background-position:0% 50%;box-shadow:0 0 15px rgba(56,189,248,0.4)}50%{background-position:100% 50%;box-shadow:0 0 30px rgba(34,197,94,0.8)}100%{background-position:0% 50%;box-shadow:0 0 15px rgba(56,189,248,0.4)}}
 
@@ -908,19 +860,19 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .hold-circle-svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
 .hold-bg-circle{fill:none;stroke:#1e293b;stroke-width:8}
 .hold-progress-circle{fill:none;stroke:url(#circleGrad);stroke-width:9;stroke-dasharray:301.59;stroke-dashoffset:301.59;transition:stroke-dashoffset 0.04s linear;stroke-linecap:round}
-.hold-btn-inner{position:relative;width:96px;height:96px;border-radius:50%;background:radial-gradient(circle,#0284c7,#0369a1);border:2px solid rgba(251,191,36,0.5);color:#fff;font-size:11.5px;font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;box-shadow:0 0 25px rgba(56,189,248,0.6);text-align:center;padding:4px;touch-action:none;animation:pulseGlow 2s infinite}
+.hold-btn-inner{position:relative;width:96px;height:96px;border-radius:50%;background:radial-gradient(circle,#0284c7,#0369a1);border:2px solid rgba(249,115,22,0.5);color:#fff;font-size:11.5px;font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;box-shadow:0 0 25px rgba(56,189,248,0.6);text-align:center;padding:4px;touch-action:none;animation:pulseGlow 2s infinite}
 .hold-btn-inner:active{transform:scale(0.94)}
 @keyframes pulseGlow{0%{box-shadow:0 0 15px rgba(56,189,248,0.4)}50%{box-shadow:0 0 30px rgba(34,197,94,0.8)}100%{box-shadow:0 0 15px rgba(56,189,248,0.4)}}
-.copy-btn-inline{background:var(--gold);color:#000;border:0;padding:4px 12px;border-radius:8px;font-weight:bold;font-size:11px;cursor:pointer;margin-left:6px;display:inline-block}
-.admin-copy-btn{background:#1e293b;color:var(--gold);border:1px solid var(--gold);padding:3px 8px;border-radius:6px;font-size:10px;cursor:pointer;margin-left:6px}
+.copy-btn-inline{background:var(--orange);color:#000;border:0;padding:4px 12px;border-radius:8px;font-weight:bold;font-size:11px;cursor:pointer;margin-left:6px;display:inline-block}
+.admin-copy-btn{background:#1e293b;color:var(--orange);border:1px solid var(--orange);padding:3px 8px;border-radius:6px;font-size:10px;cursor:pointer;margin-left:6px}
 </style></head><body>
 <div class="app">
 
-<!-- SMM Style Sidebar for Employer/Promotion -->
+<!-- Orange SMM Sidebar -->
 <div id="smmOverlay" class="smm-sidebar-overlay" onclick="toggleSmmSidebar()"></div>
 <div id="smmSidebar" class="smm-sidebar">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-    <b style="color:var(--gold);font-size:16px">SMM Menu</b>
+    <b style="color:var(--orange);font-size:16px">SMM Menu (Orange Theme)</b>
     <span style="font-size:18px;cursor:pointer" onclick="toggleSmmSidebar()">✕</span>
   </div>
   <div style="font-size:12px;color:var(--mu);margin-bottom:14px">Navigation & Services</div>
@@ -932,11 +884,11 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 
 <div id="landing">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-    <div style="display:flex;align-items:center;gap:10px"><div id="logoL"></div><b style="color:var(--gold);font-size:16px">RS Growth Matrix & RS Gallery</b></div>
-    <span style="font-size:12px;background:rgba(251,191,36,.15);color:var(--gold);padding:4px 10px;border-radius:20px;border:1px solid rgba(251,191,36,.3)">EN ▾</span>
+    <div style="display:flex;align-items:center;gap:10px"><div id="logoL"></div><b style="color:var(--orange);font-size:16px">RS Growth Matrix & RS Gallery</b></div>
+    <span style="font-size:12px;background:rgba(249,115,22,.15);color:var(--orange);padding:4px 10px;border-radius:20px;border:1px solid rgba(249,115,22,.3)">EN ▾</span>
   </div>
-  <div style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border:1px solid rgba(251,191,36,.3);border-radius:20px;padding:16px;margin-bottom:14px;position:relative;overflow:hidden">
-    <div style="font-size:11px;color:var(--gold);font-weight:700;margin-bottom:6px">⚡ Work Smart • Earn & Shop at RS Gallery</div>
+  <div style="background:linear-gradient(135deg,#1e1b4b,#0f172a);border:1px solid rgba(249,115,22,.3);border-radius:20px;padding:16px;margin-bottom:14px;position:relative;overflow:hidden">
+    <div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px">⚡ Work Smart • Earn & Shop at RS Gallery</div>
     <h1 style="font-size:22px;color:#fff;margin-bottom:8px;line-height:1.3">Small Tasks Big Opportunities</h1>
     <p style="font-size:12px;color:var(--mu);line-height:1.6;margin-bottom:14px">RS Growth Matrix একটি বিশ্বস্ত মাইক্রোজব প্ল্যাটফর্ম। এখানে টাস্ক করে ইনকাম করুন এবং আমাদের কোলাবোরেশন পার্টনার **আর এস গ্যালারি শপ** থেকে আপনার পছন্দের পোশাক অর্ডার করুন।</p>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center">
@@ -952,11 +904,11 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
     <div class="stat"><b style="font-size:13px" id="stEarn">৳8.5M+</b><small style="font-size:9.5px">Earnings</small></div>
     <div class="stat"><b style="font-size:13px">4.8/5</b><small style="font-size:9.5px">Rating</small></div>
   </div>
-  <button class="btn" style="padding:14px;font-size:15px;margin-bottom:10px;box-shadow:0 4px 15px rgba(251,191,36,.3)" onclick="openAuth()">🚀 Get Started</button>
+  <button class="btn" style="padding:14px;font-size:15px;margin-bottom:10px;box-shadow:0 4px 15px rgba(249,115,22,.3)" onclick="openAuth()">🚀 Get Started</button>
   <div style="text-align:center;font-size:11px;color:var(--mu);margin-bottom:14px">Join now and start earning today!</div>
-  <div style="background:linear-gradient(135deg,#2b1f04,#141c2e);border:1px solid rgba(251,191,36,.4);border-radius:16px;padding:12px;display:flex;align-items:center;gap:12px;margin-bottom:14px">
+  <div style="background:linear-gradient(135deg,#2b1f04,#141c2e);border:1px solid rgba(249,115,22,.4);border-radius:16px;padding:12px;display:flex;align-items:center;gap:12px;margin-bottom:14px">
     <span style="font-size:28px">🎁</span>
-    <div><b style="color:var(--gold);font-size:13px;display:block">RS Gallery Shop Collaboration!</b><small style="color:var(--mu);font-size:11px">টাস্ক করে ইনকাম করা টাকা দিয়ে আর এস গ্যালারি থেকে শপিং করুন...</small></div>
+    <div><b style="color:var(--orange);font-size:13px;display:block">RS Gallery Shop Collaboration!</b><small style="color:var(--mu);font-size:11px">টাস্ক করে ইনকাম করা টাকা দিয়ে আর এস গ্যালারি থেকে শপিং করুন...</small></div>
   </div>
   <div style="display:flex;justify-content:space-around;padding:10px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:11px;color:var(--mu);text-align:center">
     <div>🛡️ 100% Safe & Secure</div>
@@ -993,10 +945,10 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 </div>
 <div class="top">
   <div class="l">
-    <span style="font-size:22px;cursor:pointer;margin-right:4px" onclick="toggleSmmSidebar()">☰</span>
+    <span style="font-size:22px;cursor:pointer;margin-right:4px;color:var(--orange)" onclick="toggleSmmSidebar()">☰</span>
     <div id="logoT"></div>
     <div class="av" id="avT" onclick="$('avf').click()">📷</div>
-    <div><b id="hName"></b><small id="hRsCoins" style="display:block;color:var(--gold);font-size:11px">RS Coins: 0</small></div>
+    <div><b id="hName"></b><small id="hRsCoins" style="display:block;color:var(--orange);font-size:11px">RS Coins: 0</small></div>
   </div>
   <div class="bal"><span id="hBal">0.00</span><small id="balUnitLabel">Balance (BDT)</small></div>
 </div>
@@ -1010,7 +962,7 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 
 <main id="main"></main>
 </div>
-<div class="adm" id="adm"><div class="ah"><b>Admin Panel</b><button class="btn s" onclick="admClose()">Close</button></div><div id="abody"></div><div id="anav"></div></div>
+<div class="adm" id="adm"><div class="ah"><b>Admin Panel (Managed via E-Wallet)</b><button class="btn s" onclick="admClose()">Close</button></div><div id="abody"></div><div id="anav"></div></div>
 <div class="modal" id="modal"><div id="mBody"></div></div>
 <script>
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function(){});
@@ -1021,7 +973,7 @@ function installPWA() {
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then(function(choice) { if (choice.outcome === 'accepted') { var b = $('pwaBanner'); if (b) b.style.display = 'none'; } deferredPrompt = null; });
   } else {
-    modal('<h3 style="color:var(--gold)">📱 অ্যাপ ইনস্টল করার নিয়ম</h3><div class="tdw">আপনার ব্রাউজারের ডানপাশের <b>৩-ডট (⋮) মেনুতে</b> ক্লিক করে <b>Add to Home screen</b> বা <b>Install app</b> অপশনটিতে চাপ দিন।</div><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">বুঝেছি</button>');
+    modal('<h3 style="color:var(--orange)">📱 অ্যাপ ইনস্টল করার নিয়ম</h3><div class="tdw">আপনার ব্রাউজারের ডানপাশের <b>৩-ডট (⋮) মেনুতে</b> ক্লিক করে <b>Add to Home screen</b> বা <b>Install app</b> অপশনটিতে চাপ দিন।</div><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">বুঝেছি</button>');
   }
 }
 
@@ -1060,8 +1012,8 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 function money(n){return Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function formatCompact(n){n=Number(n)||0;if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'k';return n.toString()}
 function tm(t){return new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}
-function logo(s){var g='lg'+(LC++);return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 100 100"><defs><linearGradient id="'+g+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset=".5" stop-color="#fbbf24"/><stop offset="1" stop-color="#b45309"/></linearGradient></defs><path d="M50 4 90 20v30c0 25-17 42-40 48C27 92 10 75 10 50V20z" fill="#0b1020" stroke="url(#'+g+')" stroke-width="4"/><text x="50" y="60" text-anchor="middle" font-size="34" font-weight="800" fill="url(#'+g+')" font-family="Georgia,serif">RS</text><path d="M30 71h40M38 77h24" stroke="url(#'+g+')" stroke-width="2.5" stroke-linecap="round"/></svg>'}
-function mosque(w){var g='mg'+(LC++);return '<svg width="'+w+'" viewBox="0 0 200 120" style="max-width:100%"><defs><linearGradient id="'+g+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset="1" stop-color="#b45309"/></linearGradient><linearGradient id="'+g+'s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e1b4b"/><stop offset="1" stop-color="#0f3d2e"/></linearGradient><clipPath id="'+g+'c"><rect width="200" height="120" rx="16"/></clipPath></defs><g clip-path="url(#'+g+'c)"><rect width="200" height="120" fill="url(#'+g+'s)"/><rect x="26" y="52" width="14" height="56" fill="#0b1020" stroke="url(#'+g+')" stroke-width="1.5"/><path d="M26 52l7-18 7 18z" fill="url(#'+g+')"/><rect x="160" y="52" width="14" height="56" fill="#0b1020" stroke="url(#'+g+')" stroke-width="1.5"/><path d="M160 52l7-18 7 18z" fill="url(#'+g+')"/><rect x="58" y="80" width="84" height="28" fill="#0b1020" stroke="url(#'+g+')" stroke-width="1.5"/><path d="M68 80a32 32 0 0 1 64 0z" fill="url(#'+g+')"/><rect y="108" width="200" height="12" fill="#052e1a"/></g></svg>'}
+function logo(s){var g='lg'+(LC++);return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 100 100"><defs><linearGradient id="'+g+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fed7aa"/><stop offset=".5" stop-color="#f97316"/><stop offset="1" stop-color="#c2410c"/></linearGradient></defs><path d="M50 4 90 20v30c0 25-17 42-40 48C27 92 10 75 10 50V20z" fill="#0b1020" stroke="url(#'+g+')" stroke-width="4"/><text x="50" y="60" text-anchor="middle" font-size="34" font-weight="800" fill="url(#'+g+')" font-family="Georgia,serif">RS</text><path d="M30 71h40M38 77h24" stroke="url(#'+g+')" stroke-width="2.5" stroke-linecap="round"/></svg>'}
+function mosque(w){var g='mg'+(LC++);return '<svg width="'+w+'" viewBox="0 0 200 120" style="max-width:100%"><defs><linearGradient id="'+g+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fed7aa"/><stop offset="1" stop-color="#c2410c"/></linearGradient><linearGradient id="'+g+'s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e1b4b"/><stop offset="1" stop-color="#0f3d2e"/></linearGradient><clipPath id="'+g+'c"><rect width="200" height="120" rx="16"/></clipPath></defs><g clip-path="url(#'+g+'c)"><rect width="200" height="120" fill="url(#'+g+'s)"/><rect x="26" y="52" width="14" height="56" fill="#0b1020" stroke="url(#'+g+')" stroke-width="1.5"/><path d="M26 52l7-18 7 18z" fill="url(#'+g+')"/><rect x="160" y="52" width="14" height="56" fill="#0b1020" stroke="url(#'+g+')" stroke-width="1.5"/><path d="M160 52l7-18 7 18z" fill="url(#'+g+')"/><rect x="58" y="80" width="84" height="28" fill="#0b1020" stroke="url(#'+g+')" stroke-width="1.5"/><path d="M68 80a32 32 0 0 1 64 0z" fill="url(#'+g+')"/><rect y="108" width="200" height="12" fill="#052e1a"/></g></svg>'}
 function hb(c,e,t,s){return '<div class="hbn hb-'+c+'"><span class="e">'+e+'</span><div><b>'+t+'</b><small>'+s+'</small></div></div>'}
 function api(p,m,b,hd){hd=hd||{};hd['Content-Type']='application/json';if(T)hd.Authorization='Bearer '+T;
  return fetch('/api/'+p,{method:m||'GET',headers:hd,body:b?JSON.stringify(b):undefined}).then(function(r){return r.json().then(function(d){if(r.status===401&&T){out();throw new Error(d.error)}if(!r.ok)throw new Error(d.error||'Error');return d})})}
@@ -1168,7 +1120,7 @@ function vHome(){
       '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance</small></div><div class="stat"><b>'+money(ME.earned)+'</b><small>Total earned</small></div></div>'+
       '<div class="hs">'+sl+'</div><div class="dots">'+dt+'</div>'+
       
-      '<div class="bo" style="margin-bottom:14px;padding:4px"><div class="bi lk" style="flex-direction:column;text-align:center;padding:18px"><span class="ic" style="font-size:52px">🎡</span><div><b style="font-size:16px;color:var(--gold);margin-top:4px">Grand Lucky Spin & Rewards!</b><small style="font-size:11.5px">চাকা ঘুরিয়ে ক্যাশ ও কয়েন রিওয়ার্ড জিতে নিন!</small></div>'+
+      '<div class="bo" style="margin-bottom:14px;padding:4px"><div class="bi lk" style="flex-direction:column;text-align:center;padding:18px"><span class="ic" style="font-size:52px">🎡</span><div><b style="font-size:16px;color:var(--orange);margin-top:4px">Grand Lucky Spin & Rewards!</b><small style="font-size:11.5px">চাকা ঘুরিয়ে ক্যাশ ও কয়েন রিওয়ার্ড জিতে নিন!</small></div>'+
       '<button class="btn'+(sp?'':' dn')+'" style="margin-top:12px;width:100%" onclick="spinOpen()">'+(sp?'Spin Wheel Now':'Spin Completed ✅')+'</button></div></div>'+
 
       '<h3>আজকের বোনাস</h3><div class="bn">'+
@@ -1185,21 +1137,21 @@ function vHome(){
 function act(p){api(p,'POST').then(function(m){ME=m;head();vHome();toast('Reward added.')}).catch(function(e){toast(e.message)})}
 
 function wheelSvg(){
-  var cols=['#b45309','#1e3a8a','#14532d','#7c2d12','#4c1d95','#0c4a6e','#78350f','#164e63','#065f46','#1e1b4b'];
+  var cols=['#c2410c','#1e3a8a','#14532d','#7c2d12','#4c1d95','#0c4a6e','#78350f','#164e63','#065f46','#1e1b4b'];
   var icons=['৳1','৳2','৳3','৳5','50 Coins','100 Coins','৳1','৳2','৳3','৳1'];
-  var h='<svg viewBox="0 0 200 200" width="300" height="300" id="whs" style="display:block;margin:0 auto;transition:transform 4.5s cubic-bezier(.17,.67,.12,1);transform:rotate('+ROT+'deg)"><circle cx="100" cy="100" r="98" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/>';
+  var h='<svg viewBox="0 0 200 200" width="300" height="300" id="whs" style="display:block;margin:0 auto;transition:transform 4.5s cubic-bezier(.17,.67,.12,1);transform:rotate('+ROT+'deg)"><circle cx="100" cy="100" r="98" fill="#0b1224" stroke="#f97316" stroke-width="3"/>';
   for(var i=0;i<10;i++){
     var deg = i * (360/10);
-    h+='<g transform="rotate('+deg+' 100 100)"><path d="M100 100L91 8A95 95 0 0 1 109 8Z" fill="'+cols[i]+'" stroke="#fbbf24" stroke-width="1"/><text x="100" y="27" text-anchor="middle" font-size="8.5" font-weight="800" fill="#fff">'+icons[i%icons.length]+'</text></g>';
+    h+='<g transform="rotate('+deg+' 100 100)"><path d="M100 100L91 8A95 95 0 0 1 109 8Z" fill="'+cols[i]+'" stroke="#f97316" stroke-width="1"/><text x="100" y="27" text-anchor="middle" font-size="8.5" font-weight="800" fill="#fff">'+icons[i%icons.length]+'</text></g>';
   }
-  return h+'<circle cx="100" cy="100" r="16" fill="#0b1224" stroke="#fbbf24" stroke-width="3"/><text x="100" y="104" text-anchor="middle" font-size="11">⭐</text></svg>';
+  return h+'<circle cx="100" cy="100" r="16" fill="#0b1224" stroke="#f97316" stroke-width="3"/><text x="100" y="104" text-anchor="middle" font-size="11">⭐</text></svg>';
 }
 function spinOpen(){SPUN=false;var ok=Date.now()-(ME.lastSpin||0)>=864e5;
- modal('<h3 style="color:var(--gold);text-align:center;font-size:16px">🎡 Grand Lucky Wheel</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন':'আজকের স্পিন শেষ।')+'</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin Now</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
+ modal('<h3 style="color:var(--orange);text-align:center;font-size:16px">🎡 Grand Lucky Wheel</h3><div class="wheel"><div class="pt">▼</div>'+wheelSvg()+'</div><div id="spmsg" style="text-align:center;font-size:13px;min-height:22px;color:#e2e8f0;margin:6px 0">'+(ok?'চাকা ঘোরাতে Spin চাপুন':'আজকের স্পিন শেষ।')+'</div><button id="spb" class="btn"'+(ok?'':' disabled style="opacity:.5"')+' onclick="doSpin()">Spin Now</button><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>')}
 function doSpin(){if(SPUN)return;SPUN=true;$('spb').disabled=true;$('spb').style.opacity='.5';
  api('spin','POST').then(function(r){var c=[];for(var k=0;k<SEG.length;k++)if(SEG[k][0]===r.prize)c.push(k);var i=c[Math.floor(Math.random()*c.length)]||0;
   ROT=Math.ceil(ROT/360)*360+1800-(i*(360/10));$('whs').style.transform='rotate('+ROT+'deg)';
-  setTimeout(function(){ME=r.me;head();var m=$('spmsg');if(m)m.innerHTML='🎉 অভিনন্দন! আপনি জিতেছেন <b style="color:#fbbf24">'+r.prize+' টাকা</b>'},4700)})
+  setTimeout(function(){ME=r.me;head();var m=$('spmsg');if(m)m.innerHTML='🎉 অভিনন্দন! আপনি জিতেছেন <b style="color:#f97316">'+r.prize+' টাকা</b>'},4700)})
  .catch(function(e){SPUN=false;toast(e.message);closeSpin()})}
 function closeSpin(){closeM();if(TAB==='home')vHome()}
 
@@ -1217,7 +1169,7 @@ function vEmp(){
       '<div style="text-align:right">' +
         '<div style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.5);border-radius:12px;padding:6px 12px;display:flex;align-items:center;gap:6px">' +
           '<span style="font-size:16px">👤</span>' +
-          '<div><b style="color:var(--gold);font-size:13px">$'+usdBal+'</b><small style="display:block;font-size:9px;color:var(--mu)">USD Funds</small></div>' +
+          '<div><b style="color:var(--orange);font-size:13px">$'+usdBal+'</b><small style="display:block;font-size:9px;color:var(--mu)">USD Funds</small></div>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -1249,16 +1201,14 @@ function vEmp(){
 
     // Services Selection Card (SMM Style)
     '<div class="card" style="margin-bottom:12px">' +
-      '<h3 style="color:var(--gold);margin-bottom:8px">⚙️ Services Order Form</h3>' +
+      '<h3 style="color:var(--orange);margin-bottom:8px">⚙️ Services Order Form</h3>' +
       '<label>Type services ID / Search</label>' +
       '<input id="smmSearch" placeholder="Type services id..." oninput="filterSmmService(this.value)">' +
-      '<label>Category</label>' +
+      '<label>Category (Managed via Admin Panel)</label>' +
       '<select id="smmCat" onchange="updateSmmServiceDropdown()">' +
-        '<option value="facebook">📘 Facebook Followers (Page / Profile) | Cheapest RM</option>' +
-        '<option value="youtube">▶️ YouTube Subscribers & Views</option>' +
-        '<option value="telegram">✈️ Telegram Members & Views</option>' +
+        '<option value="facebook">📘 Facebook/TikTok/YouTube Followers (Managed)</option>' +
       '</select>' +
-      '<label>Service</label>' +
+      '<label>Service Package</label>' +
       '<select id="smmServSelect" onchange="updateSmmPricing()">' +
         (packages.length ? packages.map((p, idx) => '<option value="'+idx+'" data-price="'+p.price+'" data-desc="'+esc(p.description)+'">'+esc(p.title)+' - ৳'+p.price+'</option>').join('') : '<option>No services</option>') +
       '</select>' +
@@ -1266,12 +1216,12 @@ function vEmp(){
 
     // Order Details Card
     '<div class="card">' +
-      '<h3 style="color:var(--gold);margin-bottom:8px">📦 Order Details</h3>' +
+      '<h3 style="color:var(--orange);margin-bottom:8px">📦 Order Details</h3>' +
       '<label>Link (URL)</label><input id="smmLink" placeholder="https://www.facebook.com/xxxx">' +
       '<label>Quantity</label><input id="smmQty" type="number" placeholder="Min: 100 - Max: 100,000" value="100">' +
       '<label>Average Time</label><input disabled value="4 hours 41 minutes" style="color:var(--mu)">' +
       '<label>Charge ($ USD / ৳ BDT)</label>' +
-      '<div id="smmChargeBox" style="background:#0b1224;border:1px solid var(--line);border-radius:10px;padding:11px;color:var(--gold);font-weight:bold;margin-top:4px">৳80.00 ($0.67 USD)</div>' +
+      '<div id="smmChargeBox" style="background:#0b1224;border:1px solid var(--line);border-radius:10px;padding:11px;color:var(--orange);font-weight:bold;margin-top:4px">৳80.00 ($0.67 USD)</div>' +
       '<button class="btn r" style="margin-top:14px" onclick="submitSmmOrder()">Submit Order</button>' +
     '</div>' +
 
@@ -1285,13 +1235,9 @@ function vEmp(){
   });
 }
 
-var globalSmmPkgs = [];
-function filterSmmService(val){
-  // Quick filter simulation
-}
-function updateSmmPricing(){
-  // Update charge calculation
-}
+function filterSmmService(val){}
+function updateSmmServiceDropdown(){}
+function updateSmmPricing(){}
 
 function submitSmmOrder(){
   var link = $('smmLink').value;
@@ -1336,8 +1282,8 @@ function switchTaskSub(sub){
     var isCooldown = cd > now;
     var remainMin = isCooldown ? Math.ceil((cd - now) / 60000) : 0;
 
-    c.innerHTML = '<div class="card" style="text-align:center;padding:24px"><span style="font-size:48px">📺</span><h3 style="color:var(--gold);margin-top:10px">Watch Ads Rotation & Earn Cash</h3><div class="sub">১২টি ডাইরেক্ট লিংক রোটেশন সিস্টেম। প্রতিটি অ্যাড দেখায় ৳০.৫০ টাকা রিওয়ার্ড। ১০টি অ্যাড দেখার পর ২০ মিনিটের বিরতি!</div>' +
-    '<div id="adTimerBox" style="font-size:14px;color:var(--mu);margin:14px 0">' + (isCooldown ? '⚠️ ২০ মিনিটের বিরতি চলছে। আরও <b style="color:var(--gold)">' + remainMin + '</b> মিনিট বাকি।' : 'অ্যাড দেখার জন্য নিচের প্রিমিয়াম বাটনে ক্লিক করুন') + '</div>' +
+    c.innerHTML = '<div class="card" style="text-align:center;padding:24px"><span style="font-size:48px">📺</span><h3 style="color:var(--orange);margin-top:10px">Watch Ads Rotation & Earn Cash</h3><div class="sub">১২টি ডাইরেক্ট লিংক রোটেশন সিস্টেম। প্রতিটি অ্যাড দেখায় ৳০.৫০ টাকা রিওয়ার্ড। ১০টি অ্যাড দেখার পর ২০ মিনিটের বিরতি!</div>' +
+    '<div id="adTimerBox" style="font-size:14px;color:var(--mu);margin:14px 0">' + (isCooldown ? '⚠️ ২০ মিনিটের বিরতি চলছে। আরও <b style="color:var(--orange)">' + remainMin + '</b> মিনিট বাকি।' : 'অ্যাড দেখার জন্য নিচের প্রিমিয়াম বাটনে ক্লিক করুন') + '</div>' +
     '<button id="watchBtn" class="premium-ad-btn" ' + (isCooldown ? 'disabled style="opacity:0.5"' : '') + ' onclick="startWatchAdRotation()">🚀 Watch Ad & Earn ৳0.50</button></div>';
   }
 }
@@ -1365,7 +1311,7 @@ function startWatchAdRotation(){
   btn.style.opacity = '.5';
 
   var sec = 10;
-  box.innerHTML = 'অ্যাড লোড হচ্ছে... অনুগ্রহ করে <b style="color:var(--gold)">'+sec+'</b> সেকেন্ড অপেক্ষা করুন';
+  box.innerHTML = 'অ্যাড লোড হচ্ছে... অনুগ্রহ করে <b style="color:var(--orange)">'+sec+'</b> সেকেন্ড অপেক্ষা করুন';
 
   var linkIndex = (ME.adRotateCount || 0) % directLinksRotation.length;
   var targetUrl = directLinksRotation[linkIndex];
@@ -1373,7 +1319,7 @@ function startWatchAdRotation(){
   var int = setInterval(function(){
     sec--;
     if(sec > 0){ 
-      box.innerHTML = 'অ্যাড কাউন্টডাউন... অনুগ্রহ করে <b style="color:var(--gold)">'+sec+'</b> সেকেন্ড অপেক্ষা করুন'; 
+      box.innerHTML = 'অ্যাড কাউন্টডাউন... অনুগ্রহ করে <b style="color:var(--orange)">'+sec+'</b> সেকেন্ড অপেক্ষা করুন'; 
     } else {
       clearInterval(int);
       
@@ -1417,10 +1363,10 @@ function vPkg(){
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
     (pkgs.length ? pkgs.map(function(x){
       var imgTag = x.pkgImage ? '<img src="'+esc(x.pkgImage)+'" width="100%" height="90" style="object-fit:cover;border-radius:10px;margin-bottom:6px" alt="">' : '';
-      return '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:2px solid '+(x.hot?'var(--red)':'rgba(251,191,36,0.4)')+';border-radius:16px;padding:12px;text-align:center;position:relative">' +
+      return '<div style="background:linear-gradient(135deg,#131d38,#0b1224);border:2px solid '+(x.hot?'var(--red)':'rgba(249,115,22,0.4)')+';border-radius:16px;padding:12px;text-align:center;position:relative">' +
       (x.hot?'<div style="position:absolute;top:-8px;left:-8px;background:var(--red);color:#fff;font-size:9px;font-weight:bold;padding:2px 6px;border-radius:6px">🔥 HOT</div>':'') +
       imgTag +
-      '<b style="color:var(--gold);font-size:13px;display:block;margin-bottom:4px">'+esc(x.description)+'</b>' +
+      '<b style="color:var(--orange);font-size:13px;display:block;margin-bottom:4px">'+esc(x.description)+'</b>' +
       '<div style="font-size:11px;color:var(--mu)">মূল্য: <b>'+x.price+' BDT</b></div>' +
       '<div style="font-size:12px;color:var(--grn);margin:4px 0 8px">মিনিটে: <b>'+formatCompact(x.coinsPerMin)+' RS Coins</b></div>' +
       '<button class="btn s g" style="width:100%" onclick="go(\\'acc\\');depForm('+x.price+',\\''+esc(x.description)+'\\')">Buy Package</button>' +
@@ -1435,8 +1381,8 @@ function vRank(){
     api('leaderboard').then(function(a){
       if(!a.length){$('rk').innerHTML='<div class="row">No data.</div>';return}
       var p=[a[1],a[0],a[2]],cl=['','p1',''],rk=['#2','#1','#3'];
-      $('rk').innerHTML='<div class="pod">'+p.map(function(u,i){return u?'<div class="'+cl[i]+'">'+(i===1?'👑':'')+'<br>'+(u.avatar?'<img src="'+esc(u.avatar)+'" width="42" height="42" style="border-radius:50%;border:2px solid var(--gold);object-fit:cover;margin:4px auto;display:block">':'👤')+'<br>'+esc(u.name)+'<b style="color:var(--grn)">'+money(u.balance||0)+' BDT</b><small style="color:var(--gold)">'+formatCompact(u.rsCoins||0)+' RS Coins</small><small>'+rk[i]+'</small></div>':'<div></div>'}).join('')+'</div>'+
-      a.slice(3).map(function(u,i){return '<div class="row"><div style="display:flex;align-items:center;gap:10px">'+(u.avatar?'<img src="'+esc(u.avatar)+'" width="32" height="32" style="border-radius:50%;object-fit:cover">':'👤')+'<div>#'+(i+4)+' '+esc(u.name)+'<small style="color:var(--gold)">RS Coins: '+formatCompact(u.rsCoins||0)+'</small></div></div><b style="color:var(--grn)">'+money(u.balance||0)+' BDT</b></div>'}).join('')
+      $('rk').innerHTML='<div class="pod">'+p.map(function(u,i){return u?'<div class="'+cl[i]+'">'+(i===1?'👑':'')+'<br>'+(u.avatar?'<img src="'+esc(u.avatar)+'" width="42" height="42" style="border-radius:50%;border:2px solid var(--orange);object-fit:cover;margin:4px auto;display:block">':'👤')+'<br>'+esc(u.name)+'<b style="color:var(--grn)">'+money(u.balance||0)+' BDT</b><small style="color:var(--orange)">'+formatCompact(u.rsCoins||0)+' RS Coins</small><small>'+rk[i]+'</small></div>':'<div></div>'}).join('')+'</div>'+
+      a.slice(3).map(function(u,i){return '<div class="row"><div style="display:flex;align-items:center;gap:10px">'+(u.avatar?'<img src="'+esc(u.avatar)+'" width="32" height="32" style="border-radius:50%;object-fit:cover">':'👤')+'<div>#'+(i+4)+' '+esc(u.name)+'<small style="color:var(--orange)">RS Coins: '+formatCompact(u.rsCoins||0)+'</small></div></div><b style="color:var(--grn)">'+money(u.balance||0)+' BDT</b></div>'}).join('')
     }).catch(function(){})
   }
   load();
@@ -1504,7 +1450,7 @@ function vAcc(){
   '<div style="display:flex;gap:8px"><button class="btn g" style="flex:1" onclick="depForm()">Deposit ($ USD / BDT)</button>'+(isEmp?'':'<button class="btn r" style="flex:1" onclick="wdForm()">Withdraw</button>')+'</div>'+
   
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">' +
-  '<button class="btn" style="background:#1e293b;color:var(--gold);margin-top:0" onclick="openWdPopup()">💸 Withdrawal History</button>' +
+  '<button class="btn" style="background:#1e293b;color:var(--orange);margin-top:0" onclick="openWdPopup()">💸 Withdrawal History</button>' +
   '<button class="btn" style="background:#1e293b;color:var(--grn);margin-top:0" onclick="openDepPopup()">💳 Deposit History</button>' +
   '</div>' +
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:16px" onclick="admOpen()">Admin panel</button>' +
@@ -1520,8 +1466,8 @@ function renderLiveFeed(feed){
   if(!c) return;
   var shifted = feed.concat(feed.splice(0, Math.floor(Math.random() * feed.length)));
   c.innerHTML = shifted.map(function(f){
-    var badgeColor = f.type === 'dep' ? 'var(--grn)' : (f.type === 'wd' ? 'var(--red)' : (f.type === 'shop' ? 'var(--gold)' : 'var(--blu)'));
-    return '<div style="font-size:11.5px;color:var(--mu);padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between;align-items:center"><span><b style="color:'+badgeColor+'">●</b> <b>'+esc(f.name)+'</b> '+esc(f.action)+'</span><span style="color:var(--gold);font-size:10px">'+esc(f.time)+'</span></div>';
+    var badgeColor = f.type === 'dep' ? 'var(--grn)' : (f.type === 'wd' ? 'var(--red)' : (f.type === 'shop' ? 'var(--orange)' : 'var(--blu)'));
+    return '<div style="font-size:11.5px;color:var(--mu);padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between;align-items:center"><span><b style="color:'+badgeColor+'">●</b> <b>'+esc(f.name)+'</b> '+esc(f.action)+'</span><span style="color:var(--orange);font-size:10px">'+esc(f.time)+'</span></div>';
   }).join('');
 }
 
@@ -1530,7 +1476,7 @@ function openWdPopup(){
     var content = a.length ? a.map(function(w){
       return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' BDT <span class="chip '+(w.status==='pending'?'pending':w.status)+'">'+w.status+'</span></div></div>';
     }).join('') : '<div class="row">No withdrawals.</div>';
-    modal('<h3 style="color:var(--gold)">💸 Withdrawal History & Pending</h3><div style="max-height:60vh;overflow-y:auto">'+content+'</div><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>');
+    modal('<h3 style="color:var(--orange)">💸 Withdrawal History & Pending</h3><div style="max-height:60vh;overflow-y:auto">'+content+'</div><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>');
   });
 }
 
@@ -1590,7 +1536,7 @@ function cancelCircleHold(){
 }
 
 function wdForm(){
-  modal('<h3 style="color:var(--gold);text-align:center">Withdraw Form</h3>' +
+  modal('<h3 style="color:var(--orange);text-align:center">Withdraw Form</h3>' +
   '<div class="row" style="background:#0b1224;display:block;margin-bottom:10px">' +
   '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Username:</span><b>'+esc(ME.name)+'</b></div>' +
   '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">User ID:</span><b>RSGM-'+ME.id.slice(-6).toUpperCase()+'</b></div>' +
@@ -1616,20 +1562,20 @@ function doWd(){
 
 function depForm(presetAmount, pkgName){
   var presetUsd = presetAmount ? (presetAmount / 120).toFixed(2) : '';
-  modal('<h3 style="color:var(--gold);text-align:center">Deposit Fund ($ USD / BDT)</h3>' +
+  modal('<h3 style="color:var(--orange);text-align:center">Deposit Fund ($ USD / BDT)</h3>' +
   '<div class="row" style="background:#0b1224;display:block;margin-bottom:10px">' +
   '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Username:</span><b>'+esc(ME.name)+'</b></div>' +
   '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">User ID:</span><b>RSGM-'+ME.id.slice(-6).toUpperCase()+'</b></div>' +
-  '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Current USD Balance:</span><b style="color:var(--gold)">$'+(ME.balance/120).toFixed(2)+'</b></div>' +
+  '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Current USD Balance:</span><b style="color:var(--orange)">$'+(ME.balance/120).toFixed(2)+'</b></div>' +
   '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Date:</span><b>'+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</b></div>' +
   '</div>' +
   '<div style="display:flex;gap:10px;margin-bottom:10px">' +
-  '<div id="payBkash" style="flex:1;background:#131d38;border:2px solid var(--gold);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\\'bKash\\')"><b style="color:#e11d48">bKash</b></div>' +
+  '<div id="payBkash" style="flex:1;background:#131d38;border:2px solid var(--orange);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\\'bKash\\')"><b style="color:#e11d48">bKash</b></div>' +
   '<div id="payNagad" style="flex:1;background:#131d38;border:2px solid var(--line);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\\'Nagad\\')"><b style="color:#f97316">Nagad</b></div>' +
   '</div>' +
   '<div class="tdw" style="text-align:center"><b>Official Number:</b> <span style="color:var(--grn);font-weight:bold" id="offNumText">01951639460</span> <button class="copy-btn-inline" onclick="copyDepNum()">Copy</button><br><small>1. Send money to this number.<br>2. Enter TrxID and Last 3 Digits below.</small></div>' +
   '<label>Deposit Amount (৳ BDT)</label><input id="da" type="number" value="'+(presetAmount||'')+'" placeholder="200 - 15000" oninput="calcUsdDep(this.value)">' +
-  '<label>Equivalent USD ($)</label><input id="dau" readonly value="'+(presetUsd? '$'+presetUsd : '$0.00')+'" style="color:var(--gold);font-weight:bold">' +
+  '<label>Equivalent USD ($)</label><input id="dau" readonly value="'+(presetUsd? '$'+presetUsd : '$0.00')+'" style="color:var(--orange);font-weight:bold">' +
   '<label>Transaction ID (TrxID)</label><input id="dtx" placeholder="Enter Transaction ID">' +
   '<label>Last 3 Digits (Mandatory)</label><input id="dlast" maxlength="3" placeholder="123">' +
   
@@ -1656,10 +1602,10 @@ window.currentDepMethod = 'bKash';
 function setDepMethod(m){
   window.currentDepMethod = m;
   if(m === 'bKash'){
-    $('payBkash').style.borderColor = 'var(--gold)';
+    $('payBkash').style.borderColor = 'var(--orange)';
     $('payNagad').style.borderColor = 'var(--line)';
   } else {
-    $('payNagad').style.borderColor = 'var(--gold)';
+    $('payNagad').style.borderColor = 'var(--orange)';
     $('payBkash').style.borderColor = 'var(--line)';
   }
 }
@@ -1673,11 +1619,11 @@ function executeDeposit(pkgName){
     '<div class="row" style="background:#0b1224;display:block;margin-bottom:10px">' +
     '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Username:</span><b>'+esc(ME.name)+'</b></div>' +
     '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">User ID:</span><b>RSGM-'+ME.id.slice(-6).toUpperCase()+'</b></div>' +
-    '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Order No:</span><b style="color:var(--gold)">'+esc(dep.serialNo||'#D-772391')+'</b></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Order No:</span><b style="color:var(--orange)">'+esc(dep.serialNo||'#D-772391')+'</b></div>' +
     '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Deposit Amount:</span><b style="color:var(--grn)">৳'+money(dep.amount)+' ($'+(dep.amount/120).toFixed(2)+' USD)</b></div>' +
-    '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Status:</span><b style="color:var(--gold)">Pending (Verification in progress)</b></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Status:</span><b style="color:var(--orange)">Pending (Verified via E-Wallet)</b></div>' +
     '</div>' +
-    '<div class="tdw" style="text-align:center">⏱️ এডমিন অনুমোদন করলে ব্যালেন্স ডলারে যুক্ত হবে।</div>' +
+    '<div class="tdw" style="text-align:center">⏱️ ই-ওয়ালেট (E-Wallet) থেকে এপ্রুভ হলে ব্যালেন্স যুক্ত হবে।</div>' +
     '<button class="btn" style="background:#1e293b;color:#fff" onclick="closeM();vAcc()">OK, Go Back</button>');
   }).catch(function(e){
     toast(e.message);
@@ -1690,7 +1636,7 @@ var DUA=[
 ["৩. আত্তাহিয়্যাতু","التَّحِيَّاتُ لِلَّهِ","আত্তাহিয়্যাতু লিল্লাহি...","সমস্ত সম্মান আল্লাহর জন্য।"]];
 var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
 var HD=[["কাজ নিয়তের ওপর নির্ভরশীল।","সহিহ বুখারি ১"]];
-function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\\''+p+'\\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
+function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\\''+p+'\\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--orange)">&rsaquo;</span></div>'}
 function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\\''+p+'\\')">&lsaquo; ফিরে যান</button>'}
 function vBook(){bk('menu')}
 function nmF(){var q=($('nq').value||'').trim().toLowerCase(),a=NML.filter(function(x){return !q||x.toLowerCase().indexOf(q)>=0});
@@ -1703,15 +1649,15 @@ function bk(p){var h='';
   $('main').innerHTML=h;$('main').scrollTop=0;
   api('names/'+p).then(function(a){NML=a;nmF()}).catch(function(e){var l=$('nl');if(l)l.textContent=e.message});return}
  else if(p==='dua'){h=bkBack('menu')+'<h3>নামাজের দোয়া</h3>'+DUA.map(function(d){return '<div class="bkc"><b>'+esc(d[0])+'</b><div class="ar">'+esc(d[1])+'</div><small>অর্থ: '+esc(d[3])+'</small></div>'}).join('')}
- else if(p==='rakat'){h=bkBack('menu')+'<h3>পাঁচ ওয়াক্ত নামাজ</h3>'+RK.map(function(r){return '<div class="row"><div><b style="color:var(--gold)">'+r[0]+'</b></div><div>'+r[1]+'</div></div>'}).join('')}
+ else if(p==='rakat'){h=bkBack('menu')+'<h3>পাঁচ ওয়াক্ত নামাজ</h3>'+RK.map(function(r){return '<div class="row"><div><b style="color:var(--orange)">'+r[0]+'</b></div><div>'+r[1]+'</div></div>'}).join('')}
  else if(p==='hadith'){h=bkBack('menu')+'<h3>হাদিস</h3>'+HD.map(function(x){return '<div class="bkc">'+esc(x[0])+'<small>সূত্র: '+esc(x[1])+'</small></div>'}).join('')}
  $('main').innerHTML=h;$('main').scrollTop=0}
 
-var ATABS=[['ov','📊','ওভারভিউ'],['wd','💸','উত্তোলন'],['dep','💳','ডিপোজিট'],['ctask','📢','প্রমোশন'],['shop','🛍️','প্যাকেজ ও শপ'],['slider','🖼️','স্লাইডার কন্ট্রোল'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ']];
+var ATABS=[['shop','🛍️','প্যাকেজ ও শপ কন্ট্রোল'],['slider','🖼️','স্লাইডার কন্ট্রোল'],['us','🟢','অ্যাক্টিভ ইউজার']];
 function ah(){return{'x-admin-pass':ADM}}
 
 function admOpen(){
-  modal('<div style="text-align:center"><h3 style="color:var(--gold);font-size:16px;margin-bottom:6px">⚠️ Warning: Admin Access Only!</h3>' +
+  modal('<div style="text-align:center"><h3 style="color:var(--orange);font-size:16px;margin-bottom:6px">⚠️ Warning: Admin Access Only!</h3>' +
   '<p style="font-size:12px;color:var(--mu);margin-bottom:12px">সাধারণ ইউজারদের জন্য এই প্যানেলটি নিষিদ্ধ। এডমিন পাসওয়ার্ড দিন:</p>' +
   '<input id="adminPassInput" type="password" placeholder="Enter Admin Password" style="margin-bottom:12px">' +
   '<button class="btn g" style="margin-top:0" onclick="verifyAdminPass()">Confirm Access</button>' +
@@ -1726,7 +1672,7 @@ function verifyAdminPass(){
     closeM();
     $('adm').className='adm on';
     $('anav').innerHTML=ATABS.map(function(t){return '<div id="a_'+t[0]+'" onclick="admGo(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
-    admGo('ov');
+    admGo('shop');
   }).catch(function(){
     toast('Wrong admin password.');
     ADM='';
@@ -1736,63 +1682,7 @@ function verifyAdminPass(){
 function admClose(){$('adm').className='adm'}
 function aErr(e){if(e.message==='Wrong admin password.'){toast(e.message);admClose()}else $('abody').innerHTML='<div class="row">'+esc(e.message)+'</div>'}
 function admGo(t){ATABS.forEach(function(x){var el=$('a_'+x[0]);if(el)el.className=x[0]===t?'on':''});$('abody').innerHTML='<div class="row">Loading...</div>';
- ({ov:aOv,wd:aWd,dep:aDep,ctask:aCTask,shop:aShopCtrl,slider:aSliderCtrl,sp:aSp,us:aUs})[t]()}
-function sc(a){return a.map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('')}
-function aOv(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
- $('abody').innerHTML='<h3>আজকের হিসাব</h3><div class="grid">'+sc([['মোট ইউজার',s.users],['আজ ঢুকেছে',s.active],['ডিপোজিট পেন্ডিং',s.depPending],['অপেক্ষমাণ টাস্ক',s.pendingTasks]])+'</div>'}).catch(aErr)}
-function decI(i,ok){var w=AD.wds[i];api('admin/wd/'+w._id,'POST',{ok:!!ok},ah()).then(aWd).catch(aErr)}
-
-function aWd(){
-  api('admin/wd-list','GET',null,ah()).then(function(d){
-    AD.wds = d.pending;
-    $('abody').innerHTML = '<h3>অপেক্ষমাণ উত্তোলন (Real-time & Copy)</h3>' +
-    (d.pending.length ? d.pending.map(function(w, i){
-      var timeStr = new Date(w.at).toLocaleTimeString();
-      return '<div class="th">' +
-      '<div class="hd"><span>'+esc(w.name)+'</span><span style="color:var(--gold)">৳'+money(w.amount)+'</span></div>' +
-      '<div style="font-size:13px">' +
-      'Method: <b>'+esc(w.method)+'</b><br>' +
-      'Phone: <b id="wdPhone'+i+'">'+esc(w.phone)+'</b> <button class="admin-copy-btn" onclick="copyAdminText(\\'wdPhone'+i+'\\')">Copy</button><br>' +
-      '<small style="color:var(--mu)">সময়: '+timeStr+'</small>' +
-      '</div>' +
-      '<div class="gap"><button class="btn s g" onclick="decI('+i+',1)">Success</button><button class="btn s r" onclick="decI('+i+',0)">Reject</button></div>' +
-      '</div>';
-    }).join('') : '<div class="row">কোনো পেন্ডিং উইথড্র নেই।</div>');
-  }).catch(aErr);
-}
-
-function decDep(i,ok){var d=AD.deps[i];api('admin/dep/'+d._id,'POST',{ok:!!ok},ah()).then(aDep).catch(aErr)}
-
-function aDep(){
-  api('admin/dep-list','GET',null,ah()).then(function(d){
-    AD.deps = d.pending;
-    $('abody').innerHTML = '<h3>অপেক্ষমাণ ডিপোজিট ও প্যাকেজ রিকোয়েস্ট (Real-time & Copy)</h3>' +
-    (d.pending.length ? d.pending.map(function(dep, i){
-      var timeStr = new Date(dep.at).toLocaleTimeString();
-      return '<div class="th">' +
-      '<div class="hd"><span>'+esc(dep.name)+'</span><span style="color:var(--gold)">৳'+money(dep.amount)+' ($'+(dep.amount/120).toFixed(2)+' USD)</span></div>' +
-      '<div style="font-size:13px">' +
-      'Method: <b>'+esc(dep.method)+'</b><br>' +
-      'Package/Type: <b style="color:var(--grn)">'+esc(dep.pkgName || 'Custom Deposit')+'</b><br>' +
-      'TrxID: <b id="depTrx'+i+'">'+esc(dep.txid)+'</b> <button class="admin-copy-btn" onclick="copyAdminText(\\'depTrx'+i+'\\')">Copy Trx</button><br>' +
-      'Last 3 Digits: <b>'+esc(dep.lastDigits)+'</b><br>' +
-      '<small style="color:var(--mu)">সময়: '+timeStr+' | Order: '+esc(dep.serialNo)+'</small>' +
-      '</div>' +
-      '<div class="gap"><button class="btn s g" onclick="decDep('+i+',1)">Approve & Add USD</button><button class="btn s r" onclick="decDep('+i+',0)">Reject</button></div>' +
-      '</div>';
-    }).join('') : '<div class="row">কোনো পেন্ডিং ডিপোজিট বা প্যাকেজ নেই।</div>');
-  }).catch(aErr);
-}
-
-function copyAdminText(elemId){
-  var el = $(elemId);
-  if(!el) return;
-  navigator.clipboard.writeText(el.innerText).then(function(){
-    toast('Copied: ' + el.innerText);
-  }).catch(function(){
-    toast('Copy failed');
-  });
-}
+ ({shop:aShopCtrl,slider:aSliderCtrl,us:aUs})[t]()}
 
 function aShopCtrl(){
   api('admin/user-packages','GET',null,ah()).then(function(userPkgs){
@@ -1810,23 +1700,23 @@ function aShopCtrl(){
       '<button class="btn g" onclick="addUserPkg()">ইউজার প্যাকেজ যোগ করুন</button>' +
       '</div>' +
       '<h3>বিদ্যমান ইউজার প্যাকেজসমূহ</h3>' +
-      (userPkgs.length ? userPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.description)+'</span><span style="color:var(--gold)">৳'+p.price+'</span></div><small>Coins/Min: '+p.coinsPerMin+' | Hot: '+p.hot+'</small><button class="btn s r" style="margin-top:6px" onclick="delUserPkg(\\''+p._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>') +
+      (userPkgs.length ? userPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.description)+'</span><span style="color:var(--orange)">৳'+p.price+'</span></div><small>Coins/Min: '+p.coinsPerMin+' | Hot: '+p.hot+'</small><button class="btn s r" style="margin-top:6px" onclick="delUserPkg(\\''+p._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>') +
       '<hr style="border-color:var(--line);margin:16px 0">' +
-      '<h3>🛍️ আর এস গ্যালারি ও প্রমোশন প্যাকেজ কন্ট্রোল</h3>' +
+      '<h3>🛍️ TikTok/Facebook/YouTube ও প্রমোশন প্যাকেজ কন্ট্রোল (Full Image & Details Edit)</h3>' +
       '<div class="card" style="margin-bottom:12px">' +
-      '<label>প্যাকেজের নাম</label><input id="apTitle" placeholder="যেমন: RS Gallery Shirt Featured">' +
-      '<label>ক্যাটাগরি</label><input id="apCat" placeholder="RS Gallery / Social Media">' +
-      '<label>পরিমাণ/ফলোয়ার</label><input id="apFol" type="number" placeholder="500">' +
+      '<label>প্যাকেজের নাম (যেমন: TikTok/FB Followers)</label><input id="apTitle" placeholder="TikTok 1000 Followers">' +
+      '<label>ক্যাটাগরি</label><input id="apCat" placeholder="TikTok / Facebook / YouTube">' +
+      '<label>পরিমাণ/ফলোয়ার</label><input id="apFol" type="number" placeholder="1000">' +
       '<label>মূল্য (BDT)</label><input id="apPrice" type="number" placeholder="150">' +
       '<label>প্যাকেজ পিকচার আপলোড করুন (গ্যালারি থেকে)</label>' +
       '<input type="file" id="apFile" accept="image/*" style="display:none" onchange="uploadPkgImg(this)">' +
       '<div class="img-upload-btn" onclick="$(\\'apFile\\').click()">➕ গ্যালারি থেকে ছবি যুক্ত করুন</div>' +
       '<input id="apIcon" placeholder="বা ছবির URL দিন" style="margin-top:6px">' +
-      '<label>বিবরণ</label><input id="apDesc" placeholder="ছোট বিবরণ">' +
+      '<label>বিবরণ ও ডিটেইলস</label><input id="apDesc" placeholder="বিস্তারিত বিবরণ লিখুন">' +
       '<button class="btn g" onclick="addPromoPkg()">প্রমোশন প্যাকেজ যোগ করুন</button>' +
       '</div>' +
-      '<h3>বিদ্যমান প্যাকেজসমূহ</h3>' +
-      (promoPkgs.length ? promoPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.title)+'</span><span style="color:var(--gold)">৳'+p.price+'</span></div><small>Category: '+esc(p.category)+'</small><button class="btn s r" style="margin-top:6px" onclick="delPromoPkg(\\''+p._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>');
+      '<h3>বিদ্যমান প্রমোশন প্যাকেজসমূহ</h3>' +
+      (promoPkgs.length ? promoPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.title)+'</span><span style="color:var(--orange)">৳'+p.price+'</span></div><small>Category: '+esc(p.category)+'</small><button class="btn s r" style="margin-top:6px" onclick="delPromoPkg(\\''+p._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>');
     }).catch(aErr);
   }).catch(aErr);
 }
@@ -1868,7 +1758,7 @@ function aSliderCtrl(){
     '<button class="btn g" onclick="addSlider()">স্লাইড ব্যানার যোগ করুন</button>' +
     '</div>' +
     '<h3>সক্রিয় স্লাইডার ব্যানারসমূহ</h3>' +
-    (sliders.length ? sliders.map(s => '<div class="th"><div class="hd"><span>'+esc(s.title)+'</span><span style="color:var(--gold)">টাইমার: '+s.timerSeconds+'s</span></div><small>Link: '+esc(s.link)+'</small><button class="btn s r" style="margin-top:6px" onclick="delSlider(\\''+s._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো স্লাইডার নেই।</div>');
+    (sliders.length ? sliders.map(s => '<div class="th"><div class="hd"><span>'+esc(s.title)+'</span><span style="color:var(--orange)">টাইমার: '+s.timerSeconds+'s</span></div><small>Link: '+esc(s.link)+'</small><button class="btn s r" style="margin-top:6px" onclick="delSlider(\\''+s._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো স্লাইডার নেই।</div>');
   }).catch(aErr);
 }
 
@@ -1927,21 +1817,6 @@ function delPromoPkg(id){
   api('admin/promo-packages/delete/'+id,'POST',null,ah()).then(() => { toast('প্যাকেজ ডিলিট হয়েছে!'); aShopCtrl(); }).catch(aErr);
 }
 
-function aCTask(){
-  api('admin/custom-tasks','GET',null,ah()).then(function(tasks){
-    $('abody').innerHTML='<h3>অপেক্ষমাণ প্রমোশন টাস্কসমূহ</h3>' +
-    (tasks.length ? tasks.map(function(t, i){
-      return '<div class="th"><div class="hd"><span>'+esc(t.title)+' ('+esc(t.platform)+')</span><span style="color:var(--gold)">Budget: '+t.totalBudget+' BDT</span></div><div style="font-size:13px">Link: <a href="'+esc(t.link)+'" target="_blank">'+esc(t.link)+'</a><br>Reward/Worker: '+t.reward+' BDT | Target: '+t.targetWorkers+'</div><div class="gap"><button class="btn s g" onclick="decCTask(\\''+t._id+'\\',1)">Approve</button><button class="btn s r" onclick="decCTask(\\''+t._id+'\\',0)">Reject</button></div></div>';
-    }).join('') : '<div class="row">কোনো পেন্ডিং প্রমোশন টাস্ক নেই।</div>');
-  }).catch(aErr);
-}
-function decCTask(id, ok){
-  api('admin/custom-tasks/'+id,'POST',{ok:!!ok},ah()).then(aCTask).catch(aErr);
-}
-
-function repI(i){var t=$('rp'+i).value.trim();if(!t)return;api('admin/reply','POST',{uid:AD.th[i].uid,text:t},ah()).then(aSp).catch(aErr)}
-function aSp(){api('admin/support','GET',null,ah()).then(function(d){AD.th=d;
- $('abody').innerHTML=d.length?d.map(function(t,i){return '<div class="th"><div class="hd"><span>'+esc(t.name)+'</span></div><div class="chat" style="max-height:30vh">'+t.msgs.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join('')+'</div><textarea id="rp'+i+'" rows="2" maxlength="500" placeholder="উত্তর লিখুন"></textarea><button class="btn s" style="margin-top:8px" onclick="repI('+i+')">Send</button></div>'}).join(''):'<div class="row">কোনো মেসেজ নেই</div>'}).catch(aErr)}
 function aUs(){api('admin/users','GET',null,ah()).then(function(d){
  $('abody').innerHTML='<h3>অ্যাক্টিভ ইউজার</h3>'+(d.active.map(function(u){return '<div class="row"><div>'+esc(u.name)+' ('+esc(u.role)+')<small>'+esc(u.phone)+'</small></div></div>'}).join('')||'<div class="row">কেউ নেই</div>')}).catch(aErr)}
 
@@ -1971,14 +1846,11 @@ app.get('/api/assistant/summary', h(async (q, s) => {
   const wdPendingCount = await Wd.countDocuments({ status: 'pending' });
   const wdPendingAmount = await sumOf(Wd, { status: 'pending' }, 'amount');
   const wdToday = await Wd.countDocuments({ at: { $gte: st } });
-  const wdList = await Wd.find({ status: 'pending' }).sort({ at: -1 }).limit(5).select('name amount method -_id').lean();
 
   const depPendingCount = await Deposit.countDocuments({ status: 'pending' });
   const depPendingAmount = await sumOf(Deposit, { status: 'pending' }, 'amount');
   const depApprovedCount = await Deposit.countDocuments({ status: 'approved', at: { $gte: st } });
   const depApprovedAmount = await sumOf(Deposit, { status: 'approved', at: { $gte: st } }, 'amount');
-  const depListRaw = await Deposit.find({ status: 'pending' }).sort({ at: -1 }).limit(5).select('name amount method pkgName -_id').lean();
-  const depList = depListRaw.map(d => ({ name: d.name, amount: d.amount, method: d.method, package: d.pkgName }));
 
   const tPending = await Click.countDocuments({ status: 'pending' });
   const tSuccess = await Click.countDocuments({ status: 'success' });
@@ -1992,8 +1864,8 @@ app.get('/api/assistant/summary', h(async (q, s) => {
     ok: true,
     date: new Date(Date.now() + 6 * 36e5).toISOString().slice(0, 10),
     users: { total: usersTotal, activeToday: usersActive, newToday: usersNew },
-    withdrawals: { pendingCount: wdPendingCount, pendingAmount: wdPendingAmount, requestedToday: wdToday, pendingList: wdList },
-    deposits: { pendingCount: depPendingCount, pendingAmount: depPendingAmount, approvedTodayCount: depApprovedCount, approvedTodayAmount: depApprovedAmount, pendingList: depList },
+    withdrawals: { pendingCount: wdPendingCount, pendingAmount: wdPendingAmount, requestedToday: wdToday },
+    deposits: { pendingCount: depPendingCount, pendingAmount: depPendingAmount, approvedTodayCount: depApprovedCount, approvedTodayAmount: depApprovedAmount },
     tasks: { pending: tPending, success: tSuccess, cancelled: tCancelled },
     promoTasksPending: promoPending,
     totalUserBalance: totalBalance,
@@ -2047,7 +1919,6 @@ app.get('/api/assistant/details', h(async (q, s) => {
   const st = dayStart();
   const deps = await Deposit.find({ status: 'pending' }).sort({ at: -1 }).limit(10).lean();
   const depsToday = await Deposit.find({ at: { $gte: st } }).sort({ at: -1 }).limit(10).lean();
-  const wds = await Wd.find({ status: 'pending' }).sort({ at: -1 }).limit(10).lean();
 
   const mapDep = d => ({
     name: d.name,
@@ -2064,13 +1935,6 @@ app.get('/api/assistant/details', h(async (q, s) => {
   s.json({
     ok: true,
     pendingDeposits: deps.map(mapDep),
-    todayDeposits: depsToday.map(mapDep),
-    pendingWithdrawals: wds.map(x => ({
-      name: x.name,
-      amount: x.amount,
-      method: x.method,
-      number: x.phone,
-      time: x.at
-    }))
+    todayDeposits: depsToday.map(mapDep)
   });
 }));
