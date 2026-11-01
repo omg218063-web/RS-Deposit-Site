@@ -1,313 +1,329 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const crypto = require('crypto');
+Const express = require('express');
+Const mongoose = require('mongoose');
+Const crypto = require('crypto');
 
-const app = express();
-const PORT = process.env.PORT || 10000;
+Const app = express();
+Const PORT = process.env.PORT || 10000;
 
-const SECRET = process.env.SECRET || crypto.randomBytes(32).toString('hex');
-const ADMIN_PASS = process.env.ADMIN_PASSWORD || '';
-const GID = process.env.GOOGLE_CLIENT_ID || '';
+Const SECRET = process.env.SECRET || crypto.randomBytes(32).toString('hex');
+Const ADMIN_PASS = process.env.ADMIN_PASSWORD || '';
+Const GID = process.env.GOOGLE_CLIENT_ID || '';
 
-const ADGEM_APP_ID = process.env.ADGEM_APP_ID || '';
-const ADGEM_POSTBACK_KEY = process.env.ADGEM_POSTBACK_KEY || '';
+Const ADGEM_APP_ID = process.env.ADGEM_APP_ID || '';
+Const ADGEM_POSTBACK_KEY = process.env.ADGEM_POSTBACK_KEY || '';
 
-const CPAGRIP_USER_ID = process.env.CPAGRIP_USER_ID || '';
-const CPAGRIP_KEY = process.env.CPAGRIP_KEY || '';
-const CPAGRIP_FEED_URL = process.env.CPAGRIP_FEED_URL || '';
+Const CPAGRIP_USER_ID = process.env.CPAGRIP_USER_ID || '';
+Const CPAGRIP_KEY = process.env.CPAGRIP_KEY || '';
+Const CPAGRIP_FEED_URL = process.env.CPAGRIP_FEED_URL || '';
 
-const RATE = Number(process.env.BDT_PER_USD) || 120;
+Const RATE = Number(process.env.BDT_PER_USD) || 120;
 
-const TW_SECRET = process.env.TIMEWALL_SECRET || '';
-const TW_RATE = Number(process.env.TIMEWALL_RATE) || 65;
-const TW_URL = process.env.TIMEWALL_URL || '';
-const TW_IP_CHECK = false;
-const TW_IPS = ['18.156.132.55', '51.81.120.73', '142.111.248.18'];
+Const TW_SECRET = process.env.TIMEWALL_SECRET || '';
+Const TW_RATE = Number(process.env.TIMEWALL_RATE) || 65;
+Const TW_URL = process.env.TIMEWALL_URL || '';
+Const TW_IP_CHECK = false;
+Const TW_IPS = ['18.156.132.55', '51.81.120.73', '142.111.248.18'];
 
-const MIN_AGE = 18;
-const CO = {
-  n: 'RS Growth Matrix', e: 'omg218063@gmail.com', p: '01764024069', y: 2026,
-  tg: 'rkrana33', wa: '8801764024069', fb: 'https://www.facebook.com/share/1CAK8sYqDw/', age: MIN_AGE,
-  d: 'RS Growth Matrix একটি টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম। এখানে সহজ টাস্ক, দৈনিক বোনাস, অ্যাড দেখে ইনকাম ও লাকি ড্রয়ের মাধ্যমে ব্যালেন্স জমিয়ে bKash বা Nagad-এ উত্তোলন করা যায়। এছাড়া আমাদের কোলাবোরেশন পার্টনার আর এস গ্যালারি শপ (RS Gallery Shop) থেকে আপনার জমানো ইনকামের টাকা দিয়ে খুব সহজেই দেশি-বিদেশি আকর্ষণীয় কাপড়চোপড় ও ফ্যাশন আইটেম কেনাকাটা করতে পারবেন।'
+Const MIN_AGE = 18;
+Const CO = {
+  N: 'RS Growth Matrix', e: 'omg218063@gmail.com', p: '01764024069', y: 2026,
+  Tg: 'rkrana33', wa: '8801764024069', fb: 'https://www.facebook.com/share/1CAK8sYqDw/', age: MIN_AGE,
+  D: 'RS Growth Matrix একটি টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম। এখানে সহজ টাস্ক, দৈনিক বোনাস, অ্যাড দেখে ইনকাম ও লাকি ড্রয়ের মাধ্যমে ব্যালেন্স জমিয়ে bKash বা Nagad-এ উত্তোলন করা যায়। এছাড়া আমাদের কোলাবোরেশন পার্টনার আর এস গ্যালারি শপ (RS Gallery Shop) থেকে আপনার জমানো ইনকামের টাকা দিয়ে খুব সহজেই দেশি-বিদেশি আকর্ষণীয় কাপড়চোপড় ও ফ্যাশন আইটেম কেনাকাটা করতে পারবেন।'
 };
 
-const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
-const PENDING_HOURS = 48;
-const SPIN = [[1, 40], [2, 30], [3, 20], [5, 10]];
-const MAX_USD = 5;
-const COUNTRY_FILTER = true;
-const TARGETS = ['BD', 'IN', 'PK', 'NP'];
-const BLOCK_CATS = ['signup', 'signups', 'deposit', 'deposits', 'creditcard', 'creditcards', 'oneclick', 'multireward', 'freetrial', 'freetrials', 'shopping', 'extension', 'extensions'];
+Const REF_BONUS = 10, DAILY = 2, CHECKIN = 4, MIN_WD = 300, MAX_WD = 5000, SLOTS = 50;
+Const PENDING_HOURS = 48;
+Const SPIN = [[1, 40], [2, 30], [3, 20], [5, 10]];
+Const MAX_USD = 5;
+Const COUNTRY_FILTER = true;
+Const TARGETS = ['BD', 'IN', 'PK', 'NP'];
+Const BLOCK_CATS = ['signup', 'signups', 'deposit', 'deposits', 'creditcard', 'creditcards', 'oneclick', 'multireward', 'freetrial', 'freetrials', 'shopping', 'extension', 'extensions'];
 app.use(express.json({ limit: '10mb' }));
 
-let NAMES = { boys: [], girls: [] };
-try { NAMES = require('./names.js'); } catch (e) { console.error('names.js not found:', e.message); }
+Let NAMES = { boys: [], girls: [] };
+Try { NAMES = require('./names.js'); } catch (e) { console.error('names.js not found:', e.message); }
 
-if (!process.env.MONGO_URI) console.error('MONGO_URI is not set: accounts cannot be saved.');
+If (!process.env.MONGO_URI) console.error('MONGO_URI is not set: accounts cannot be saved.');
 else mongoose.connect(process.env.MONGO_URI).then(async () => {
-  console.log('MongoDB connected');
-  try { await User.syncIndexes(); console.log('User indexes synced'); } catch (e) { console.error('Index sync error:', e.message); }
+  Console.log('MongoDB connected');
+  Try { await User.syncIndexes(); console.log('User indexes synced'); } catch (e) { console.error('Index sync error:', e.message); }
 }).catch(e => console.error('MongoDB error:', e.message));
 
-const User = mongoose.model('User', new mongoose.Schema({
-  name: String, nameKey: { type: String, unique: true, sparse: true }, phone: String,
-  email: { type: String, unique: true, sparse: true }, hash: String, salt: String,
-  role: { type: String, default: 'worker' },
-  balance: { type: Number, default: 0 }, earned: { type: Number, default: 0 },
-  rsCoins: { type: Number, default: 0 },
-  activePkg: { type: Object, default: null },
-  refCode: { type: String, unique: true }, refBy: String,
-  refEarn: { type: Number, default: 0 }, refCount: { type: Number, default: 0 },
-  avatar: { type: String, default: '' },
-  lastDaily: { type: Number, default: 0 }, lastCheckin: String, lastSpin: { type: Number, default: 0 }, lastAdWatch: { type: Number, default: 0 },
-  adRotateCount: { type: Number, default: 0 }, adCooldownUntil: { type: Number, default: 0 },
-  lastSeen: Number, created: { type: Date, default: Date.now }
+Const User = mongoose.model('User', new mongoose.Schema({
+  Name: String, nameKey: { type: String, unique: true, sparse: true }, phone: String,
+  Email: { type: String, unique: true, sparse: true }, hash: String, salt: String,
+  Role: { type: String, default: 'worker' },
+  Balance: { type: Number, default: 0 }, earned: { type: Number, default: 0 },
+  RsCoins: { type: Number, default: 0 },
+  ActivePkg: { type: Object, default: null },
+  RefCode: { type: String, unique: true }, refBy: String,
+  RefEarn: { type: Number, default: 0 }, refCount: { type: Number, default: 0 },
+  Avatar: { type: String, default: '' },
+  LastDaily: { type: Number, default: 0 }, lastCheckin: String, lastSpin: { type: Number, default: 0 }, lastAdWatch: { type: Number, default: 0 },
+  AdRotateCount: { type: Number, default: 0 }, adCooldownUntil: { type: Number, default: 0 },
+  LastSeen: Number, created: { type: Date, default: Date.now }
 }));
-const Click = mongoose.model('Click', new mongoose.Schema({ uid: String, offerId: String, title: String, icon: String, bdt: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now }, doneAt: Number }));
-const Conv = mongoose.model('Conv', new mongoose.Schema({ key: { type: String, unique: true }, uid: String, tx: String, bdt: Number, status: String, at: { type: Date, default: Date.now } }));
-const Wd = mongoose.model('Wd', new mongoose.Schema({ uid: String, name: String, amount: Number, method: String, phone: String, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
-const Deposit = mongoose.model('Deposit', new mongoose.Schema({ uid: String, name: String, amount: Number, method: String, txid: String, lastDigits: String, pkgName: String, serialNo: String, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
-const Msg = mongoose.model('Msg', new mongoose.Schema({ uid: String, name: String, from: String, text: String, at: { type: Date, default: Date.now } }));
-const CustomTask = mongoose.model('CustomTask', new mongoose.Schema({ uid: String, platform: String, title: String, link: String, reward: Number, targetWorkers: Number, totalBudget: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
+Const Click = mongoose.model('Click', new mongoose.Schema({ uid: String, offerId: String, title: String, icon: String, bdt: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now }, doneAt: Number }));
+Const Conv = mongoose.model('Conv', new mongoose.Schema({ key: { type: String, unique: true }, uid: String, tx: String, bdt: Number, status: String, at: { type: Date, default: Date.now } }));
+Const Wd = mongoose.model('Wd', new mongoose.Schema({ uid: String, name: String, amount: Number, method: String, phone: String, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
+Const Deposit = mongoose.model('Deposit', new mongoose.Schema({ uid: String, name: String, amount: Number, method: String, txid: String, lastDigits: String, pkgName: String, serialNo: String, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
+Const Msg = mongoose.model('Msg', new mongoose.Schema({ uid: String, name: String, from: String, text: String, at: { type: Date, default: Date.now } }));
+Const CustomTask = mongoose.model('CustomTask', new mongoose.Schema({ uid: String, platform: String, title: String, link: String, reward: Number, targetWorkers: Number, totalBudget: Number, status: { type: String, default: 'pending' }, at: { type: Date, default: Date.now } }));
 
-const PromoPackage = mongoose.model('PromoPackage', new mongoose.Schema({
-  title: String,
-  category: String,
-  followers: Number,
-  price: Number,
-  description: String,
-  icon: String,
-  active: { type: Boolean, default: true }
-}));
-
-const UserPackage = mongoose.model('UserPackage', new mongoose.Schema({
-  title: String,
-  price: Number,
-  coinsPerMin: Number,
-  description: String,
-  pkgImage: { type: String, default: '' },
-  hot: { type: Boolean, default: false },
-  active: { type: Boolean, default: true }
+Const PromoPackage = mongoose.model('PromoPackage', new mongoose.Schema({
+  Title: String,
+  Category: String,
+  Followers: Number,
+  Price: Number,
+  Description: String,
+  Icon: String,
+  Active: { type: Boolean, default: true }
 }));
 
-const SliderSetting = mongoose.model('SliderSetting', new mongoose.Schema({
-  title: String,
-  subtitle: String,
-  description: String,
-  link: String,
-  bgImage: { type: String, default: '' },
-  bgClass: { type: String, default: 's0' },
-  emoji: { type: String, default: '🕌' },
-  timerSeconds: { type: Number, default: 6 },
-  active: { type: Boolean, default: true }
+Const UserPackage = mongoose.model('UserPackage', new mongoose.Schema({
+  Title: String,
+  Price: Number,
+  CoinsPerMin: Number,
+  Description: String,
+  PkgImage: { type: String, default: '' },
+  Hot: { type: Boolean, default: false },
+  Active: { type: Boolean, default: true }
 }));
 
-const h = fn => (q, s) => fn(q, s).catch(e => {
-  console.error('ERROR', q.method, q.path, e && e.code, e && e.message);
-  if (e && e.code === 11000) return s.status(400).json({ error: 'This name or phone is already registered. Try a different name.' });
-  s.status(500).json({ error: 'Server error. Please try again.' });
+Const SliderSetting = mongoose.model('SliderSetting', new mongoose.Schema({
+  Title: String,
+  Subtitle: String,
+  Description: String,
+  Link: String,
+  BgImage: { type: String, default: '' },
+  BgClass: { type: String, default: 's0' },
+  Emoji: { type: String, default: '🕌' },
+  TimerSeconds: { type: Number, default: 6 },
+  Active: { type: Boolean, default: true }
+}));
+
+// নতুন প্রমোট সাইট এডিট ও কনটেন্ট മാനেজমেন্ট স্কিমা
+Const SiteContent = mongoose.model('SiteContent', new mongoose.Schema({
+  Key: { type: String, unique: true },
+  Title: String,
+  Subtitle: String,
+  Description: String,
+  ImageUrl: String,
+  ExtraData: String
+}));
+
+Const h = fn => (q, s) => fn(q, s).catch(e => {
+  Console.error('ERROR', q.method, q.path, e && e.code, e && e.message);
+  If (e && e.code === 11000) return s.status(400).json({ error: 'This name or phone is already registered. Try a different name.' });
+  S.status(500).json({ error: 'Server error. Please try again.' });
 });
-const bad = (s, m, c) => s.status(c || 400).json({ error: m });
-const hmac = b => crypto.createHmac('sha256', SECRET).update(b).digest('hex');
-const sign = id => { const b = id + '.' + (Date.now() + 30 * 864e5); return b + '.' + hmac(b); };
-const hashPw = (p, salt) => crypto.scryptSync(p, salt, 32).toString('hex');
-const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
-const today = () => new Date().toISOString().slice(0, 10);
-const dayStart = () => { const o = 6 * 36e5, n = Date.now() + o; return new Date(n - (n % 864e5) - o); };
+Const bad = (s, m, c) => s.status(c || 400).json({ error: m });
+Const hmac = b => crypto.createHmac('sha256', SECRET).update(b).digest('hex');
+Const sign = id => { const b = id + '.' + (Date.now() + 30 * 864e5); return b + '.' + hmac(b); };
+Const hashPw = (p, salt) => crypto.scryptSync(p, salt, 32).toString('hex');
+Const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+Const today = () => new Date().toISOString().slice(0, 10);
+Const dayStart = () => { const o = 6 * 36e5, n = Date.now() + o; return new Date(n - (n % 864e5) - o); };
 
-const partners = () => [
+Const partners = () => [
   ADGEM_APP_ID && ADGEM_POSTBACK_KEY ? 'AdGem' : '',
   CPAGRIP_USER_ID && CPAGRIP_KEY ? 'CPAGrip' : '',
   TW_SECRET && TW_URL ? 'TimeWall.io (Australian Clearing Pty Ltd)' : '',
   'RS Gallery Shop (Official Collaboration)'
 ].filter(Boolean);
 
-const me = u => ({ id: u._id, name: u.name, phone: u.phone || '', email: u.email || '', av: u.avatar || '', role: u.role || 'worker', balance: u.balance, earned: u.earned, rsCoins: u.rsCoins || 0, activePkg: u.activePkg || null, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, lastAdWatch: u.lastAdWatch || 0, adRotateCount: u.adRotateCount || 0, adCooldownUntil: u.adCooldownUntil || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS, ct: CO, pt: partners() });
-const bdtFor = usd => Math.round(usd * RATE * (usd > 1 ? 0.5 : 0.7) * 100) / 100;
-const expire = uid => Click.updateMany(Object.assign({ status: 'pending', at: { $lt: new Date(Date.now() - PENDING_HOURS * 36e5) } }, uid ? { uid } : {}), { status: 'expired' });
+Const me = u => ({ id: u._id, name: u.name, phone: u.phone || '', email: u.email || '', av: u.avatar || '', role: u.role || 'worker', balance: u.balance, earned: u.earned, rsCoins: u.rsCoins || 0, activePkg: u.activePkg || null, refCode: u.refCode, refEarn: u.refEarn, refCount: u.refCount, lastDaily: u.lastDaily, lastSpin: u.lastSpin || 0, lastAdWatch: u.lastAdWatch || 0, adRotateCount: u.adRotateCount || 0, adCooldownUntil: u.adCooldownUntil || 0, checkedIn: u.lastCheckin === today(), d: DAILY, c: CHECKIN, tc: TARGETS, ct: CO, pt: partners() });
+Const bdtFor = usd => Math.round(usd * RATE * (usd > 1 ? 0.5 : 0.7) * 100) / 100;
+Const expire = uid => Click.updateMany(Object.assign({ status: 'pending', at: { $lt: new Date(Date.now() - PENDING_HOURS * 36e5) } }, uid ? { uid } : {}), { status: 'expired' });
 
-const auth = async (req, res, next) => {
-  try {
-    const [id, exp, sig] = (req.headers.authorization || '').replace('Bearer ', '').split('.');
-    if (!sig || !same(sig, hmac(id + '.' + exp)) || +exp < Date.now()) throw 0;
-    req.user = await User.findById(id);
-    if (!req.user) throw 0;
-    if (!req.user.lastSeen || Date.now() - req.user.lastSeen > 3e5) User.updateOne({ _id: id }, { lastSeen: Date.now() }).catch(() => {});
-    next();
+Const auth = async (req, res, next) => {
+  Try {
+    Const [id, exp, sig] = (req.headers.authorization || '').replace('Bearer ', '').split('.');
+    If (!sig || !same(sig, hmac(id + '.' + exp)) || +exp < Date.now()) throw 0;
+    Req.user = await User.findById(id);
+    If (!req.user) throw 0;
+    If (!req.user.lastSeen || Date.now() - req.user.lastSeen > 3e5) User.updateOne({ _id: id }, { lastSeen: Date.now() }).catch(() => {});
+    Next();
   } catch (e) { bad(res, 'Please log in again.', 401); }
 };
-const admin = (req, res, next) => (ADMIN_PASS && same(String(req.headers['x-admin-pass'] || ''), ADMIN_PASS)) ? next() : bad(res, 'Wrong admin password.', 403);
+Const admin = (req, res, next) => (ADMIN_PASS && same(String(req.headers['x-admin-pass'] || ''), ADMIN_PASS)) ? next() : bad(res, 'Wrong admin password.', 403);
 
-async function newUser(data, ref) {
-  let refCode;
-  do { refCode = crypto.randomBytes(4).toString('hex').slice(0, 6).toUpperCase(); } while (await User.exists({ refCode }));
-  const u = await User.create({ ...data, refCode });
-  if (ref) {
-    const r = await User.findOne({ refCode: String(ref).toUpperCase() });
-    if (r && String(r._id) !== String(u._id)) {
-      await User.updateOne({ _id: r._id }, { $inc: { balance: REF_BONUS, earned: REF_BONUS, refEarn: REF_BONUS, refCount: 1 } });
-      u.refBy = r.refCode; await u.save();
+Async function newUser(data, ref) {
+  Let refCode;
+  Do { refCode = crypto.randomBytes(4).toString('hex').slice(0, 6).toUpperCase(); } while (await User.exists({ refCode }));
+  Const u = await User.create({ ...data, refCode });
+  If (ref) {
+    Const r = await User.findOne({ refCode: String(ref).toUpperCase() });
+    If (r && String(r._id) !== String(u._id)) {
+      Await User.updateOne({ _id: r._id }, { $inc: { balance: REF_BONUS, earned: REF_BONUS, refEarn: REF_BONUS, refCount: 1 } });
+      U.refBy = r.refCode; await u.save();
     }
   }
-  return u;
+  Return u;
 }
 
 app.get('/ping', (req, res) => res.send('OK'));
 app.get('/manifest.json', (req, res) => {
-  res.json({
-    name: "RS Growth Matrix", short_name: "RS Matrix",
-    description: "RS Growth Matrix - Complete tasks, earn rewards, and shop at RS Gallery.",
-    start_url: "/", display: "standalone", background_color: "#060913", theme_color: "#fbbf24",
-    icons: [
+  Res.json({
+    Name: "RS Growth Matrix", short_name: "RS Matrix",
+    Description: "RS Growth Matrix - Complete tasks, earn rewards, and shop at RS Gallery.",
+    Start_url: "/", display: "standalone", background_color: "#060913", theme_color: "#fbbf24",
+    Icons: [
       { src: "https://cdn-icons-png.flaticon.com/512/1041/1041888.png", sizes: "192x192", type: "image/png" },
       { src: "https://cdn-icons-png.flaticon.com/512/1041/1041888.png", sizes: "512x512", type: "image/png" }
     ]
   });
 });
 app.get('/sw.js', (req, res) => {
-  res.setHeader('Content-Type', 'application/javascript');
-  res.send(`self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));`);
+  Res.setHeader('Content-Type', 'application/javascript');
+  Res.send(`self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));`);
 });
 
 app.post('/api/register', h(async (q, s) => {
-  const { name, phone, password, confirm, role, ref } = q.body || {};
-  const n = String(name || '').trim();
-  if (n.length < 3 || n.length > 30) return bad(s, 'Name must be 3 to 30 characters.');
-  if (!/^01\d{9}$/.test(String(phone || ''))) return bad(s, 'Enter a valid 11-digit phone number.');
-  if (String(password || '').length < 6) return bad(s, 'Password must be at least 6 characters.');
-  if (password !== confirm) return bad(s, 'Passwords do not match.');
-  if (await User.exists({ nameKey: n.toLowerCase() })) return bad(s, 'This name is already taken.');
-  const userRole = role === 'employer' ? 'employer' : 'worker';
-  const salt = crypto.randomBytes(16).toString('hex');
-  const u = await newUser({ name: n, nameKey: n.toLowerCase(), phone, role: userRole, salt, hash: hashPw(password, salt) }, ref);
-  s.json({ token: sign(u.id), me: me(u) });
+  Const { name, phone, password, confirm, role, ref } = q.body || {};
+  Const n = String(name || '').trim();
+  If (n.length < 3 || n.length > 30) return bad(s, 'Name must be 3 to 30 characters.');
+  If (!/^01\d{9}$/.test(String(phone || ''))) return bad(s, 'Enter a valid 11-digit phone number.');
+  If (String(password || '').length < 6) return bad(s, 'Password must be at least 6 characters.');
+  If (password !== confirm) return bad(s, 'Passwords do not match.');
+  If (await User.exists({ nameKey: n.toLowerCase() })) return bad(s, 'This name is already taken.');
+  Const userRole = role === 'employer' ? 'employer' : 'worker';
+  Const salt = crypto.randomBytes(16).toString('hex');
+  Const u = await newUser({ name: n, nameKey: n.toLowerCase(), phone, role: userRole, salt, hash: hashPw(password, salt) }, ref);
+  S.json({ token: sign(u.id), me: me(u) });
 }));
 
 app.post('/api/login', h(async (q, s) => {
-  const { name, password } = q.body || {};
-  const u = await User.findOne({ nameKey: String(name || '').trim().toLowerCase() });
-  if (!u || !u.hash || !same(u.hash, hashPw(String(password || ''), u.salt))) return bad(s, 'Wrong name or password.', 401);
-  s.json({ token: sign(u.id), me: me(u) });
+  Const { name, password } = q.body || {};
+  Const u = await User.findOne({ nameKey: String(name || '').trim().toLowerCase() });
+  If (!u || !u.hash || !same(u.hash, hashPw(String(password || ''), u.salt))) return bad(s, 'Wrong name or password.', 401);
+  S.json({ token: sign(u.id), me: me(u) });
 }));
 
 app.post('/api/google', h(async (q, s) => {
-  if (!GID) return bad(s, 'Google sign-in is not set up.');
-  const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(String((q.body || {}).credential || '')));
-  const g = await r.json();
-  if (!r.ok || g.aud !== GID || g.email_verified !== 'true') return bad(s, 'Google verification failed.', 401);
-  let u = await User.findOne({ email: g.email });
-  if (!u) u = await newUser({ name: (g.name || g.email.split('@')[0]).slice(0, 30), email: g.email, role: 'worker' }, (q.body || {}).ref);
-  s.json({ token: sign(u.id), me: me(u) });
+  If (!GID) return bad(s, 'Google sign-in is not set up.');
+  Const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(String((q.body || {}).credential || '')));
+  Const g = await r.json();
+  If (!r.ok || g.aud !== GID || g.email_verified !== 'true') return bad(s, 'Google verification failed.', 401);
+  Let u = await User.findOne({ email: g.email });
+  If (!u) u = await newUser({ name: (g.name || g.email.split('@')[0]).slice(0, 30), email: g.email, role: 'worker' }, (q.body || {}).ref);
+  S.json({ token: sign(u.id), me: me(u) });
 }));
 
 app.get('/api/me', auth, h(async (q, s) => {
-  let u = q.user;
-  if (u.activePkg && u.activePkg.expiresAt > Date.now()) {
-    const now = Date.now();
-    const lastClaim = u.activePkg.lastClaim || u.activePkg.startedAt;
-    const diffMinutes = Math.floor((now - lastClaim) / 60000);
-    if (diffMinutes > 0) {
-      const coinsToAdd = diffMinutes * (u.activePkg.coinsPerMin || 1);
-      u.rsCoins = (u.rsCoins || 0) + coinsToAdd;
-      u.activePkg.lastClaim = lastClaim + (diffMinutes * 60000);
-      await u.save();
+  Let u = q.user;
+  If (u.activePkg && u.activePkg.expiresAt > Date.now()) {
+    Const now = Date.now();
+    Const lastClaim = u.activePkg.lastClaim || u.activePkg.startedAt;
+    Const diffMinutes = Math.floor((now - lastClaim) / 60000);
+    If (diffMinutes > 0) {
+      Const coinsToAdd = diffMinutes * (u.activePkg.coinsPerMin || 1);
+      U.rsCoins = (u.rsCoins || 0) + coinsToAdd;
+      U.activePkg.lastClaim = lastClaim + (diffMinutes * 60000);
+      Await u.save();
     }
   }
-  s.json(me(u));
+  S.json(me(u));
 }));
 
 app.post('/api/avatar', auth, h(async (q, s) => {
-  const img = String((q.body || {}).img || '');
-  if (img.length > 2000000) return bad(s, 'Photo is too large.');
-  await User.updateOne({ _id: q.user.id }, { avatar: img });
-  s.json({ av: img });
+  Const img = String((q.body || {}).img || '');
+  If (img.length > 2000000) return bad(s, 'Photo is too large.');
+  Await User.updateOne({ _id: q.user.id }, { avatar: img });
+  S.json({ av: img });
 }));
 
 app.get('/api/names/:t', auth, (q, s) => s.json(q.params.t === 'girls' ? NAMES.girls : NAMES.boys));
 
 app.get('/api/sliders', auth, h(async (q, s) => {
-  let sliders = await SliderSetting.find({ active: true });
-  if (!sliders.length) {
-    const defaultSliders = [
+  Let sliders = await SliderSetting.find({ active: true });
+  If (!sliders.length) {
+    Const defaultSliders = [
       { title: 'নামাজের স্মরণ', subtitle: 'নামাজ কি পড়েছেন?', description: 'নামাজ আমাদের জীবনের সবচেয়ে বড় আমানত। কাজের ফাঁকে ওয়াক্ত হলেই নামাজ আদায় করে নিন।', link: '#', bgClass: 's0', emoji: '🕌', timerSeconds: 6 },
       { title: 'আমাদের সাইট ও পার্টনার', subtitle: 'RS Growth Matrix & RS Gallery', description: 'টাস্ক সম্পন্ন করে ইনকাম করুন এবং আমাদের অফিশিয়াল পার্টনার আর এস গ্যালারি শপ থেকে পছন্দের পোশাক অর্ডার করুন।', link: 'https://www.facebook.com/share/1CAK8sYqDw/', bgClass: 's1', emoji: '🛍️', timerSeconds: 6 },
       { title: 'টাস্ক ও অ্যাড আয়', subtitle: 'ডেইলি ক্যাশ রিওয়ার্ড', description: 'Tasks ট্যাবে গিয়ে টাস্ক সম্পন্ন করুন অথবা Watch Ads অপশনে গিয়ে অ্যাড দেখে ইনস্ট্যান্ট ক্যাশ আয় করুন।', link: '#', bgClass: 's2', emoji: '📱', timerSeconds: 6 },
       { title: 'সহজে উত্তোলন', subtitle: 'বিকাশ ও নগদ পেমেন্ট', description: 'Account থেকে Withdraw চেপে bKash বা Nagad নাম্বার দিন। উত্তোলন ৩০০ থেকে ৫০০০ টাকা পর্যন্ত করা যায়।', link: '#', bgClass: 's3', emoji: '💸', timerSeconds: 6 }
     ];
-    await SliderSetting.insertMany(defaultSliders);
-    sliders = await SliderSetting.find({ active: true });
+    Await SliderSetting.insertMany(defaultSliders);
+    Sliders = await SliderSetting.find({ active: true });
   }
-  s.json(sliders);
+  S.json(sliders);
 }));
 
-const pick = (o, ks) => { for (const k of ks) if (o[k] != null && o[k] !== '') return o[k]; };
-const arrOf = v => Array.isArray(v) ? v : [];
-const ctxOf = q => {
-  const ua = String(q.headers['user-agent'] || '');
-  const device = /android/i.test(ua) ? 'android' : /iphone|ipad|ipod/i.test(ua) ? 'ios' : 'desktop';
-  const c = String(q.headers['cf-ipcountry'] || q.headers['x-vercel-ip-country'] || '').toUpperCase();
-  return { device, country: /^[A-Z]{2}$/.test(c) ? c : '' };
+// প্রমোট সাইট এডিট ও কনটেন্ট গেট API
+app.get('/api/site-contents', auth, h(async (q, s) => {
+  Let contents = await SiteContent.find({});
+  S.json(contents);
+}));
+
+Const pick = (o, ks) => { for (const k of ks) if (o[k] != null && o[k] !== '') return o[k]; };
+Const arrOf = v => Array.isArray(v) ? v : [];
+Const ctxOf = q => {
+  Const ua = String(q.headers['user-agent'] || '');
+  Const device = /android/i.test(ua) ? 'android' : /iphone|ipad|ipod/i.test(ua) ? 'ios' : 'desktop';
+  Const c = String(q.headers['cf-ipcountry'] || q.headers['x-vercel-ip-country'] || '').toUpperCase();
+  Return { device, country: /^[A-Z]{2}$/.test(c) ? c : '' };
 };
-const devOk = (list, device) => {
-  if (!list.length) return true;
-  const words = { android: ['android'], ios: ['ios', 'iphone', 'ipad', 'apple'], desktop: ['desktop', 'web', 'windows', 'mac', 'pc', 'linux'] }[device];
-  return list.some(d => words.some(w => String(d).toLowerCase().includes(w)));
+Const devOk = (list, device) => {
+  If (!list.length) return true;
+  Const words = { android: ['android'], ios: ['ios', 'iphone', 'ipad', 'apple'], desktop: ['desktop', 'web', 'windows', 'mac', 'pc', 'linux'] }[device];
+  Return list.some(d => words.some(w => String(d).toLowerCase().includes(w)));
 };
 
-async function fetchOffers(uid, ctx, dbg) {
-  ctx = ctx || { device: '', country: '' };
-  let combinedOffers = [];
+Async function fetchOffers(uid, ctx, dbg) {
+  Ctx = ctx || { device: '', country: '' };
+  Let combinedOffers = [];
 
-  const approvedCustom = await CustomTask.find({ status: 'approved' });
-  const mappedCustom = approvedCustom.map(t => {
-    let iconUrl = 'https://cdn-icons-png.flaticon.com/512/1041/1041888.png';
-    if(t.platform === 'youtube') iconUrl = 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png';
-    if(t.platform === 'facebook') iconUrl = 'https://cdn-icons-png.flaticon.com/512/124/124010.png';
-    if(t.platform === 'telegram') iconUrl = 'https://cdn-icons-png.flaticon.com/512/2111/2111646.png';
+  Const approvedCustom = await CustomTask.find({ status: 'approved' });
+  Const mappedCustom = approvedCustom.map(t => {
+    Let iconUrl = 'https://cdn-icons-png.flaticon.com/512/1041/1041888.png';
+    If(t.platform === 'youtube') iconUrl = 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png';
+    If(t.platform === 'facebook') iconUrl = 'https://cdn-icons-png.flaticon.com/512/124/124010.png';
+    If(t.platform === 'telegram') iconUrl = 'https://cdn-icons-png.flaticon.com/512/2111/2111646.png';
 
-    return {
-      id: 'customtask:' + t._id,
-      title: t.title + ' (' + t.platform.toUpperCase() + ')',
-      icon: iconUrl,
-      clickUrl: t.link,
-      desc: 'প্রমোশন টাস্ক: ' + t.title + ' | টার্গেট ওয়ার্কার: ' + t.targetWorkers,
-      req: 'লিংকে গিয়ে সাবস্ক্রাইব/ফলো করে প্রুফ রাখুন।',
-      usd: t.reward / RATE,
-      bdt: t.reward,
-      cats: [],
-      cnt: ['BD'],
-      dev: []
+    Return {
+      Id: 'customtask:' + t._id,
+      Title: t.title + ' (' + t.platform.toUpperCase() + ')',
+      Icon: iconUrl,
+      ClickUrl: t.link,
+      Desc: 'প্রমোশন টাস্ক: ' + t.title + ' | টার্গেট ওয়ার্কার: ' + t.targetWorkers,
+      Req: 'লিংকে গিয়ে সাবস্ক্রাইব/ফলো করে প্রুফ রাখুন।',
+      Usd: t.reward / RATE,
+      Bdt: t.reward,
+      Cats: [],
+      Cnt: ['BD'],
+      Dev: []
     };
   });
-  combinedOffers = combinedOffers.concat(mappedCustom);
+  CombinedOffers = combinedOffers.concat(mappedCustom);
 
-  if (ADGEM_APP_ID && ADGEM_POSTBACK_KEY) {
-    try {
-      const adgemRes = await fetch(`https://api.adgem.com/v1/wall?appid=${ADGEM_APP_ID}&player_id=${encodeURIComponent(uid)}`);
-      const adgemJson = await adgemRes.json();
-      const adgemArr = Array.isArray(adgemJson) ? adgemJson : (adgemJson.offers || adgemJson.data || []);
-      const mappedAdgem = adgemArr.map(o => {
-        const payout = +pick(o, ['payout', 'reward', 'amount']) || 0;
-        return {
-          id: 'adgem:' + String(pick(o, ['campaign_id', 'id']) || ''),
-          title: String(pick(o, ['name', 'title']) || 'AdGem Offer').slice(0, 80),
-          icon: String(pick(o, ['icon', 'image_url']) || ''),
-          clickUrl: pick(o, ['url', 'click_url']),
-          desc: String(o.description || '').slice(0, 300),
-          req: String(o.requirements || '').slice(0, 300),
-          usd: payout,
-          bdt: bdtFor(payout),
-          cats: arrOf(o.categories).map(c => String(c).toLowerCase().replace(/[^a-z]/g, '')),
-          cnt: arrOf(o.countries).map(c => String(c).toUpperCase()),
-          dev: arrOf(o.devices)
+  If (ADGEM_APP_ID && ADGEM_POSTBACK_KEY) {
+    Try {
+      Const adgemRes = await fetch(`https://api.adgem.com/v1/wall?appid=${ADGEM_APP_ID}&player_id=${encodeURIComponent(uid)}`);
+      Const adgemJson = await adgemRes.json();
+      Const adgemArr = Array.isArray(adgemJson) ? adgemJson : (adgemJson.offers || adgemJson.data || []);
+      Const mappedAdgem = adgemArr.map(o => {
+        Const payout = +pick(o, ['payout', 'reward', 'amount']) || 0;
+        Return {
+          Id: 'adgem:' + String(pick(o, ['campaign_id', 'id']) || ''),
+          Title: String(pick(o, ['name', 'title']) || 'AdGem Offer').slice(0, 80),
+          Icon: String(pick(o, ['icon', 'image_url']) || ''),
+          ClickUrl: pick(o, ['url', 'click_url']),
+          Desc: String(o.description || '').slice(0, 300),
+          Req: String(o.requirements || '').slice(0, 300),
+          Usd: payout,
+          Bdt: bdtFor(payout),
+          Cats: arrOf(o.categories).map(c => String(c).toLowerCase().replace(/[^a-z]/g, '')),
+          Cnt: arrOf(o.countries).map(c => String(c).toUpperCase()),
+          Dev: arrOf(o.devices)
         };
       }).filter(o => o.id && o.clickUrl);
-      combinedOffers = combinedOffers.concat(mappedAdgem);
+      CombinedOffers = combinedOffers.concat(mappedAdgem);
     } catch (err) { console.error('AdGem fetch error:', err.message); }
   }
 
-  if (combinedOffers.length === 0) {
-    combinedOffers = [
+  If (combinedOffers.length === 0) {
+    CombinedOffers = [
       { id: 'custom:1', title: 'Subscribe Official YouTube Channel', icon: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png', clickUrl: 'https://www.youtube.com/@rkrana33', desc: 'আমাদের অফিসিয়াল ইউটিউব চ্যানেলে গিয়ে Subscribe করুন।', req: 'স্ক্রিনশট রাখুন।', usd: 0.10, bdt: 12, cats: [], cnt: ['BD'], dev: [] },
       { id: 'custom:2', title: 'Follow Facebook Official Page', icon: 'https://cdn-icons-png.flaticon.com/512/124/124010.png', clickUrl: 'https://www.facebook.com/share/1CAK8sYqDw/', desc: 'আমাদের ফেসবুক পেজটি লাইক ও ফলো করুন।', req: 'পেজ লাইক দিন।', usd: 0.08, bdt: 10, cats: [], cnt: ['BD'], dev: [] },
       { id: 'custom:3', title: 'Join Official Telegram Channel', icon: 'https://cdn-icons-png.flaticon.com/512/2111/2111646.png', clickUrl: 'https://t.me/rkrana33', desc: 'আমাদের অফিসিয়াল টেলিগ্রাম চ্যানেলে জয়েন করুন।', req: 'চ্যানেলে জয়েন থাকুন।', usd: 0.08, bdt: 10, cats: [], cnt: ['BD'], dev: [] },
@@ -315,48 +331,48 @@ async function fetchOffers(uid, ctx, dbg) {
     ];
   }
 
-  let l = combinedOffers;
-  if (dbg) { dbg.total = l.length; dbg.cn = {}; l.forEach(o => (o.cnt.length ? o.cnt : ['ALL']).forEach(c => { dbg.cn[c] = (dbg.cn[c] || 0) + 1; })); }
-  l = l.filter(o => o.usd <= MAX_USD); if (dbg) dbg.price = l.length;
-  l = l.filter(o => !o.cats.some(c => BLOCK_CATS.includes(c))); if (dbg) dbg.cat = l.length;
-  l = l.filter(o => !COUNTRY_FILTER || !o.cnt.length || o.cnt.some(c => TARGETS.includes(c))); if (dbg) dbg.country = l.length;
-  l = l.filter(o => !ctx.device || devOk(o.dev, ctx.device)); if (dbg) dbg.device = l.length;
-  return l;
+  Let l = combinedOffers;
+  If (dbg) { dbg.total = l.length; dbg.cn = {}; l.forEach(o => (o.cnt.length ? o.cnt : ['ALL']).forEach(c => { dbg.cn[c] = (dbg.cn[c] || 0) + 1; })); }
+  L = l.filter(o => o.usd <= MAX_USD); if (dbg) dbg.price = l.length;
+  L = l.filter(o => !o.cats.some(c => BLOCK_CATS.includes(c))); if (dbg) dbg.cat = l.length;
+  L = l.filter(o => !COUNTRY_FILTER || !o.cnt.length || o.cnt.some(c => TARGETS.includes(c))); if (dbg) dbg.country = l.length;
+  L = l.filter(o => !ctx.device || devOk(o.dev, ctx.device)); if (dbg) dbg.device = l.length;
+  Return l;
 }
 
 app.get('/api/offers', auth, h(async (q, s) => {
-  await expire(q.user.id);
-  const now = Date.now(), day = 864e5;
-  const clicks = await Click.find({ uid: q.user.id });
-  const used = clicks.filter(c => c.status === 'pending' || (c.status === 'success' && c.doneAt > now - day && !String(c.offerId).startsWith('tw:')));
-  const blocked = new Set(clicks.filter(c => c.status === 'success' || c.status === 'pending').map(c => c.offerId));
-  const offers = await fetchOffers(q.user.id, ctxOf(q));
-  const free = offers.filter(o => !blocked.has(o.id)).slice(0, Math.max(0, SLOTS - used.length));
-  const list = used.map(c => ({ id: c.offerId, title: c.title, icon: c.icon, bdt: c.bdt, status: c.status })).concat(free.map(o => ({ id: o.id, title: o.title, icon: o.icon, bdt: o.bdt, status: 'open', desc: o.desc, req: o.req, cnt: o.cnt, dev: o.dev })));
-  const n = st => clicks.filter(c => c.status === st).length;
-  s.json({ stats: { pending: n('pending'), success: n('success'), cancelled: n('cancelled') + n('expired'), total: list.length }, list });
+  Await expire(q.user.id);
+  Const now = Date.now(), day = 864e5;
+  Const clicks = await Click.find({ uid: q.user.id });
+  Const used = clicks.filter(c => c.status === 'pending' || (c.status === 'success' && c.doneAt > now - day && !String(c.offerId).startsWith('tw:')));
+  Const blocked = new Set(clicks.filter(c => c.status === 'success' || c.status === 'pending').map(c => c.offerId));
+  Const offers = await fetchOffers(q.user.id, ctxOf(q));
+  Const free = offers.filter(o => !blocked.has(o.id)).slice(0, Math.max(0, SLOTS - used.length));
+  Const list = used.map(c => ({ id: c.offerId, title: c.title, icon: c.icon, bdt: c.bdt, status: c.status })).concat(free.map(o => ({ id: o.id, title: o.title, icon: o.icon, bdt: o.bdt, status: 'open', desc: o.desc, req: o.req, cnt: o.cnt, dev: o.dev })));
+  Const n = st => clicks.filter(c => c.status === st).length;
+  S.json({ stats: { pending: n('pending'), success: n('success'), cancelled: n('cancelled') + n('expired'), total: list.length }, list });
 }));
 
 app.post('/api/offers/:id/start', auth, h(async (q, s) => {
-  await expire(q.user.id);
-  const clicks = await Click.find({ uid: q.user.id });
-  const now = Date.now();
-  const used = clicks.filter(c => c.status === 'pending' || (c.status === 'success' && c.doneAt > now - 864e5 && !String(c.offerId).startsWith('tw:')));
-  if (clicks.some(c => c.offerId === q.params.id && (c.status === 'success'))) return bad(s, 'You already completed this task.');
-  const o = (await fetchOffers(q.user.id, ctxOf(q))).find(x => x.id === q.params.id);
-  if (!o) return bad(s, 'This task is no longer available.', 404);
-  const mine = used.find(c => c.offerId === o.id);
-  if (!mine) {
-    if (used.length >= SLOTS) return bad(s, 'Daily task limit reached.');
-    await Click.create({ uid: q.user.id, offerId: o.id, title: o.title, icon: o.icon, bdt: o.bdt });
+  Await expire(q.user.id);
+  Const clicks = await Click.find({ uid: q.user.id });
+  Const now = Date.now();
+  Const used = clicks.filter(c => c.status === 'pending' || (c.status === 'success' && c.doneAt > now - 864e5 && !String(c.offerId).startsWith('tw:')));
+  If (clicks.some(c => c.offerId === q.params.id && (c.status === 'success'))) return bad(s, 'You already completed this task.');
+  Const o = (await fetchOffers(q.user.id, ctxOf(q))).find(x => x.id === q.params.id);
+  If (!o) return bad(s, 'This task is no longer available.', 404);
+  Const mine = used.find(c => c.offerId === o.id);
+  If (!mine) {
+    If (used.length >= SLOTS) return bad(s, 'Daily task limit reached.');
+    Await Click.create({ uid: q.user.id, offerId: o.id, title: o.title, icon: o.icon, bdt: o.bdt });
   }
-  s.json({ url: o.clickUrl });
+  S.json({ url: o.clickUrl });
 }));
 
 app.get('/api/user-packages', auth, h(async (q, s) => {
-  let pkgs = await UserPackage.find({ active: true });
-  if (!pkgs.length) {
-    const defaultUserPkgs = [
+  Let pkgs = await UserPackage.find({ active: true });
+  If (!pkgs.length) {
+    Const defaultUserPkgs = [
       { price: 200, coinsPerMin: 10, description: 'Basic RS Coin Package', hot: false },
       { price: 500, coinsPerMin: 25, description: 'Bronze RS Coin Package', hot: false },
       { price: 800, coinsPerMin: 50, description: 'Silver RS Coin Package', hot: false },
@@ -366,175 +382,176 @@ app.get('/api/user-packages', auth, h(async (q, s) => {
       { price: 2500, coinsPerMin: 220, description: 'Master RS Coin Package', hot: true },
       { price: 3000, coinsPerMin: 300, description: 'Elite RS Coin Package', hot: true }
     ];
-    await UserPackage.insertMany(defaultUserPkgs);
-    pkgs = await UserPackage.find({ active: true });
+    Await UserPackage.insertMany(defaultUserPkgs);
+    Pkgs = await UserPackage.find({ active: true });
   }
-  s.json(pkgs);
+  S.json(pkgs);
 }));
 
 app.get('/api/promo-packages', auth, h(async (q, s) => {
-  let pkgs = await PromoPackage.find({ active: true });
-  if (!pkgs.length) {
-    const defaultPkgs = [
+  Let pkgs = await PromoPackage.find({ active: true });
+  If (!pkgs.length) {
+    Const defaultPkgs = [
       { title: '200 Facebook Followers', category: 'Facebook', followers: 200, price: 80, description: 'আপনার ফেসবুক পেজ বা আইডিতে ইনস্ট্যান্ট রিয়েল ফলোয়ার নিন।', icon: 'https://cdn-icons-png.flaticon.com/512/124/124010.png' },
       { title: '1,000 YouTube Subscribers', category: 'YouTube', followers: 1000, price: 650, description: 'আপনার ইউটিউব চ্যানেলে গ্রোথ ও সাবস্ক্রাইবার বৃদ্ধি করুন।', icon: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png' },
       { title: '5,000 Telegram Members', category: 'Telegram', followers: 5000, price: 2500, description: 'টেলিগ্রাম গ্রুপ বা চ্যানেলে একটিভ মেম্বার যুক্ত করুন।', icon: 'https://cdn-icons-png.flaticon.com/512/2111/2111646.png' },
       { title: 'RS Gallery Shop Featured Item', category: 'RS Gallery', followers: 10000, price: 5000, description: 'আর এস গ্যালারি শপ কোলাবোরেশন ও প্রোডাক্ট প্রমোশন প্যাকেজ।', icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041888.png' }
     ];
-    await PromoPackage.insertMany(defaultPkgs);
-    pkgs = await PromoPackage.find({ active: true });
+    Await PromoPackage.insertMany(defaultPkgs);
+    Pkgs = await PromoPackage.find({ active: true });
   }
-  s.json(pkgs);
+  S.json(pkgs);
 }));
 
 app.post('/api/employer/task', auth, h(async (q, s) => {
-  if (q.user.role !== 'employer') return bad(s, 'Only employers can post tasks.');
-  const { platform, title, link, reward, targetWorkers, packageId } = q.body || {};
+  If (q.user.role !== 'employer') return bad(s, 'Only employers can post tasks.');
+  Const { platform, title, link, reward, targetWorkers, packageId } = q.body || {};
   
-  let r = Number(reward), tw = Number(targetWorkers), totalBudget = 0;
+  Let r = Number(reward), tw = Number(targetWorkers), totalBudget = 0;
 
-  if (packageId) {
-    const pkg = await PromoPackage.findById(packageId);
-    if (!pkg) return bad(s, 'Selected package not found.');
-    totalBudget = pkg.price;
-    platform = pkg.category.toLowerCase().includes('face') ? 'facebook' : (pkg.category.toLowerCase().includes('you') ? 'youtube' : 'telegram');
-    title = pkg.title;
-    reward = Math.round((pkg.price / pkg.followers) * 100) / 100;
-    targetWorkers = pkg.followers;
+  If (packageId) {
+    Const pkg = await PromoPackage.findById(packageId);
+    If (!pkg) return bad(s, 'Selected package not found.');
+    TotalBudget = pkg.price;
+    Platform = pkg.category.toLowerCase().includes('face') ? 'facebook' : (pkg.category.toLowerCase().includes('you') ? 'youtube' : 'telegram');
+    Title = pkg.title;
+    Reward = Math.round((pkg.price / pkg.followers) * 100) / 100;
+    TargetWorkers = pkg.followers;
   } else {
-    if (!platform || !title || !link || isNaN(r) || isNaN(tw) || r <= 0 || tw <= 0) return bad(s, 'Invalid task details.');
-    totalBudget = r * tw;
+    If (!platform || !title || !link || isNaN(r) || isNaN(tw) || r <= 0 || tw <= 0) return bad(s, 'Invalid task details.');
+    TotalBudget = r * tw;
   }
 
-  if (q.user.balance < totalBudget) return bad(s, 'Insufficient balance. Required: ' + totalBudget + ' BDT');
+  If (q.user.balance < totalBudget) return bad(s, 'Insufficient balance. Required: ' + totalBudget + ' BDT');
 
-  await User.updateOne({ _id: q.user.id }, { $inc: { balance: -totalBudget } });
-  await CustomTask.create({ uid: q.user.id, platform: platform || 'general', title: String(title).trim(), link: String(link || '#').trim(), reward: Number(reward || 1), targetWorkers: Number(targetWorkers || 100), totalBudget, status: 'pending' });
-  const updatedUser = await User.findById(q.user.id);
-  s.json({ ok: true, me: me(updatedUser) });
+  Await User.updateOne({ _id: q.user.id }, { $inc: { balance: -totalBudget } });
+  Await CustomTask.create({ uid: q.user.id, platform: platform || 'general', title: String(title).trim(), link: String(link || '#').trim(), reward: Number(reward || 1), targetWorkers: Number(targetWorkers || 100), totalBudget, status: 'pending' });
+  Const updatedUser = await User.findById(q.user.id);
+  S.json({ ok: true, me: me(updatedUser) });
 }));
 
 app.get('/api/employer/tasks', auth, h(async (q, s) => {
-  if (q.user.role !== 'employer') return bad(s, 'Access denied.');
-  s.json(await CustomTask.find({ uid: q.user.id }).sort({ at: -1 }));
+  If (q.user.role !== 'employer') return bad(s, 'Access denied.');
+  S.json(await CustomTask.find({ uid: q.user.id }).sort({ at: -1 }));
 }));
 
 app.post('/api/watch-ad', auth, h(async (q, s) => {
-  const now = Date.now();
-  let user = q.user;
+  Const now = Date.now();
+  Let user = q.user;
   
-  if (user.adCooldownUntil && now < user.adCooldownUntil) {
-    const remainMin = Math.ceil((user.adCooldownUntil - now) / 60000);
-    return bad(s, `আপনার ২০ মিনিটের বিরতি চলছে। আরও ${remainMin} মিনিট পর চেষ্টা করুন।`);
+  If (user.adCooldownUntil && now < user.adCooldownUntil) {
+    Const remainMin = Math.ceil((user.adCooldownUntil - now) / 60000);
+    Return bad(s, `আপনার ২০ মিনিটের বিরতি চলছে। আরও ${remainMin} মিনিট পর চেষ্টা করুন।`);
   }
 
-  if (user.lastAdWatch && now - user.lastAdWatch < 10000) return bad(s, 'অনুগ্রহ করে ১০ সেকেন্ড অপেক্ষা করুন।');
+  If (user.lastAdWatch && now - user.lastAdWatch < 10000) return bad(s, 'অনুগ্রহ করে ১০ সেকেন্ড অপেক্ষা করুন।');
   
-  const adReward = 0.50;
-  let newRotateCount = (user.adRotateCount || 0) + 1;
-  let cooldownUntil = 0;
+  Const adReward = 0.50;
+  Let newRotateCount = (user.adRotateCount || 0) + 1;
+  Let cooldownUntil = 0;
 
-  if (newRotateCount >= 10) {
-    cooldownUntil = now + (20 * 60 * 1000);
-    newRotateCount = 0;
+  If (newRotateCount >= 10) {
+    CooldownUntil = now + (20 * 60 * 1000);
+    NewRotateCount = 0;
   }
 
-  const u = await User.findOneAndUpdate({ _id: user.id }, { 
+  Const u = await User.findOneAndUpdate({ _id: user.id }, { 
     $set: { lastAdWatch: now, adRotateCount: newRotateCount, adCooldownUntil: cooldownUntil }, 
     $inc: { balance: adReward, earned: adReward } 
   }, { new: true });
 
-  s.json({ reward: adReward, me: me(u), cooldown: cooldownUntil > 0 });
+  S.json({ reward: adReward, me: me(u), cooldown: cooldownUntil > 0 });
 }));
 
 app.get('/api/timewall', auth, (q, s) => s.json({ url: TW_URL ? TW_URL.replace(/\{uid\}/g, encodeURIComponent(q.user.id)) : '' }));
 
 app.post('/api/daily', auth, h(async (q, s) => {
-  const r = await User.findOneAndUpdate({ _id: q.user.id, lastDaily: { $lte: Date.now() - 864e5 } }, { $set: { lastDaily: Date.now() }, $inc: { balance: DAILY, earned: DAILY } }, { new: true });
-  if (!r) return bad(s, 'You already claimed today.');
-  s.json(me(r));
+  Const r = await User.findOneAndUpdate({ _id: q.user.id, lastDaily: { $lte: Date.now() - 864e5 } }, { $set: { lastDaily: Date.now() }, $inc: { balance: DAILY, earned: DAILY } }, { new: true });
+  If (!r) return bad(s, 'You already claimed today.');
+  S.json(me(r));
 }));
 
 app.post('/api/checkin', auth, h(async (q, s) => {
-  const r = await User.findOneAndUpdate({ _id: q.user.id, lastCheckin: { $ne: today() } }, { $set: { lastCheckin: today() }, $inc: { balance: CHECKIN, earned: CHECKIN } }, { new: true });
-  if (!r) return bad(s, 'You already checked in today.');
-  s.json(me(r));
+  Const r = await User.findOneAndUpdate({ _id: q.user.id, lastCheckin: { $ne: today() } }, { $set: { lastCheckin: today() }, $inc: { balance: CHECKIN, earned: CHECKIN } }, { new: true });
+  If (!r) return bad(s, 'You already checked in today.');
+  S.json(me(r));
 }));
 
 app.post('/api/spin', auth, h(async (q, s) => {
-  const tot = SPIN.reduce((a, x) => a + x[1], 0);
-  let r = crypto.randomInt(tot), prize = SPIN[0][0];
-  for (const x of SPIN) { if (r < x[1]) { prize = x[0]; break; } r -= x[1]; }
-  const u = await User.findOneAndUpdate({ _id: q.user.id, $or: [{ lastSpin: { $exists: false } }, { lastSpin: {$lte: Date.now() - 864e5 } }] }, { $set: { lastSpin: Date.now() }, $inc: { balance: prize, earned: prize } }, { new: true });
-  if (!u) return bad(s, 'You already spun today.');
-  s.json({ prize, me: me(u) });
+  Const tot = SPIN.reduce((a, x) => a + x[1], 0);
+  Let r = crypto.randomInt(tot), prize = SPIN[0][0];
+  For (const x of SPIN) { if (r < x[1]) { prize = x[0]; break; } r -= x[1]; }
+  Const u = await User.findOneAndUpdate({ _id: q.user.id, $or: [{ lastSpin: { $exists: false } }, { lastSpin: {$lte: Date.now() - 864e5 } }] }, { $set: { lastSpin: Date.now() }, $inc: { balance: prize, earned: prize } }, { new: true });
+  If (!u) return bad(s, 'You already spun today.');
+  S.json({ prize, me: me(u) });
 }));
 
 app.get('/api/leaderboard', auth, h(async (q, s) => {
-  const realTop = await User.find({ earned: { $gt: 0 } }).sort({ rsCoins: -1, earned: -1 }).limit(20).select('name balance earned rsCoins avatar');
-  const demoNames = ['Tanvir Ahmed', 'Rakibul Islam', 'Sumaiya Akter', 'Farhan Hossain', 'Nusrat Jahan', 'Mehedi Hasan', 'Ayesha Siddika', 'Imran Khan', 'Sadia Afrin', 'Nazmul Huda'];
-  const demoAvatars = [
+  Const realTop = await User.find({ earned: { $gt: 0 } }).sort({ rsCoins: -1, earned: -1 }).limit(20).select('name balance earned rsCoins avatar');
+  Const demoNames = ['Tanvir Ahmed', 'Rakibul Islam', 'Sumaiya Akter', 'Farhan Hossain', 'Nusrat Jahan', 'Mehedi Hasan', 'Ayesha Siddika', 'Imran Khan', 'Sadia Afrin', 'Nazmul Huda'];
+  Const demoAvatars = [
     'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=80'
   ];
-  let demoTop = [];
-  let baseEarn = 45000;
-  let baseCoins = 150000;
+  Let demoTop = [];
+  Let baseEarn = 45000;
+  Let baseCoins = 150000;
   
-  const randomShift = Math.floor(Date.now() / 10000) % 7;
+  Const randomShift = Math.floor(Date.now() / 10000) % 7;
   
-  for (let i = 0; i < 100; i++) {
-    let flucBal = Math.max(500, baseEarn - (i * 300) + ((i * 13 + randomShift * 41) % 1500) - 750);
-    let flucCoins = Math.max(500, baseCoins - (i * 1200) + ((i * 29 + randomShift * 67) % 5000) - 2500);
-    demoTop.push({
-      name: i === 0 ? '👑 Al-Amin (Top 1)' : (i === 1 ? '⭐ Shanto Mahmud (Top 2)' : (demoNames[i % demoNames.length] + ' ' + (i + 1))),
-      balance: flucBal,
-      earned: flucBal + 2000,
-      rsCoins: flucCoins,
-      avatar: demoAvatars[i % demoAvatars.length]
+  For (let i = 0; i < 100; i++) {
+    Let flucBal = Math.max(500, baseEarn - (i * 300) + ((i * 13 + randomShift * 41) % 1500) - 750);
+    Let flucCoins = Math.max(500, baseCoins - (i * 1200) + ((i * 29 + randomShift * 67) % 5000) - 2500);
+    DemoTop.push({
+      Name: i === 0 ? '👑 Al-Amin (Top 1)' : (i === 1 ? '⭐ Shanto Mahmud (Top 2)' : (demoNames[i % demoNames.length] + ' ' + (i + 1))),
+      Balance: flucBal,
+      Earned: flucBal + 2000,
+      RsCoins: flucCoins,
+      Avatar: demoAvatars[i % demoAvatars.length]
     });
   }
-  let combined = realTop.map(u => ({ name: u.name, balance: u.balance || 0, earned: u.earned, rsCoins: u.rsCoins || 0, avatar: u.avatar || '' })).concat(demoTop);
-  combined.sort((a, b) => b.rsCoins - a.rsCoins || b.earned - a.earned);
-  s.json(combined.slice(0, 100));
+  Let combined = realTop.map(u => ({ name: u.name, balance: u.balance || 0, earned: u.earned, rsCoins: u.rsCoins || 0, avatar: u.avatar || '' })).concat(demoTop);
+  Combined.sort((a, b) => b.rsCoins - a.rsCoins || b.earned - a.earned);
+  S.json(combined.slice(0, 100));
 }));
 
+// উইথড্র API (ইউজারের জন্য রাখা হলো যদিও বাটন সড়ানো হয়েছে)
 app.post('/api/withdraw', auth, h(async (q, s) => {
-  if (q.user.role === 'employer') return bad(s, 'Employers cannot withdraw funds.');
-  const { amount, method, phone } = q.body || {};
-  const a = Math.floor(+amount);
-  if (!(a >= MIN_WD && a <= MAX_WD)) return bad(s, 'Withdraw amount must be between ' + MIN_WD + ' and ' + MAX_WD + '.');
-  if (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
-  if (!phone || String(phone).trim().length < 11) return bad(s, 'Enter a valid phone number.');
-  const r = await User.findOneAndUpdate({ _id: q.user.id, balance: { $gte: a } }, { $inc: { balance: -a } }, { new: true });
-  if (!r) return bad(s, 'Not enough balance.');
-  await Wd.create({ uid: q.user.id, name: q.user.name, amount: a, method, phone: String(phone).trim() });
-  s.json(me(r));
+  If (q.user.role === 'employer') return bad(s, 'Employers cannot withdraw funds.');
+  Const { amount, method, phone } = q.body || {};
+  Const a = Math.floor(+amount);
+  If (!(a >= MIN_WD && a <= MAX_WD)) return bad(s, 'Withdraw amount must be between ' + MIN_WD + ' and ' + MAX_WD + '.');
+  If (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
+  If (!phone || String(phone).trim().length < 11) return bad(s, 'Enter a valid phone number.');
+  Const r = await User.findOneAndUpdate({ _id: q.user.id, balance: { $gte: a } }, { $inc: { balance: -a } }, { new: true });
+  If (!r) return bad(s, 'Not enough balance.');
+  Await Wd.create({ uid: q.user.id, name: q.user.name, amount: a, method, phone: String(phone).trim() });
+  S.json(me(r));
 }));
 
 app.get('/api/withdrawals', auth, h(async (q, s) => s.json(await Wd.find({ uid: q.user.id }).sort({ at: -1 }).limit(30))));
 
 app.post('/api/deposit', auth, h(async (q, s) => {
-  const { amount, method, txid, lastDigits, pkgName } = q.body || {};
-  const a = Math.floor(+amount);
-  if (!(a >= 200 && a <= 15000)) return bad(s, 'Deposit amount must be between 200 and 15000 BDT.');
-  if (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
-  if (!txid || txid.trim().length < 10) return bad(s, 'Transaction ID must be at least 10 characters.');
-  if (!lastDigits || String(lastDigits).trim().length !== 3) return bad(s, 'Please provide the last 3 digits of TrxID.');
-  const lDigits = String(lastDigits).trim();
-  const serialNo = '#D-' + Math.floor(100000 + Math.random() * 900000);
+  Const { amount, method, txid, lastDigits, pkgName } = q.body || {};
+  Const a = Math.floor(+amount);
+  If (!(a >= 200 && a <= 15000)) return bad(s, 'Deposit amount must be between 200 and 15000 BDT.');
+  If (!['bKash', 'Nagad'].includes(method)) return bad(s, 'Choose bKash or Nagad.');
+  If (!txid || txid.trim().length < 10) return bad(s, 'Transaction ID must be at least 10 characters.');
+  If (!lastDigits || String(lastDigits).trim().length !== 3) return bad(s, 'Please provide the last 3 digits of TrxID.');
+  Const lDigits = String(lastDigits).trim();
+  Const serialNo = '#D-' + Math.floor(100000 + Math.random() * 900000);
 
-  const newDep = await Deposit.create({ uid: q.user.id, name: q.user.name, amount: a, method, txid: txid.trim(), lastDigits: lDigits, pkgName: pkgName || 'Custom Deposit', serialNo });
-  s.json({ ok: true, serialNo, time: new Date().toLocaleString(), balance: q.user.balance, depositDetails: newDep });
+  Const newDep = await Deposit.create({ uid: q.user.id, name: q.user.name, amount: a, method, txid: txid.trim(), lastDigits: lDigits, pkgName: pkgName || 'Custom Deposit', serialNo });
+  S.json({ ok: true, serialNo, time: new Date().toLocaleString(), balance: q.user.balance, depositDetails: newDep });
 }));
 
 app.get('/api/deposits', auth, h(async (q, s) => s.json(await Deposit.find({ uid: q.user.id }).sort({ at: -1 }).limit(30))));
 
 app.get('/api/global-feed', auth, h(async (q, s) => {
-  const feedItems = [
+  Const feedItems = [
     { name: 'Tanvir Ahmed', action: 'bKash-এ ৳500 ডিপোজিট সফল হয়েছে', type: 'dep', time: 'মাত্রই' },
     { name: 'Rakibul Islam', action: 'Nagad-এ ৳1,000 উত্তোলন করেছেন', type: 'wd', time: '১ মিনিট আগে' },
     { name: 'Sumaiya Akter', action: 'আর এস গ্যালারি শপ থেকে ৳850 দিয়ে শার্ট অর্ডার করেছেন', type: 'shop', time: '২ মিনিট আগে' },
@@ -542,209 +559,167 @@ app.get('/api/global-feed', auth, h(async (q, s) => {
     { name: 'Nusrat Jahan', action: 'প্রিমিয়াম RS Coin Package (৳1,500) কিনেছেন', type: 'shop', time: '৪ মিনিট আগে' },
     { name: 'Mehedi Hasan', action: 'bKash-এ ৳1,200 ডিপোজিট সফল হয়েছে', type: 'dep', time: '৫ মিনিট আগে' }
   ];
-  s.json(feedItems);
+  S.json(feedItems);
 }));
 
 app.get('/api/support', auth, h(async (q, s) => s.json(await Msg.find({ uid: q.user.id }).sort({ at: 1 }).limit(100))));
 app.post('/api/support', auth, h(async (q, s) => {
-  const text = String((q.body || {}).text || '').trim().slice(0, 500);
-  if (!text) return bad(s, 'Write your message first.');
-  await Msg.create({ uid: q.user.id, name: q.user.name, from: 'user', text });
+  Const text = String((q.body || {}).text || '').trim().slice(0, 500);
+  If (!text) return bad(s, 'Write your message first.');
+  Await Msg.create({ uid: q.user.id, name: q.user.name, from: 'user', text });
   
-  let botReply = 'আপনার মেসেজটি আমরা পেয়েছি। আমাদের সাপোর্ট টিম শীঘ্রই এটি চেক করে আপনাকে সহযোগিতা করবে।';
-  const lower = text.toLowerCase();
-  if(lower.includes('ডিপোজিট') || lower.includes('deposit')) {
-    botReply = 'ডিপোজিট সমস্যার জন্য অনুগ্রহ করে সঠিক TrxID ও সঠিক লাস্ট ডিজিট প্রদান করুন। সাধারণত ১০-১৫ মিনিটের মধ্যে ডিপোজিট ব্যালেন্সে যুক্ত হয়।';
+  Let botReply = 'আপনার মেসেজটি আমরা পেয়েছি। আমাদের সাপোর্ট টিম শীঘ্রই এটি চেক করে আপনাকে সহযোগিতা করবে।';
+  Const lower = text.toLowerCase();
+  If(lower.includes('ডিপোজিট') || lower.includes('deposit')) {
+    botReply = 'ডিপোজিট সমস্যার জন্য অনুগ্রহ করে সঠিক TrxID ও সঠিক লাস্ট ডিজিট প্রদান করুন। সাধারণত ১০-১৫ মিনিটের মধ্যে ডিপোজিটের ব্যালেন্স আপডেট হয়।';
   } else if(lower.includes('উইথড্র') || lower.includes('withdrawal') || lower.includes('টাকা পাব')) {
-    botReply = 'উইথড্র রিকোয়েস্ট করার পর ২৪ থেকে ৪৮ ঘণ্টার মধ্যে পেমেন্ট সফলভাবে সম্পন্ন করা হয়। অনুগ্রহ করে অপেক্ষা করুন।';
+    botReply = 'আপনার উইথড্র রিকোয়েস্ট ওয়ালেটের মাধ্যমে প্রসেস করা হয়। বিস্তারিত আপনার ই-ওয়ালেট ড্যাশবোর্ডে দেখতে পাবেন।';
   } else if(lower.includes('টাস্ক') || lower.includes('task')) {
     botReply = 'টাস্ক সেকশন থেকে যেকোনো অফার বা টাস্ক সঠিকভাবে নিয়ম মেনে সম্পন্ন করলে ব্যালেন্সে রিওয়ার্ড যোগ হয়ে যাবে।';
   } else if(lower.includes('গ্যালারি') || lower.includes('gallery')) {
     botReply = 'আর এস গ্যালারি শপ (RS Gallery Shop) আমাদের অফিশিয়াল পার্টনার। এখানে আপনি ইনকামের টাকা দিয়ে খুব সহজেই সাশ্রয়ী মূল্যে সেরা পোশাক ও ফ্যাশন আইটেম অর্ডার করতে পারবেন!';
   }
   
-  await Msg.create({ uid: q.user.id, name: 'Support Bot', from: 'support', text: botReply });
-  s.json({ ok: true });
+  Await Msg.create({ uid: q.user.id, name: 'Support Bot', from: 'support', text: botReply });
+  S.json({ ok: true });
 }));
 
 app.get('/api/admin/user-packages', admin, h(async (q, s) => {
-  s.json(await UserPackage.find({}));
+  S.json(await UserPackage.find({}));
 }));
 app.post('/api/admin/user-packages', admin, h(async (q, s) => {
-  const { title, price, coinsPerMin, description, pkgImage, hot } = q.body || {};
-  if (!price || !coinsPerMin) return bad(s, 'Price and coins per min are required.');
-  await UserPackage.create({ title: title || 'RS Coin Package', price: Number(price), coinsPerMin: Number(coinsPerMin), description: description || '', pkgImage: pkgImage || '', hot: !!hot });
-  s.json({ ok: true });
+  Const { title, price, coinsPerMin, description, pkgImage, hot } = q.body || {};
+  If (!price || !coinsPerMin) return bad(s, 'Price and coins per min are required.');
+  Await UserPackage.create({ title: title || 'RS Coin Package', price: Number(price), coinsPerMin: Number(coinsPerMin), description: description || '', pkgImage: pkgImage || '', hot: !!hot });
+  S.json({ ok: true });
 }));
 app.post('/api/admin/user-packages/delete/:id', admin, h(async (q, s) => {
-  await UserPackage.findByIdAndDelete(q.params.id);
-  s.json({ ok: true });
+  Await UserPackage.findByIdAndDelete(q.params.id);
+  S.json({ ok: true });
 }));
 
 app.get('/api/admin/promo-packages', admin, h(async (q, s) => {
-  s.json(await PromoPackage.find({}));
+  S.json(await PromoPackage.find({}));
 }));
 app.post('/api/admin/promo-packages', admin, h(async (q, s) => {
-  const { title, category, followers, price, description, icon } = q.body || {};
-  if (!title || !price) return bad(s, 'Title and price are required.');
-  await PromoPackage.create({ title, category: category || 'Social Media', followers: Number(followers) || 100, price: Number(price) || 100, description: description || '', icon: icon || 'https://cdn-icons-png.flaticon.com/512/1041/1041888.png' });
-  s.json({ ok: true });
+  Const { title, category, followers, price, description, icon } = q.body || {};
+  If (!title || !price) return bad(s, 'Title and price are required.');
+  Await PromoPackage.create({ title, category: category || 'Social Media', followers: Number(followers) || 100, price: Number(price) || 100, description: description || '', icon: icon || 'https://cdn-icons-png.flaticon.com/512/1041/1041888.png' });
+  S.json({ ok: true });
 }));
 app.post('/api/admin/promo-packages/delete/:id', admin, h(async (q, s) => {
-  await PromoPackage.findByIdAndDelete(q.params.id);
-  s.json({ ok: true });
+  Await PromoPackage.findByIdAndDelete(q.params.id);
+  S.json({ ok: true });
 }));
 
 app.get('/api/admin/sliders', admin, h(async (q, s) => {
-  s.json(await SliderSetting.find({}));
+  S.json(await SliderSetting.find({}));
 }));
 app.post('/api/admin/sliders', admin, h(async (q, s) => {
-  const { title, subtitle, description, link, bgImage, bgClass, emoji, timerSeconds } = q.body || {};
-  await SliderSetting.create({ title, subtitle, description, link, bgImage: bgImage || '', bgClass: bgClass || 's0', emoji: emoji || '🌟', timerSeconds: Number(timerSeconds) || 6 });
-  s.json({ ok: true });
+  Const { title, subtitle, description, link, bgImage, bgClass, emoji, timerSeconds } = q.body || {};
+  Await SliderSetting.create({ title, subtitle, description, link, bgImage: bgImage || '', bgClass: bgClass || 's0', emoji: emoji || '🌟', timerSeconds: Number(timerSeconds) || 6 });
+  S.json({ ok: true });
 }));
 app.post('/api/admin/sliders/delete/:id', admin, h(async (q, s) => {
-  await SliderSetting.findByIdAndDelete(q.params.id);
-  s.json({ ok: true });
+  Await SliderSetting.findByIdAndDelete(q.params.id);
+  S.json({ ok: true });
+}));
+
+// এডমিন প্রমোট সাইট এডিট API (সেভ করার জন্য)
+app.get('/api/admin/site-contents', admin, h(async (q, s) => {
+  S.json(await SiteContent.find({}));
+}));
+app.post('/api/admin/site-contents', admin, h(async (q, s) => {
+  Const { key, title, subtitle, description, imageUrl, extraData } = q.body || {};
+  If (!key) return bad(s, 'Key is required.');
+  Await SiteContent.findOneAndUpdate(
+    { key: key },
+    { key, title, subtitle, description, imageUrl, extraData },
+    { upsert: true, new: true }
+  );
+  S.json({ ok: true });
 }));
 
 app.get('/api/admin/data', admin, h(async (q, s) => {
-  await expire();
-  const start = dayStart();
-  const sum = async (M, match, f) => { const r = await M.aggregate([{ $match: match }, {$group: { _id: null, t: { $sum: '$' + f } } }]); return r.length ? r[0].t : 0; };
-  s.json({
+  Await expire();
+  Const start = dayStart();
+  Const sum = async (M, match, f) => { const r = await M.aggregate([{ $match: match }, {$group: { _id: null, t: { $sum: '$' + f } } }]); return r.length ? r[0].t : 0; };
+  S.json({
     stats: {
-      users: await User.countDocuments(), active: await User.countDocuments({ lastSeen: { $gte: start.getTime() } }),
-      newToday: await User.countDocuments({ created: { $gte: start } }),
-      pending: await Click.countDocuments({ status: 'pending' }), success: await Click.countDocuments({ status: 'success' }), cancelled: await Click.countDocuments({ status: { $in: ['cancelled', 'expired'] } }),
-      today: await sum(Conv, { at: { $gte: start } }, 'bdt'), balance: await sum(User, {}, 'balance'),
-      wdPending: await Wd.countDocuments({ status: 'pending' }), wdPendingSum: await sum(Wd, { status: 'pending' }, 'amount'),
-      wdToday: await Wd.countDocuments({ at: { $gte: start } }),
-      depPending: await Deposit.countDocuments({ status: 'pending' }),
-      pendingTasks: await CustomTask.countDocuments({ status: 'pending' })
+      Users: await User.countDocuments(), active: await User.countDocuments({ lastSeen: { $gte: start.getTime() } }),
+      NewToday: await User.countDocuments({ created: { $gte: start } }),
+      Pending: await Click.countDocuments({ status: 'pending' }), success: await Click.countDocuments({ status: 'success' }), cancelled: await Click.countDocuments({ status: { $in: ['cancelled', 'expired'] } }),
+      Today: await sum(Conv, { at: { $gte: start } }, 'bdt'), balance: await sum(User, {}, 'balance'),
+      PendingTasks: await CustomTask.countDocuments({ status: 'pending' })
     }
   });
 }));
 
-app.get('/api/admin/wd-list', admin, h(async (q, s) => {
-  s.json({ pending: await Wd.find({ status: 'pending' }).sort({ at: 1 }).limit(100), done: await Wd.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20) });
-}));
-
-app.get('/api/admin/dep-list', admin, h(async (q, s) => {
-  s.json({ pending: await Deposit.find({ status: 'pending' }).sort({ at: 1 }).limit(100), done: await Deposit.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20) });
-}));
-
 app.get('/api/admin/custom-tasks', admin, h(async (q, s) => {
-  s.json(await CustomTask.find({ status: 'pending' }).sort({ at: 1 }));
+  S.json(await CustomTask.find({ status: 'pending' }).sort({ at: 1 }));
 }));
 app.post('/api/admin/custom-tasks/:id', admin, h(async (q, s) => {
-  const t = await CustomTask.findById(q.params.id);
-  if (!t) return bad(s, 'Task not found.');
-  if (q.body.ok) {
-    t.status = 'approved';
-    await t.save();
+  Const t = await CustomTask.findById(q.params.id);
+  If (!t) return bad(s, 'Task not found.');
+  If (q.body.ok) {
+    T.status = 'approved';
+    Await t.save();
   } else {
-    t.status = 'rejected';
-    await t.save();
-    await User.updateOne({ _id: t.uid }, { $inc: { balance: t.totalBudget } });
+    T.status = 'rejected';
+    Await t.save();
+    Await User.updateOne({ _id: t.uid }, { $inc: { balance: t.totalBudget } });
   }
-  s.json({ ok: true });
+  S.json({ ok: true });
 }));
 
 app.get('/api/admin/support', admin, h(async (q, s) => {
-  const all = await Msg.find().sort({ at: -1 }).limit(400);
-  const map = {};
-  all.reverse().forEach(m => { (map[m.uid] = map[m.uid] || { uid: m.uid, name: m.name, msgs: [] }).msgs.push({ from: m.from, text: m.text, at: m.at }); });
-  const th = Object.values(map).map(t => { const l = t.msgs[t.msgs.length - 1]; return { uid: t.uid, name: t.name, msgs: t.msgs.slice(-30), needs: l.from === 'user', last: +new Date(l.at) }; });
-  th.sort((a, b) => (b.needs - a.needs) || (b.last - a.last));
-  s.json(th);
+  Const all = await Msg.find().sort({ at: -1 }).limit(400);
+  Const map = {};
+  All.reverse().forEach(m => { (map[m.uid] = map[m.uid] || { uid: m.uid, name: m.name, msgs: [] }).msgs.push({ from: m.from, text: m.text, at: m.at }); });
+  Const th = Object.values(map).map(t => { const l = t.msgs[t.msgs.length - 1]; return { uid: t.uid, name: t.name, msgs: t.msgs.slice(-30), needs: l.from === 'user', last: +new Date(l.at) }; });
+  Th.sort((a, b) => (b.needs - a.needs) || (b.last - a.last));
+  S.json(th);
 }));
 
 app.get('/api/admin/users', admin, h(async (q, s) => {
-  const st = dayStart();
-  const act = await User.find({ lastSeen: { $gte: st.getTime() } }).sort({ lastSeen: -1 }).limit(200).select('name phone email lastSeen balance earned role');
-  const ag = await Conv.aggregate([{ $match: { at: {$gte: st } } }, { $group: { _id: '$uid', t: { $sum: '$bdt' } } }]);
-  const em = {}; ag.forEach(x => { em[x._id] = x.t; });
-  const ids = ag.map(x => x._id).filter(x => mongoose.isValidObjectId(x));
-  const eu = ids.length ? await User.find({ _id: { $in: ids } }).select('name phone email') : [];
-  const earners = eu.map(u => ({ name: u.name, phone: u.phone || u.email || '', t: em[String(u._id)] || 0 })).sort((a, b) => b.t - a.t);
-  const top = await User.find({ earned: { $gt: 0 } }).sort({ earned: -1 }).limit(30).select('name phone email earned balance');
-  s.json({
-    newToday: await User.countDocuments({ created: { $gte: st } }),
-    active: act.map(u => ({ name: u.name, phone: u.phone || u.email || '', role: u.role || 'worker', seen: u.lastSeen, balance: u.balance, today: em[String(u._id)] || 0 })),
-    earners,
-    top: top.map(u => ({ name: u.name, phone: u.phone || u.email || '', earned: u.earned, balance: u.balance }))
+  Const st = dayStart();
+  Const act = await User.find({ lastSeen: { $gte: st.getTime() } }).sort({ lastSeen: -1 }).limit(200).select('name phone email lastSeen balance earned role');
+  Const ag = await Conv.aggregate([{ $match: { at: {$gte: st } } }, { $group: { _id: '$uid', t: { $sum: '$bdt' } } }]);
+  Const em = {}; ag.forEach(x => { em[x._id] = x.t; });
+  Const ids = ag.map(x => x._id).filter(x => mongoose.isValidObjectId(x));
+  Const eu = ids.length ? await User.find({ _id: { $in: ids } }).select('name phone email') : [];
+  Const earners = eu.map(u => ({ name: u.name, phone: u.phone || u.email || '', t: em[String(u._id)] || 0 })).sort((a, b) => b.t - a.t);
+  Const top = await User.find({ earned: { $gt: 0 } }).sort({ earned: -1 }).limit(30).select('name phone email earned balance');
+  S.json({
+    NewToday: await User.countDocuments({ created: { $gte: st } }),
+    Active: act.map(u => ({ name: u.name, phone: u.phone || u.email || '', role: u.role || 'worker', seen: u.lastSeen, balance: u.balance, today: em[String(u._id)] || 0 })),
+    Earners,
+    Top: top.map(u => ({ name: u.name, phone: u.phone || u.email || '', earned: u.earned, balance: u.balance }))
   });
 }));
 
-app.post('/api/admin/wd/:id', admin, h(async (q, s) => {
-  const statusVal = q.body.ok ? 'Success' : 'Rejected';
-  const x = await Wd.findOneAndUpdate({ _id: q.params.id, status: 'pending' }, { status: statusVal });
-  if (x && !q.body.ok) await User.updateOne({ _id: x.uid }, { $inc: { balance: x.amount } });
-  s.json({ ok: true });
-}));
-
-app.post('/api/admin/dep/:id', admin, h(async (q, s) => {
-  const dep = await Deposit.findOne({ _id: q.params.id, status: 'pending' });
-  if (!dep) return bad(s, 'Deposit not found or already processed.');
-  
-  if (q.body.ok) {
-    dep.status = 'approved';
-    await dep.save();
-    
-    let coinsPerMin = 10;
-    const a = dep.amount;
-    if (a >= 3000) coinsPerMin = 300;
-    else if (a >= 2500) coinsPerMin = 220;
-    else if (a >= 2000) coinsPerMin = 160;
-    else if (a >= 1500) coinsPerMin = 110;
-    else if (a >= 1200) coinsPerMin = 80;
-    else if (a >= 800) coinsPerMin = 50;
-    else if (a >= 500) coinsPerMin = 25;
-    else if (a >= 200) coinsPerMin = 10;
-
-    const pkgData = { 
-      name: dep.pkgName || 'RS Coin Package', 
-      amount: a, 
-      coinsPerMin, 
-      startedAt: Date.now(), 
-      lastClaim: Date.now(), 
-      expiresAt: Date.now() + (30 * 86400000) 
-    };
-
-    await User.updateOne({ _id: dep.uid }, { 
-      $inc: { balance: a, earned: a },
-      $set: { activePkg: pkgData } 
-    });
-  } else {
-    dep.status = 'rejected';
-    await dep.save();
-  }
-  s.json({ ok: true });
-}));
-
 app.post('/api/admin/bonus', admin, h(async (q, s) => {
-  const { phone, amount } = q.body || {};
-  const a = Number(amount);
-  if (!phone || isNaN(a) || a <= 0) return bad(s, 'Invalid phone or amount.');
-  const u = await User.findOneAndUpdate({ phone: String(phone).trim() }, { $inc: { balance: a, earned: a } });
-  if (!u) return bad(s, 'User not found.');
-  s.json({ ok: true });
+  Const { phone, amount } = q.body || {};
+  Const a = Number(amount);
+  If (!phone || isNaN(a) || a <= 0) return bad(s, 'Invalid phone or amount.');
+  Const u = await User.findOneAndUpdate({ phone: String(phone).trim() }, { $inc: { balance: a, earned: a } });
+  If (!u) return bad(s, 'User not found.');
+  S.json({ ok: true });
 }));
 
 app.post('/api/admin/reply', admin, h(async (q, s) => {
-  const u = await User.findById(q.body.uid);
-  if (u && q.body.text) await Msg.create({ uid: u.id, name: u.name, from: 'support', text: String(q.body.text).slice(0, 500) });
-  s.json({ ok: true });
+  Const u = await User.findById(q.body.uid);
+  If (u && q.body.text) await Msg.create({ uid: u.id, name: u.name, from: 'support', text: String(q.body.text).slice(0, 500) });
+  S.json({ ok: true });
 }));
 
 app.get('/api/admin/offers-raw', admin, h(async (q, s) => {
-  const dbg = {};
-  await fetchOffers('admin-test', ctxOf(q), dbg);
-  s.json({ text: 'Offers fetched successfully.' });
+  Const dbg = {};
+  Await fetchOffers('admin-test', ctxOf(q), dbg);
+  S.json({ text: 'Offers fetched successfully.' });
 }));
 
-const PAGE = `<!DOCTYPE html>
+Const PAGE = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="google-site-verification" content="LFCR_Ofi-3uqR900pf2ntTa2io3ymE1PRv4jlyWoX28" />
 <link rel="manifest" href="/manifest.json">
@@ -828,20 +803,30 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .th{background:#131d38;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
 .th .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;font-weight:700}
 .gap{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-.hs{position:relative;height:200px;border-radius:24px;overflow:hidden;margin-bottom:10px;border:1px solid rgba(251,191,36,.45);cursor:pointer;background-size:contain;background-repeat:no-repeat;background-position:center}
-.sl{position:absolute;inset:0;padding:18px 16px;opacity:0;transform:scale(.96);transition:opacity .7s,transform .7s;display:flex;flex-direction:column;justify-content:center;pointer-events:none;background-size:contain;background-repeat:no-repeat;background-position:center}
-.sl.on{opacity:1;transform:none;pointer-events:auto}
-.sl .tag{display:inline-block;align-self:flex-start;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,.5);color:#fde68a;margin-bottom:8px}
-.sl h4{font-size:18px;color:#fff;margin-bottom:6px;max-width:72%;text-shadow:0 2px 4px rgba(0,0,0,.8)}
-.sl p{font-size:12.5px;line-height:1.65;color:#f1f5f9;max-width:74%;text-shadow:0 2px 4px rgba(0,0,0,.8)}
-.sl .em{position:absolute;right:8px;bottom:6px;font-size:76px}
-.s0{background:linear-gradient(135deg,#0f3d2e,#14532d 55%,#052e1a)}
-.s1{background:linear-gradient(135deg,#1e1b4b,#312e81 55%,#0f172a)}
-.s2{background:linear-gradient(135deg,#0c4a6e,#075985 55%,#082f49)}
-.s3{background:linear-gradient(135deg,#78350f,#92400e 55%,#451a03)}
+
+/* প্রিমিয়াম অ্যানিমেটেড ও কালারফুল হোম স্লাইডার ও ব্যানার */
+.hs{position:relative;height:210px;border-radius:24px;overflow:hidden;margin-bottom:10px;border:1px solid rgba(251,191,36,.5);cursor:pointer;background-size:cover;background-repeat:no-repeat;background-position:center}
+.sl{position:absolute;inset:0;padding:18px 16px;opacity:0;transform:scale(.95);transition:opacity .8s ease,transform .8s ease;display:flex;flex-direction:column;justify-content:center;pointer-events:none;background-size:cover;background-repeat:no-repeat;background-position:center}
+.sl.on{opacity:1;transform:scale(1);pointer-events:auto}
+.sl .tag{display:inline-block;align-self:flex-start;font-size:11px;font-weight:800;padding:4px 12px;border-radius:14px;background:rgba(251,191,36,0.25);color:var(--gold);margin-bottom:8px;border:1px solid var(--gold);animation:pulseTag 2s infinite}
+@keyframes pulseTag{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+.sl h4{font-size:20px;color:#fff;margin-bottom:6px;max-width:75%;text-shadow:0 2px 6px rgba(0,0,0,0.9);animation:fadeInText 0.8s ease}
+.sl p{font-size:13px;line-height:1.65;color:#f8fafc;max-width:78%;text-shadow:0 2px 6px rgba(0,0,0,0.9);animation:fadeInText 1s ease}
+@keyframes fadeInText{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.sl .em{position:absolute;right:12px;bottom:10px;font-size:80px;animation:floatEmoji 3s ease-in-out infinite}
+@keyframes floatEmoji{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+/* হোম স্ক্রিনের ডিফারেন্ট প্রিমিয়াম কালার থিম */
+.s0{background:linear-gradient(135deg,#134e4a,#042f2e 55%,#022c22)}
+.s1{background:linear-gradient(135deg,#311026,#4a044e 55%,#1e1b4b)}
+.s2{background:linear-gradient(135deg,#1e3a8a,#172554 55%,#0f172a)}
+.s3{background:linear-gradient(135deg,#78350f,#451a03 55%,#291302)}
+.s4{background:linear-gradient(135deg,#831843,#500724 55%,#18181b)}
+
 .dots{display:flex;justify-content:center;gap:6px;margin-bottom:14px}
 .dots i{width:7px;height:7px;border-radius:50%;background:#334155;cursor:pointer;transition:all .3s}
 .dots i.on{background:var(--gold);width:22px;border-radius:6px}
+
 .bn{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
 .bo{border-radius:22px;padding:3px;background:linear-gradient(135deg,#fde68a,#b45309 50%,#fbbf24)}
 .bi{border-radius:19px;background:linear-gradient(180deg,#16213f,#0b1224);padding:14px 10px;text-align:center;border:1px solid rgba(251,191,36,.25)}
@@ -855,7 +840,6 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .wheel .pt{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:28px;color:#fbbf24;z-index:3}
 .tdw{font-size:12.5px;line-height:1.7;color:#e2e8f0;background:#131d38;border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0}
 .tdw b{color:var(--gold)}
-.stp{font-size:12.5px;line-height:1.9;color:#cbd5e1;margin:8px 0 4px;padding-left:4px}
 .thero{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,#0c2a4a,#0b1224);border:1px solid rgba(56,189,248,.35);border-radius:20px;padding:14px;margin-bottom:12px}
 .thero b{font-size:16px;color:#fff}.thero small{display:block;color:var(--mu);font-size:11.5px;margin-top:4px}
 .rg{position:relative;width:78px;height:78px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:30px}
@@ -878,26 +862,22 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .fcols h5{font-size:12px;color:var(--gold);margin-bottom:6px}
 .fcols a{display:block;font-size:12.5px;color:#94a3b8;padding:5px 0;cursor:pointer;text-decoration:none}
 .fsoc{display:flex;align-items:center;justify-content:center;gap:14px;padding:14px 0;border-top:1px solid #1e293b;border-bottom:1px solid #1e293b;margin-bottom:12px}
-.fsoc a{display:block;width:46px;height:46px;border-radius:50%}
 .fage{display:flex;align-items:center;gap:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.4);border-radius:14px;padding:10px;margin-bottom:12px}
 .fage .bd{width:46px;height:46px;border-radius:50%;border:3px solid var(--red);color:var(--red);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0}
 .fage div{font-size:11.5px;line-height:1.6;color:#fecaca}
-.fchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-.fchip{font-size:11px;padding:5px 10px;border-radius:12px;background:#16213f;border:1px solid #243352;color:#e2e8f0}
-.fh{font-size:11px;color:var(--mu);margin:10px 0 2px}
-.fr{display:flex;align-items:center;gap:10px;font-size:12.5px;color:#cbd5e1;padding:7px 0;border-top:1px solid #1e293b}
-.fr a{color:#7dd3fc;text-decoration:none}
 .fc{font-size:10.5px;color:#64748b;text-align:center;margin-top:12px;border-top:1px solid #1e293b;padding-top:10px}
 .img-upload-btn{display:flex;align-items:center;justify-content:center;gap:6px;background:#1e293b;border:1px dashed var(--gold);color:var(--gold);padding:10px;border-radius:10px;cursor:pointer;font-size:13px;margin-top:6px;font-weight:bold}
 
-/* SMM Style Dashboard & Sidebar */
-.smm-welcome{background:linear-gradient(135deg,#311026,#131d38);border:1px solid rgba(239,68,68,0.4);border-radius:18px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+/* SMM Style Dashboard & Sidebar - কমলা কালার থিম */
+.smm-welcome{background:linear-gradient(135deg,#311026,#131d38);border:1px solid rgba(251,191,36,0.5);border-radius:18px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .smm-services-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:14px}
 .smm-service-icon{background:#131d38;border:1px solid var(--line);border-radius:10px;padding:8px 4px;text-align:center;font-size:18px;cursor:pointer;transition:0.2s}
 .smm-service-icon:hover{border-color:var(--gold)}
 .smm-sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:150}
 .smm-sidebar{position:fixed;top:0;left:-280px;width:280px;height:100%;background:#0b1224;border-right:1px solid var(--line);z-index:160;transition:left 0.3s;padding:16px;overflow-y:auto}
 .smm-sidebar.on{left:0}
+.smm-menu-item{display:flex;align-items:center;gap:10px;background:#131d38;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer;font-size:13.5px;color:#fff;font-weight:600;transition:all 0.2s}
+.smm-menu-item:hover{border-color:var(--gold);color:var(--gold)}
 
 /* Premium Animated Ad Button */
 .premium-ad-btn{position:relative;width:100%;background:linear-gradient(135deg,#38bdf8,#22c55e,#fbbf24);background-size:200% 200%;color:#000;font-weight:800;font-size:15px;padding:14px;border:none;border-radius:16px;cursor:pointer;box-shadow:0 0 20px rgba(56,189,248,0.5);animation:premiumGlow 3s ease infinite;transition:transform 0.2s;text-align:center;margin-top:12px}
@@ -916,18 +896,18 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 </style></head><body>
 <div class="app">
 
-<!-- SMM Style Sidebar for Employer/Promotion -->
+<!-- SMM Style Sidebar with Orange/Gold Theme -->
 <div id="smmOverlay" class="smm-sidebar-overlay" onclick="toggleSmmSidebar()"></div>
 <div id="smmSidebar" class="smm-sidebar">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-    <b style="color:var(--gold);font-size:16px">SMM Menu</b>
-    <span style="font-size:18px;cursor:pointer" onclick="toggleSmmSidebar()">✕</span>
+    <b style="color:var(--gold);font-size:17px">⚡ SMM Panel Menu</b>
+    <span style="font-size:18px;cursor:pointer;color:var(--gold)" onclick="toggleSmmSidebar()">✕</span>
   </div>
-  <div style="font-size:12px;color:var(--mu);margin-bottom:14px">Navigation & Services</div>
-  <div class="row" style="cursor:pointer" onclick="toggleSmmSidebar();go('emp')">🛒 New Order / Services</div>
-  <div class="row" style="cursor:pointer" onclick="toggleSmmSidebar();go('home')">🏠 Home Dashboard</div>
-  <div class="row" style="cursor:pointer" onclick="toggleSmmSidebar();go('tasks')">📋 Micro Tasks</div>
-  <div class="row" style="cursor:pointer" onclick="toggleSmmSidebar();go('acc')">👤 Account & Deposit ($)</div>
+  <div style="font-size:11.5px;color:var(--mu);margin-bottom:14px">Navigation & Services</div>
+  <div class="smm-menu-item" onclick="toggleSmmSidebar();go('emp')"><span style="color:var(--gold)">🛒</span> New Order / Services</div>
+  <div class="smm-menu-item" onclick="toggleSmmSidebar();go('home')"><span style="color:var(--gold)">🏠</span> Home Dashboard</div>
+  <div class="smm-menu-item" onclick="toggleSmmSidebar();go('tasks')"><span style="color:var(--gold)">📋</span> Micro Tasks</div>
+  <div class="smm-menu-item" onclick="toggleSmmSidebar();go('acc')"><span style="color:var(--gold)">👤</span> Account & Deposit ($)</div>
 </div>
 
 <div id="landing">
@@ -993,7 +973,7 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 </div>
 <div class="top">
   <div class="l">
-    <span style="font-size:22px;cursor:pointer;margin-right:4px" onclick="toggleSmmSidebar()">☰</span>
+    <span style="font-size:22px;cursor:pointer;margin-right:4px;color:var(--gold)" onclick="toggleSmmSidebar()">☰</span>
     <div id="logoT"></div>
     <div class="av" id="avT" onclick="$('avf').click()">📷</div>
     <div><b id="hName"></b><small id="hRsCoins" style="display:block;color:var(--gold);font-size:11px">RS Coins: 0</small></div>
@@ -1089,7 +1069,7 @@ function enter(m){
   $('landing').style.display='none';
   $('auth').style.display='none';
   var tbs = getTabs();
-  $('nav').innerHTML=tbs.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
+  $('nav').innerHTML=tbs.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\x27'+t[0]+'\x27)"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
   head();
   go(ME.role === 'employer' ? 'emp' : 'home');
   startGlobalSync();
@@ -1142,8 +1122,8 @@ function handleSlideClick(link){
 function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
  return '<div class="ft"><div class="ftl">'+logo(46)+'<div><b>'+esc(c.n)+'</b><small>টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম ও আর এস গ্যালারি কোলাবোরেশন</small></div></div>'+
  '<div class="fd">'+esc(c.d||'')+'</div>'+
- '<div class="fcols"><h5>প্ল্যাটফর্ম</h5><a onclick="go(\\'home\\')">Home</a><a onclick="go(\\'tasks\\')">Tasks</a><a onclick="go(\\'pkg\\')">Package</a><a onclick="go(\\'rank\\')">Ranking</a><a onclick="go(\\'ref\\')">Refer</a></div>'+
- '<div><h5>সহায়তা</h5><a onclick="go(\\'help\\')">Support</a><a onclick="go(\\'acc\\')">Account</a><a onclick="go(\\'book\\')">ইসলামিক বই</a></div></div>'+
+ '<div class="fcols"><h5>প্ল্যাটফর্ম</h5><a onclick="go(\x27home\x27)">Home</a><a onclick="go(\x27tasks\x27)">Tasks</a><a onclick="go(\x27pkg\x27)">Package</a><a onclick="go(\x27rank\x27)">Ranking</a><a onclick="go(\x27ref\x27)">Refer</a></div>'+
+ '<div><h5>সহায়তা</h5><a onclick="go(\x27help\x27)">Support</a><a onclick="go(\x27acc\x27)">Account</a><a onclick="go(\x27book\x27)">ইসলামিক বই</a></div></div>'+
  '<div class="fage"><span class="bd">'+A+'+</span><div>'+A+' বছরের নিচে কারও এই অ্যাকাউন্টে প্রবেশ করা নিষেধ।</div></div>'+
  '<div class="fc">© '+esc(c.y)+' '+esc(c.n)+'. সর্বস্বত্ব সংরক্ষিত।</div></div>'}
 
@@ -1155,8 +1135,8 @@ function vHome(){
     var timerSec = (sliders[0] && sliders[0].timerSeconds) ? (sliders[0].timerSeconds * 1000) : 6000;
     
     var sl = sliders.map(function(x,i){
-      var styleBg = x.bgImage ? 'background-image:linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.6)),url(\\''+esc(x.bgImage)+'\\');background-size:cover;' : '';
-      return '<div class="sl '+x.bgClass+(i===0?' on':'')+'" style="'+styleBg+'" onclick="handleSlideClick(\\''+esc(x.link)+'\\')"><span class="tag">'+esc(x.subtitle)+'</span><h4>'+esc(x.title)+'</h4><p>'+esc(x.description)+'</p><span class="em">'+x.emoji+'</span></div>';
+      var styleBg = x.bgImage ? 'background-image:linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.6)),url(\x27'+esc(x.bgImage)+'\x27);background-size:cover;' : '';
+      return '<div class="sl '+x.bgClass+(i===0?' on':'')+'" style="'+styleBg+'" onclick="handleSlideClick(\x27'+esc(x.link)+'\x27)"><span class="tag">'+esc(x.subtitle)+'</span><h4>'+esc(x.title)+'</h4><p>'+esc(x.description)+'</p><span class="em">'+x.emoji+'</span></div>';
     }).join('');
     var dt = sliders.map(function(x,i){
       return '<i class="'+(i===0?'on':'')+'" onclick="hsGo('+i+')"></i>';
@@ -1172,8 +1152,8 @@ function vHome(){
       '<button class="btn'+(sp?'':' dn')+'" style="margin-top:12px;width:100%" onclick="spinOpen()">'+(sp?'Spin Wheel Now':'Spin Completed ✅')+'</button></div></div>'+
 
       '<h3>আজকের বোনাস</h3><div class="bn">'+
-      '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
-      '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
+      '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\x27daily\x27)">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
+      '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\x27checkin\x27)">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
       
       if(window.TIMER) clearInterval(window.TIMER);
       window.TIMER=setInterval(function(){if(!document.querySelector('.hs')){clearInterval(window.TIMER);return}hsGo((HSI+1)%HS_DATA.length)}, timerSec);
@@ -1215,7 +1195,7 @@ function vEmp(){
         '<small style="display:block;color:var(--mu);font-size:11px">Email: '+esc(ME.email || 'omg218063@gmail.com')+'</small>' +
       '</div>' +
       '<div style="text-align:right">' +
-        '<div style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.5);border-radius:12px;padding:6px 12px;display:flex;align-items:center;gap:6px">' +
+        '<div style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.5);border-radius:12px;padding:6px 12px;display:flex;align-items:center;gap:6px">' +
           '<span style="font-size:16px">👤</span>' +
           '<div><b style="color:var(--gold);font-size:13px">$'+usdBal+'</b><small style="display:block;font-size:9px;color:var(--mu)">USD Funds</small></div>' +
         '</div>' +
@@ -1223,10 +1203,10 @@ function vEmp(){
     '</div>' +
 
     // Quick Connect Telegram & Support links
-    '<div class="row" style="cursor:pointer;background:linear-gradient(135deg,#0c2350,#0b1224)" onclick="window.open(\\'https://t.me/rkrana33\\',\\'_blank\\')">' +
+    '<div class="row" style="cursor:pointer;background:linear-gradient(135deg,#0c2350,#0b1224)" onclick="window.open(\x27https://t.me/rkrana33\x27,\x27_blank\x27)">' +
       '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:22px">✈️</span><div><b>Join Our Telegram Channel to Get Update</b><small style="color:var(--blu)">Connect Telegram &rsaquo;</small></div></div>' +
     '</div>' +
-    '<div class="row" style="cursor:pointer;background:linear-gradient(135deg,#0b3a1e,#0b1224)" onclick="go(\\'help\\')">' +
+    '<div class="row" style="cursor:pointer;background:linear-gradient(135deg,#0b3a1e,#0b1224)" onclick="go(\x27help\x27)">' +
       '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:22px">💬</span><div><b>For Any Kind of Customer Support</b><small style="color:var(--grn)">Talk with us &rsaquo;</small></div></div>' +
     '</div>' +
 
@@ -1243,8 +1223,8 @@ function vEmp(){
 
     // Action buttons: New Order & Add Fund ($)
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
-      '<button class="btn r" style="margin-top:0;font-size:13px" onclick="toast(\\'Already in New Order section\\')">🛍️ New Order</button>' +
-      '<button class="btn g" style="margin-top:0;font-size:13px" onclick="go(\\'acc\\')">💳 Add Fund ($)</button>' +
+      '<button class="btn r" style="margin-top:0;font-size:13px;background:linear-gradient(90deg,var(--gold),#f59e0b);color:#000" onclick="toast(\x27Already in New Order section\x27)">🛒 New Order</button>' +
+      '<button class="btn g" style="margin-top:0;font-size:13px" onclick="go(\x27acc\x27)">💳 Add Fund ($)</button>' +
     '</div>' +
 
     // Services Selection Card (SMM Style)
@@ -1272,7 +1252,7 @@ function vEmp(){
       '<label>Average Time</label><input disabled value="4 hours 41 minutes" style="color:var(--mu)">' +
       '<label>Charge ($ USD / ৳ BDT)</label>' +
       '<div id="smmChargeBox" style="background:#0b1224;border:1px solid var(--line);border-radius:10px;padding:11px;color:var(--gold);font-weight:bold;margin-top:4px">৳80.00 ($0.67 USD)</div>' +
-      '<button class="btn r" style="margin-top:14px" onclick="submitSmmOrder()">Submit Order</button>' +
+      '<button class="btn r" style="margin-top:14px;background:linear-gradient(90deg,var(--gold),#f59e0b);color:#000" onclick="submitSmmOrder()">Submit Order</button>' +
     '</div>' +
 
     // Service Info & Description Box
@@ -1285,13 +1265,8 @@ function vEmp(){
   });
 }
 
-var globalSmmPkgs = [];
-function filterSmmService(val){
-  // Quick filter simulation
-}
-function updateSmmPricing(){
-  // Update charge calculation
-}
+function filterSmmService(val){}
+function updateSmmPricing(){}
 
 function submitSmmOrder(){
   var link = $('smmLink').value;
@@ -1311,7 +1286,7 @@ function submitSmmOrder(){
 
 function vTasks(){
   $('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>📋</div><div><b>Tasks & Watch Ads Dashboard</b><small>টাস্ক সম্পন্ন করুন এবং অর্জিত টাকা দিয়ে আর এস গ্যালারি থেকে শপিং করুন।</small></div></div>' +
-  '<div class="seg" style="margin-bottom:14px"><div id="subTask" class="on" onclick="switchTaskSub(\\'tasks\\')">📋 Offerwall Tasks</div><div id="subAd" onclick="switchTaskSub(\\'ads\\')">📺 Watch Ads</div></div>' +
+  '<div class="seg" style="margin-bottom:14px"><div id="subTask" class="on" onclick="switchTaskSub(\x27tasks\x27)">📋 Offerwall Tasks</div><div id="subAd" onclick="switchTaskSub(\x27ads\x27)">📺 Watch Ads</div></div>' +
   '<div id="taskSubContent"></div>';
   switchTaskSub('tasks');
 }
@@ -1423,7 +1398,7 @@ function vPkg(){
       '<b style="color:var(--gold);font-size:13px;display:block;margin-bottom:4px">'+esc(x.description)+'</b>' +
       '<div style="font-size:11px;color:var(--mu)">মূল্য: <b>'+x.price+' BDT</b></div>' +
       '<div style="font-size:12px;color:var(--grn);margin:4px 0 8px">মিনিটে: <b>'+formatCompact(x.coinsPerMin)+' RS Coins</b></div>' +
-      '<button class="btn s g" style="width:100%" onclick="go(\\'acc\\');depForm('+x.price+',\\''+esc(x.description)+'\\')">Buy Package</button>' +
+      '<button class="btn s g" style="width:100%" onclick="go(\x27acc\x27);depForm('+x.price+',\x27'+esc(x.description)+'\x27)">Buy Package</button>' +
       '</div>';
     }).join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>') + '</div>';
   }).catch(function(e){$('main').innerHTML='<div class="row">'+e.message+'</div>'});
@@ -1453,10 +1428,10 @@ function copyL(){(navigator.clipboard?navigator.clipboard.writeText(RL):Promise.
 function vHelp(){
   $('main').innerHTML=hb('help','💬','Support','আপনার যেকোনো সমস্যার দ্রুত সমাধান নিন।') +
   '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">' +
-  '<button class="btn s" onclick="presetMsg(\\'আমার ডিপোজিট এখনো যুক্ত হয়নি, কি করব?\\')">💳 ডিপোজিট সমস্যা</button>' +
-  '<button class="btn s" onclick="presetMsg(\\'আমার উইথড্র পেন্ডিং আছে, কখন পাব?\\')">💸 উইথড্র সমস্যা</button>' +
-  '<button class="btn s" onclick="presetMsg(\\'টাস্ক কমপ্লিট করার নিয়ম সম্পর্কে জানতে চাই।\\')">📋 টাস্ক সমস্যা</button>' +
-  '<button class="btn s" onclick="presetMsg(\\'আর এস গ্যালারি শপ থেকে কিভাবে কেনাকাটা করব?\\')">🛍️ আর এস গ্যালারি শপ</button>' +
+  '<button class="btn s" onclick="presetMsg(\x27আমার ডিপোজিট এখনো যুক্ত হয়নি, কি করব?\x27)">💳 ডিপোজিট সমস্যা</button>' +
+  '<button class="btn s" onclick="presetMsg(\x27আমার উইথড্র পেন্ডিং আছে, কখন পাব?\x27)">💸 উইথড্র সমস্যা</button>' +
+  '<button class="btn s" onclick="presetMsg(\x27টাস্ক কমপ্লিট করার নিয়ম সম্পর্কে জানতে চাই।\x27)">📋 টাস্ক সমস্যা</button>' +
+  '<button class="btn s" onclick="presetMsg(\x27আর এস গ্যালারি শপ থেকে কিভাবে কেনাকাটা করব?\x27)">🛍️ আর এস গ্যালারি শপ</button>' +
   '</div>' +
   '<div class="chat" id="ch"></div><textarea id="st" rows="2" maxlength="500" placeholder="Describe your problem"></textarea><button class="btn" onclick="sendS()">Send</button>';
   loadSupportMsgs();
@@ -1498,13 +1473,13 @@ function vAcc(){
     }, 2000);
   }).catch(function(){});
 
+  // নির্দেশ অনুযায়ী ইউজার অ্যাকাউন্ট থেকে উইথড্র (Withdraw) অপশন পুরোপুরি কেটে দেওয়া হয়েছে
   $('main').innerHTML=hb('acc','👤','My Account','আপনার ব্যালেন্স ও পপআপ হিস্ট্রি।')+
   '<div class="row"><div>'+esc(ME.name)+' ('+(isEmp?'Employer SMM':'Worker')+')<small>'+esc(ME.phone||ME.email)+'</small></div><button class="btn s" onclick="out()">Logout</button></div>'+
   '<div class="grid"><div class="stat"><b>'+money(ME.balance)+'</b><small>Balance (BDT)</small></div><div class="stat"><b>$'+(ME.balance/120).toFixed(2)+'</b><small>Balance (USD)</small></div></div>'+
-  '<div style="display:flex;gap:8px"><button class="btn g" style="flex:1" onclick="depForm()">Deposit ($ USD / BDT)</button>'+(isEmp?'':'<button class="btn r" style="flex:1" onclick="wdForm()">Withdraw</button>')+'</div>'+
+  '<button class="btn g" style="width:100%" onclick="depForm()">Deposit ($ USD / BDT)</button>'+
   
-  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">' +
-  '<button class="btn" style="background:#1e293b;color:var(--gold);margin-top:0" onclick="openWdPopup()">💸 Withdrawal History</button>' +
+  '<div style="display:grid;grid-template-columns:1fr;gap:10px;margin-top:16px">' +
   '<button class="btn" style="background:#1e293b;color:var(--grn);margin-top:0" onclick="openDepPopup()">💳 Deposit History</button>' +
   '</div>' +
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:16px" onclick="admOpen()">Admin panel</button>' +
@@ -1525,15 +1500,6 @@ function renderLiveFeed(feed){
   }).join('');
 }
 
-function openWdPopup(){
-  api('withdrawals').then(function(a){
-    var content = a.length ? a.map(function(w){
-      return '<div class="row"><div>'+esc(w.method)+' '+esc(w.phone)+'<small>'+new Date(w.at).toLocaleDateString()+'</small></div><div>'+money(w.amount)+' BDT <span class="chip '+(w.status==='pending'?'pending':w.status)+'">'+w.status+'</span></div></div>';
-    }).join('') : '<div class="row">No withdrawals.</div>';
-    modal('<h3 style="color:var(--gold)">💸 Withdrawal History & Pending</h3><div style="max-height:60vh;overflow-y:auto">'+content+'</div><button class="btn" style="background:#1e293b;color:#fff" onclick="closeM()">Close</button>');
-  });
-}
-
 function openDepPopup(){
   api('deposits').then(function(a){
     var content = a.length ? a.map(function(d){
@@ -1552,10 +1518,6 @@ function startCircleHold(type, pkgName){
     var lastDig = $('dlast').value.trim();
     if(txVal.length < 10) { toast('TrxID কমপক্ষে ১০ অক্ষরের হতে হবে।'); return; }
     if(lastDig.length !== 3) { toast('সঠিকভাবে ট্রানজেকশনের শেষের ৩ ডিজিট দিন।'); return; }
-  } else if(type === 'wd'){
-    var wa = $('wa').value, wp = $('wp').value;
-    if(!wa || wa < 300) { toast('উইথড্র অ্যামাউন্ট কমপক্ষে ৩০০ টাকা হতে হবে।'); return; }
-    if(!wp || wp.length < 11) { toast('সঠিক ফোন নাম্বার দিন।'); return; }
   }
 
   currentProgress = 0;
@@ -1572,7 +1534,6 @@ function startCircleHold(type, pkgName){
       clearInterval(circularTimer);
       circularTimer = null;
       if(type === 'dep') executeDeposit(pkgName);
-      else if(type === 'wd') doWd();
     }
   }, 35);
 }
@@ -1589,31 +1550,6 @@ function cancelCircleHold(){
   if(txt) txt.innerText = 'TAP & HOLD';
 }
 
-function wdForm(){
-  modal('<h3 style="color:var(--gold);text-align:center">Withdraw Form</h3>' +
-  '<div class="row" style="background:#0b1224;display:block;margin-bottom:10px">' +
-  '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Username:</span><b>'+esc(ME.name)+'</b></div>' +
-  '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">User ID:</span><b>RSGM-'+ME.id.slice(-6).toUpperCase()+'</b></div>' +
-  '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Current Balance:</span><b style="color:var(--grn)">৳'+money(ME.balance)+'</b></div>' +
-  '</div>' +
-  '<label>Select Method</label><select id="wm"><option value="bKash">bKash</option><option value="Nagad">Nagad</option></select>' +
-  '<label>Withdraw Amount (BDT)</label><input id="wa" type="number" placeholder="300 - 5000">' +
-  '<label>Account Number</label><input id="wp" placeholder="01XXXXXXXXX">' +
-  
-  '<div class="hold-circle-container">' +
-  '<svg class="hold-circle-svg" viewBox="0 0 100 100"><defs><linearGradient id="circleGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#22c55e"/></linearGradient></defs><circle class="hold-bg-circle" cx="50" cy="50" r="48"/><circle id="circleProgress" class="hold-progress-circle" cx="50" cy="50" r="48"/></svg>' +
-  '<div class="hold-btn-inner" onmousedown="startCircleHold(\\'wd\\')" ontouchstart="startCircleHold(\\'wd\\')" onmouseup="cancelCircleHold()" ontouchend="cancelCircleHold()"><span id="circleBtnText">TAP & HOLD</span><small style="font-size:7px;opacity:0.9">TO SUBMIT</small></div>' +
-  '</div>' +
-  
-  '<button class="btn" style="background:#1e293b;color:#fff;margin-top:6px" onclick="closeM()">Close</button>');
-}
-
-function doWd(){
-  api('withdraw','POST',{method:$('wm').value,amount:$('wa').value,phone:$('wp').value}).then(function(m){
-    ME=m; head(); closeM(); toast('Withdrawal request submitted successfully.'); vAcc();
-  }).catch(function(e){toast(e.message)});
-}
-
 function depForm(presetAmount, pkgName){
   var presetUsd = presetAmount ? (presetAmount / 120).toFixed(2) : '';
   modal('<h3 style="color:var(--gold);text-align:center">Deposit Fund ($ USD / BDT)</h3>' +
@@ -1624,8 +1560,8 @@ function depForm(presetAmount, pkgName){
   '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Date:</span><b>'+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</b></div>' +
   '</div>' +
   '<div style="display:flex;gap:10px;margin-bottom:10px">' +
-  '<div id="payBkash" style="flex:1;background:#131d38;border:2px solid var(--gold);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\\'bKash\\')"><b style="color:#e11d48">bKash</b></div>' +
-  '<div id="payNagad" style="flex:1;background:#131d38;border:2px solid var(--line);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\\'Nagad\\')"><b style="color:#f97316">Nagad</b></div>' +
+  '<div id="payBkash" style="flex:1;background:#131d38;border:2px solid var(--gold);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\x27bKash\x27)"><b style="color:#e11d48">bKash</b></div>' +
+  '<div id="payNagad" style="flex:1;background:#131d38;border:2px solid var(--line);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\x27Nagad\x27)"><b style="color:#f97316">Nagad</b></div>' +
   '</div>' +
   '<div class="tdw" style="text-align:center"><b>Official Number:</b> <span style="color:var(--grn);font-weight:bold" id="offNumText">01951639460</span> <button class="copy-btn-inline" onclick="copyDepNum()">Copy</button><br><small>1. Send money to this number.<br>2. Enter TrxID and Last 3 Digits below.</small></div>' +
   '<label>Deposit Amount (৳ BDT)</label><input id="da" type="number" value="'+(presetAmount||'')+'" placeholder="200 - 15000" oninput="calcUsdDep(this.value)">' +
@@ -1635,7 +1571,7 @@ function depForm(presetAmount, pkgName){
   
   '<div class="hold-circle-container">' +
   '<svg class="hold-circle-svg" viewBox="0 0 100 100"><defs><linearGradient id="circleGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#22c55e"/></linearGradient></defs><circle class="hold-bg-circle" cx="50" cy="50" r="48"/><circle id="circleProgress" class="hold-progress-circle" cx="50" cy="50" r="48"/></svg>' +
-  '<div class="hold-btn-inner" onmousedown="startCircleHold(\\'dep\\',\\''+(pkgName||'Custom Deposit')+'\\')" ontouchstart="startCircleHold(\\'dep\\',\\''+(pkgName||'Custom Deposit')+'\\')" onmouseup="cancelCircleHold()" ontouchend="cancelCircleHold()"><span id="circleBtnText">TAP & HOLD</span><small style="font-size:7px;opacity:0.9">TO SUBMIT</small></div>' +
+  '<div class="hold-btn-inner" onmousedown="startCircleHold(\x27dep\x27,\x27'+(pkgName||'Custom Deposit')+'\x27)" ontouchstart="startCircleHold(\x27dep\x27,\x27'+(pkgName||'Custom Deposit')+'\x27)" onmouseup="cancelCircleHold()" ontouchend="cancelCircleHold()"><span id="circleBtnText">TAP & HOLD</span><small style="font-size:7px;opacity:0.9">TO SUBMIT</small></div>' +
   '</div>' +
   
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:6px" onclick="closeM()">Close</button>');
@@ -1690,8 +1626,8 @@ var DUA=[
 ["৩. আত্তাহিয়্যাতু","التَّحِيَّاتُ لِلَّهِ","আত্তাহিয়্যাতু লিল্লাহি...","সমস্ত সম্মান আল্লাহর জন্য।"]];
 var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
 var HD=[["কাজ নিয়তের ওপর নির্ভরশীল।","সহিহ বুখারি ১"]];
-function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\\''+p+'\\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
-function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\\''+p+'\\')">&lsaquo; ফিরে যান</button>'}
+function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\x27'+p+'\x27)"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
+function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\x27'+p+'\x27)">&lsaquo; ফিরে যান</button>'}
 function vBook(){bk('menu')}
 function nmF(){var q=($('nq').value||'').trim().toLowerCase(),a=NML.filter(function(x){return !q||x.toLowerCase().indexOf(q)>=0});
  $('nl').innerHTML='<h3>'+a.length+'টি নাম</h3>'+(a.length?a.map(function(x){var p=x.split('|');return '<div class="bkc nm"><div><b>'+esc(p[0])+'</b><small>'+esc(p[2]||'')+'</small></div><div class="ar2">'+esc(p[1]||'')+'</div></div>'}).join(''):'<div class="row">কোনো নাম মেলেনি</div>')}
@@ -1707,7 +1643,8 @@ function bk(p){var h='';
  else if(p==='hadith'){h=bkBack('menu')+'<h3>হাদিস</h3>'+HD.map(function(x){return '<div class="bkc">'+esc(x[0])+'<small>সূত্র: '+esc(x[1])+'</small></div>'}).join('')}
  $('main').innerHTML=h;$('main').scrollTop=0}
 
-var ATABS=[['ov','📊','ওভারভিউ'],['wd','💸','উত্তোলন'],['dep','💳','ডিপোজিট'],['ctask','📢','প্রমোশন'],['shop','🛍️','প্যাকেজ ও শপ'],['slider','🖼️','স্লাইডার কন্ট্রোল'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ']];
+// এডমিন প্যানেল থেকে উইথড্র ও ডিপোজিট কেটে নতুন "প্রমোট সাইট এডিট" (edit) যুক্ত করা হলো
+var ATABS=[['ov','📊','ওভারভিউ'],['edit','✏️','প্রমোট সাইট এডিট'],['ctask','📢','প্রমোশন'],['shop','🛍️','প্যাকেজ ও শপ'],['slider','🖼️','স্লাইডার কন্ট্রোল'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ']];
 function ah(){return{'x-admin-pass':ADM}}
 
 function admOpen(){
@@ -1725,7 +1662,7 @@ function verifyAdminPass(){
   api('admin/data','GET',null,ah()).then(function(){
     closeM();
     $('adm').className='adm on';
-    $('anav').innerHTML=ATABS.map(function(t){return '<div id="a_'+t[0]+'" onclick="admGo(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
+    $('anav').innerHTML=ATABS.map(function(t){return '<div id="a_'+t[0]+'" onclick="admGo(\x27'+t[0]+'\x27)"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
     admGo('ov');
   }).catch(function(){
     toast('Wrong admin password.');
@@ -1736,62 +1673,50 @@ function verifyAdminPass(){
 function admClose(){$('adm').className='adm'}
 function aErr(e){if(e.message==='Wrong admin password.'){toast(e.message);admClose()}else $('abody').innerHTML='<div class="row">'+esc(e.message)+'</div>'}
 function admGo(t){ATABS.forEach(function(x){var el=$('a_'+x[0]);if(el)el.className=x[0]===t?'on':''});$('abody').innerHTML='<div class="row">Loading...</div>';
- ({ov:aOv,wd:aWd,dep:aDep,ctask:aCTask,shop:aShopCtrl,slider:aSliderCtrl,sp:aSp,us:aUs})[t]()}
+ ({ov:aOv,edit:aEditSite,ctask:aCTask,shop:aShopCtrl,slider:aSliderCtrl,sp:aSp,us:aUs})[t]()}
 function sc(a){return a.map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('')}
 function aOv(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
- $('abody').innerHTML='<h3>আজকের হিসাব</h3><div class="grid">'+sc([['মোট ইউজার',s.users],['আজ ঢুকেছে',s.active],['ডিপোজিট পেন্ডিং',s.depPending],['অপেক্ষমাণ টাস্ক',s.pendingTasks]])+'</div>'}).catch(aErr)}
-function decI(i,ok){var w=AD.wds[i];api('admin/wd/'+w._id,'POST',{ok:!!ok},ah()).then(aWd).catch(aErr)}
+ $('abody').innerHTML='<h3>আজকের হিসাব</h3><div class="grid">'+sc([['মোট ইউজার',s.users],['আজ ঢুকেছে',s.active],['অপেক্ষমাণ টাস্ক',s.pendingTasks]])+'</div>'}).catch(aErr)}
 
-function aWd(){
-  api('admin/wd-list','GET',null,ah()).then(function(d){
-    AD.wds = d.pending;
-    $('abody').innerHTML = '<h3>অপেক্ষমাণ উত্তোলন (Real-time & Copy)</h3>' +
-    (d.pending.length ? d.pending.map(function(w, i){
-      var timeStr = new Date(w.at).toLocaleTimeString();
-      return '<div class="th">' +
-      '<div class="hd"><span>'+esc(w.name)+'</span><span style="color:var(--gold)">৳'+money(w.amount)+'</span></div>' +
-      '<div style="font-size:13px">' +
-      'Method: <b>'+esc(w.method)+'</b><br>' +
-      'Phone: <b id="wdPhone'+i+'">'+esc(w.phone)+'</b> <button class="admin-copy-btn" onclick="copyAdminText(\\'wdPhone'+i+'\\')">Copy</button><br>' +
-      '<small style="color:var(--mu)">সময়: '+timeStr+'</small>' +
-      '</div>' +
-      '<div class="gap"><button class="btn s g" onclick="decI('+i+',1)">Success</button><button class="btn s r" onclick="decI('+i+',0)">Reject</button></div>' +
-      '</div>';
-    }).join('') : '<div class="row">কোনো পেন্ডিং উইথড্র নেই।</div>');
+// নতুন প্রমোট সাইট এডিট ফাংশন (এডমিন প্যানেলের জন্য)
+function aEditSite(){
+  api('admin/site-contents','GET',null,ah()).then(function(contents){
+    var map = {};
+    contents.forEach(c => { map[c.key] = c; });
+    var hero = map['hero'] || { title:'', subtitle:'', description:'', imageUrl:'' };
+    var banner = map['banner'] || { title:'', subtitle:'', description:'', imageUrl:'' };
+
+    $('abody').innerHTML='<h3>✏️ প্রমোট সাইট টেক্সট ও ইমেজ এডিটর</h3>' +
+    '<div class="card" style="margin-bottom:12px">' +
+    '<h4 style="color:var(--gold);margin-bottom:8px">1. Hero Banner / Landing Section</h4>' +
+    '<label>Title</label><input id="editHeroTitle" value="'+esc(hero.title)+'">' +
+    '<label>Subtitle</label><input id="editHeroSub" value="'+esc(hero.subtitle)+'">' +
+    '<label>Description</label><textarea id="editHeroDesc">'+esc(hero.description)+'</textarea>' +
+    '<label>Image URL (Facebook, Instagram বা অন্য অফিশিয়াল ছবি)</label><input id="editHeroImg" value="'+esc(hero.imageUrl)+'">' +
+    '<button class="btn g" style="margin-top:10px" onclick="saveSiteContent(\x27hero\x27)">Save Hero Section</button>' +
+    '</div>' +
+
+    '<div class="card" style="margin-bottom:12px">' +
+    '<h4 style="color:var(--gold);margin-bottom:8px">2. Promotion / RS Gallery Collaboration Section</h4>' +
+    '<label>Title</label><input id="editBannerTitle" value="'+esc(banner.title)+'">' +
+    '<label>Subtitle</label><input id="editBannerSub" value="'+esc(banner.subtitle)+'">' +
+    '<label>Description</label><textarea id="editBannerDesc">'+esc(banner.description)+'</textarea>' +
+    '<label>Image URL</label><input id="editBannerImg" value="'+esc(banner.imageUrl)+'">' +
+    '<button class="btn g" style="margin-top:10px" onclick="saveSiteContent(\x27banner\x27)">Save Promotion Section</button>' +
+    '</div>';
   }).catch(aErr);
 }
 
-function decDep(i,ok){var d=AD.deps[i];api('admin/dep/'+d._id,'POST',{ok:!!ok},ah()).then(aDep).catch(aErr)}
+function saveSiteContent(key){
+  var title = key === 'hero' ? $('editHeroTitle').value : $('editBannerTitle').value;
+  var subtitle = key === 'hero' ? $('editHeroSub').value : $('editBannerSub').value;
+  var description = key === 'hero' ? $('editHeroDesc').value : $('editBannerDesc').value;
+  var imageUrl = key === 'hero' ? $('editHeroImg').value : $('editBannerImg').value;
 
-function aDep(){
-  api('admin/dep-list','GET',null,ah()).then(function(d){
-    AD.deps = d.pending;
-    $('abody').innerHTML = '<h3>অপেক্ষমাণ ডিপোজিট ও প্যাকেজ রিকোয়েস্ট (Real-time & Copy)</h3>' +
-    (d.pending.length ? d.pending.map(function(dep, i){
-      var timeStr = new Date(dep.at).toLocaleTimeString();
-      return '<div class="th">' +
-      '<div class="hd"><span>'+esc(dep.name)+'</span><span style="color:var(--gold)">৳'+money(dep.amount)+' ($'+(dep.amount/120).toFixed(2)+' USD)</span></div>' +
-      '<div style="font-size:13px">' +
-      'Method: <b>'+esc(dep.method)+'</b><br>' +
-      'Package/Type: <b style="color:var(--grn)">'+esc(dep.pkgName || 'Custom Deposit')+'</b><br>' +
-      'TrxID: <b id="depTrx'+i+'">'+esc(dep.txid)+'</b> <button class="admin-copy-btn" onclick="copyAdminText(\\'depTrx'+i+'\\')">Copy Trx</button><br>' +
-      'Last 3 Digits: <b>'+esc(dep.lastDigits)+'</b><br>' +
-      '<small style="color:var(--mu)">সময়: '+timeStr+' | Order: '+esc(dep.serialNo)+'</small>' +
-      '</div>' +
-      '<div class="gap"><button class="btn s g" onclick="decDep('+i+',1)">Approve & Add USD</button><button class="btn s r" onclick="decDep('+i+',0)">Reject</button></div>' +
-      '</div>';
-    }).join('') : '<div class="row">কোনো পেন্ডিং ডিপোজিট বা প্যাকেজ নেই।</div>');
+  api('admin/site-contents','POST',{ key, title, subtitle, description, imageUrl }, ah()).then(function(){
+    toast('সফলভাবে আপডেট করা হয়েছে!');
+    aEditSite();
   }).catch(aErr);
-}
-
-function copyAdminText(elemId){
-  var el = $(elemId);
-  if(!el) return;
-  navigator.clipboard.writeText(el.innerText).then(function(){
-    toast('Copied: ' + el.innerText);
-  }).catch(function(){
-    toast('Copy failed');
-  });
 }
 
 function aShopCtrl(){
@@ -1802,15 +1727,15 @@ function aShopCtrl(){
       '<label>প্যাকেজ বিবরণ / নাম</label><input id="upDesc" placeholder="যেমন: Basic RS Coin Package">' +
       '<label>মূল্য (BDT)</label><input id="upPrice" type="number" placeholder="200">' +
       '<label>প্রতি মিনিটে কয়েন</label><input id="upCoins" type="number" placeholder="10">' +
-      '<label>প্যাকেজের ছবি আপলোড করুন (গ্যালারি বা প্লাস আইকন)</label>' +
+      '<label>প্যাকেজের ছবি আপলোড করুন</label>' +
       '<input type="file" id="upFile" accept="image/*" style="display:none" onchange="uploadUserPkgImg(this)">' +
-      '<div class="img-upload-btn" onclick="$(\\'upFile\\').click()">➕ গ্যালারি থেকে ছবি যোগ করুন</div>' +
+      '<div class="img-upload-btn" onclick="$(\x27upFile\x27).click()">➕ গ্যালারি থেকে ছবি যোগ করুন</div>' +
       '<input id="upImgUrl" placeholder="বা সরাসরি ছবির URL" style="margin-top:6px">' +
       '<label>হট অফার (true/false)</label><input id="upHot" placeholder="false">' +
       '<button class="btn g" onclick="addUserPkg()">ইউজার প্যাকেজ যোগ করুন</button>' +
       '</div>' +
       '<h3>বিদ্যমান ইউজার প্যাকেজসমূহ</h3>' +
-      (userPkgs.length ? userPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.description)+'</span><span style="color:var(--gold)">৳'+p.price+'</span></div><small>Coins/Min: '+p.coinsPerMin+' | Hot: '+p.hot+'</small><button class="btn s r" style="margin-top:6px" onclick="delUserPkg(\\''+p._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>') +
+      (userPkgs.length ? userPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.description)+'</span><span style="color:var(--gold)">৳'+p.price+'</span></div><small>Coins/Min: '+p.coinsPerMin+' | Hot: '+p.hot+'</small><button class="btn s r" style="margin-top:6px" onclick="delUserPkg(\x27'+p._id+'\x27)">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>') +
       '<hr style="border-color:var(--line);margin:16px 0">' +
       '<h3>🛍️ আর এস গ্যালারি ও প্রমোশন প্যাকেজ কন্ট্রোল</h3>' +
       '<div class="card" style="margin-bottom:12px">' +
@@ -1818,15 +1743,15 @@ function aShopCtrl(){
       '<label>ক্যাটাগরি</label><input id="apCat" placeholder="RS Gallery / Social Media">' +
       '<label>পরিমাণ/ফলোয়ার</label><input id="apFol" type="number" placeholder="500">' +
       '<label>মূল্য (BDT)</label><input id="apPrice" type="number" placeholder="150">' +
-      '<label>প্যাকেজ পিকচার আপলোড করুন (গ্যালারি থেকে)</label>' +
+      '<label>প্যাকেজ পিকচার আপলোড করুন</label>' +
       '<input type="file" id="apFile" accept="image/*" style="display:none" onchange="uploadPkgImg(this)">' +
-      '<div class="img-upload-btn" onclick="$(\\'apFile\\').click()">➕ গ্যালারি থেকে ছবি যুক্ত করুন</div>' +
+      '<div class="img-upload-btn" onclick="$(\x27apFile\x27).click()">➕ গ্যালারি থেকে ছবি যুক্ত করুন</div>' +
       '<input id="apIcon" placeholder="বা ছবির URL দিন" style="margin-top:6px">' +
       '<label>বিবরণ</label><input id="apDesc" placeholder="ছোট বিবরণ">' +
       '<button class="btn g" onclick="addPromoPkg()">প্রমোশন প্যাকেজ যোগ করুন</button>' +
       '</div>' +
       '<h3>বিদ্যমান প্যাকেজসমূহ</h3>' +
-      (promoPkgs.length ? promoPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.title)+'</span><span style="color:var(--gold)">৳'+p.price+'</span></div><small>Category: '+esc(p.category)+'</small><button class="btn s r" style="margin-top:6px" onclick="delPromoPkg(\\''+p._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>');
+      (promoPkgs.length ? promoPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.title)+'</span><span style="color:var(--gold)">৳'+p.price+'</span></div><small>Category: '+esc(p.category)+'</small><button class="btn s r" style="margin-top:6px" onclick="delPromoPkg(\x27'+p._id+'\x27)">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>');
     }).catch(aErr);
   }).catch(aErr);
 }
@@ -1861,14 +1786,14 @@ function aSliderCtrl(){
     '<label>কোলাবোরেশন বা এক্সটার্নাল লিংক (URL)</label><input id="slLink" placeholder="https://www.facebook.com/share/...">' +
     '<label>গ্যালারি থেকে ব্যাকগ্রাউন্ড ব্যানার ছবি থিম যোগ করুন</label>' +
     '<input type="file" id="slFile" accept="image/*" style="display:none" onchange="uploadSliderImg(this)">' +
-    '<div class="img-upload-btn" onclick="$(\\'slFile\\').click()">➕ প্লাস আইকন (গ্যালারি থেকে ছবি থিম সিলেক্ট করুন)</div>' +
+    '<div class="img-upload-btn" onclick="$(\x27slFile\x27).click()">➕ প্লাস আইকন (গ্যালারি থেকে ছবি থিম সিলেক্ট করুন)</div>' +
     '<input id="slBgImg" placeholder="বা সরাসরি ছবি URL" style="margin-top:6px">' +
     '<label>ইমোজি বা আইকন</label><input id="slEmoji" placeholder="🛍️">' +
     '<label>পরিবর্তন সময় (স্লাইড টাইমার সেকেন্ডে, যেমন: ৬)</label><input id="slTimer" type="number" value="6">' +
     '<button class="btn g" onclick="addSlider()">স্লাইড ব্যানার যোগ করুন</button>' +
     '</div>' +
     '<h3>সক্রিয় স্লাইডার ব্যানারসমূহ</h3>' +
-    (sliders.length ? sliders.map(s => '<div class="th"><div class="hd"><span>'+esc(s.title)+'</span><span style="color:var(--gold)">টাইমার: '+s.timerSeconds+'s</span></div><small>Link: '+esc(s.link)+'</small><button class="btn s r" style="margin-top:6px" onclick="delSlider(\\''+s._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো স্লাইডার নেই।</div>');
+    (sliders.length ? sliders.map(s => '<div class="th"><div class="hd"><span>'+esc(s.title)+'</span><span style="color:var(--gold)">টাইমার: '+s.timerSeconds+'s</span></div><small>Link: '+esc(s.link)+'</small><button class="btn s r" style="margin-top:6px" onclick="delSlider(\x27'+s._id+'\x27)">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো স্লাইডার নেই।</div>');
   }).catch(aErr);
 }
 
@@ -1931,7 +1856,7 @@ function aCTask(){
   api('admin/custom-tasks','GET',null,ah()).then(function(tasks){
     $('abody').innerHTML='<h3>অপেক্ষমাণ প্রমোশন টাস্কসমূহ</h3>' +
     (tasks.length ? tasks.map(function(t, i){
-      return '<div class="th"><div class="hd"><span>'+esc(t.title)+' ('+esc(t.platform)+')</span><span style="color:var(--gold)">Budget: '+t.totalBudget+' BDT</span></div><div style="font-size:13px">Link: <a href="'+esc(t.link)+'" target="_blank">'+esc(t.link)+'</a><br>Reward/Worker: '+t.reward+' BDT | Target: '+t.targetWorkers+'</div><div class="gap"><button class="btn s g" onclick="decCTask(\\''+t._id+'\\',1)">Approve</button><button class="btn s r" onclick="decCTask(\\''+t._id+'\\',0)">Reject</button></div></div>';
+      return '<div class="th"><div class="hd"><span>'+esc(t.title)+' ('+esc(t.platform)+')</span><span style="color:var(--gold)">Budget: '+t.totalBudget+' BDT</span></div><div style="font-size:13px">Link: <a href="'+esc(t.link)+'" target="_blank">'+esc(t.link)+'</a><br>Reward/Worker: '+t.reward+' BDT | Target: '+t.targetWorkers+'</div><div class="gap"><button class="btn s g" onclick="decCTask(\x27'+t._id+'\x27,1)">Approve</button><button class="btn s r" onclick="decCTask(\x27'+t._id+'\x27,0)">Reject</button></div></div>';
     }).join('') : '<div class="row">কোনো পেন্ডিং প্রমোশন টাস্ক নেই।</div>');
   }).catch(aErr);
 }
@@ -1954,45 +1879,39 @@ app.get('/', (req, res) => res.send(PAGE.replace('__GID__', GID.replace(/[^\w.\-
 app.listen(PORT, () => console.log('Server is running on port ' + PORT));
 
 app.get('/api/assistant/summary', h(async (q, s) => {
-  const key = String(q.headers['x-assistant-key'] || '');
-  const expected = process.env.ASSISTANT_KEY || '';
-  if (!expected || !key || !same(key, expected)) return bad(s, 'অনুমতি নেই', 401);
+  Const key = String(q.headers['x-assistant-key'] || '');
+  Const expected = process.env.ASSISTANT_KEY || '';
+  If (!expected || !key || !same(key, expected)) return bad(s, 'অনুমতি নেই', 401);
 
-  const st = dayStart();
-  const sumOf = async (M, match, f) => {
-    const r = await M.aggregate([{ $match: match }, { $group: { _id: null, t: { $sum: '$' + f } } }]);
-    return r.length ? r[0].t : 0;
+  Const st = dayStart();
+  Const sumOf = async (M, match, f) => {
+    Const r = await M.aggregate([{ $match: match }, { $group: { _id: null, t: { $sum: '$' + f } } }]);
+    Return r.length ? r[0].t : 0;
   };
 
-  const usersTotal = await User.countDocuments();
-  const usersActive = await User.countDocuments({ lastSeen: { $gte: st.getTime() } });
-  const usersNew = await User.countDocuments({ created: { $gte: st } });
+  Const usersTotal = await User.countDocuments();
+  Const usersActive = await User.countDocuments({ lastSeen: { $gte: st.getTime() } });
+  Const usersNew = await User.countDocuments({ created: { $gte: st } });
 
-  const wdPendingCount = await Wd.countDocuments({ status: 'pending' });
-  const wdPendingAmount = await sumOf(Wd, { status: 'pending' }, 'amount');
-  const wdToday = await Wd.countDocuments({ at: { $gte: st } });
-  const wdList = await Wd.find({ status: 'pending' }).sort({ at: -1 }).limit(5).select('name amount method -_id').lean();
+  Const depPendingCount = await Deposit.countDocuments({ status: 'pending' });
+  Const depPendingAmount = await sumOf(Deposit, { status: 'pending' }, 'amount');
+  Const depApprovedCount = await Deposit.countDocuments({ status: 'approved', at: { $gte: st } });
+  Const depApprovedAmount = await sumOf(Deposit, { status: 'approved', at: { $gte: st } }, 'amount');
+  Const depListRaw = await Deposit.find({ status: 'pending' }).sort({ at: -1 }).limit(5).select('name amount method pkgName -_id').lean();
+  Const depList = depListRaw.map(d => ({ name: d.name, amount: d.amount, method: d.method, package: d.pkgName }));
 
-  const depPendingCount = await Deposit.countDocuments({ status: 'pending' });
-  const depPendingAmount = await sumOf(Deposit, { status: 'pending' }, 'amount');
-  const depApprovedCount = await Deposit.countDocuments({ status: 'approved', at: { $gte: st } });
-  const depApprovedAmount = await sumOf(Deposit, { status: 'approved', at: { $gte: st } }, 'amount');
-  const depListRaw = await Deposit.find({ status: 'pending' }).sort({ at: -1 }).limit(5).select('name amount method pkgName -_id').lean();
-  const depList = depListRaw.map(d => ({ name: d.name, amount: d.amount, method: d.method, package: d.pkgName }));
+  Const tPending = await Click.countDocuments({ status: 'pending' });
+  Const tSuccess = await Click.countDocuments({ status: 'success' });
+  Const tCancelled = await Click.countDocuments({ status: { $in: ['cancelled', 'expired'] } });
+  Const promoPending = await CustomTask.countDocuments({ status: 'pending' });
 
-  const tPending = await Click.countDocuments({ status: 'pending' });
-  const tSuccess = await Click.countDocuments({ status: 'success' });
-  const tCancelled = await Click.countDocuments({ status: { $in: ['cancelled', 'expired'] } });
-  const promoPending = await CustomTask.countDocuments({ status: 'pending' });
+  Const totalBalance = await sumOf(User, {}, 'balance');
+  Const earnedToday = await sumOf(Conv, { at: { $gte: st } }, 'bdt');
 
-  const totalBalance = await sumOf(User, {}, 'balance');
-  const earnedToday = await sumOf(Conv, { at: { $gte: st } }, 'bdt');
-
-  s.json({
+  S.json({
     ok: true,
     date: new Date(Date.now() + 6 * 36e5).toISOString().slice(0, 10),
     users: { total: usersTotal, activeToday: usersActive, newToday: usersNew },
-    withdrawals: { pendingCount: wdPendingCount, pendingAmount: wdPendingAmount, requestedToday: wdToday, pendingList: wdList },
     deposits: { pendingCount: depPendingCount, pendingAmount: depPendingAmount, approvedTodayCount: depApprovedCount, approvedTodayAmount: depApprovedAmount, pendingList: depList },
     tasks: { pending: tPending, success: tSuccess, cancelled: tCancelled },
     promoTasksPending: promoPending,
@@ -2001,20 +1920,20 @@ app.get('/api/assistant/summary', h(async (q, s) => {
   });
 }));
 
-const WALLET_URL_ENV = (process.env.WALLET_URL || '').replace(/\/$/, '');
-const WALLET_KEY_ENV = process.env.WALLET_KEY || '';
-const walletSent = new Set();
+Const WALLET_URL_ENV = (process.env.WALLET_URL || '').replace(/\/$/, '');
+Const WALLET_KEY_ENV = process.env.WALLET_KEY || '';
+Const walletSent = new Set();
 
 async function sendDepositsToWallet() {
-  if (!WALLET_URL_ENV || !WALLET_KEY_ENV) return;
-  if (mongoose.connection.readyState !== 1) return;
-  const since = new Date(Date.now() - 3 * 24 * 36e5);
-  const list = await Deposit.find({ at: { $gte: since }, status: 'pending' }).limit(50);
-  for (const d of list) {
-    const id = String(d._id);
-    if (walletSent.has(id)) continue;
-    try {
-      const r = await fetch(WALLET_URL_ENV + '/api/site/deposit', {
+  If (!WALLET_URL_ENV || !WALLET_KEY_ENV) return;
+  If (mongoose.connection.readyState !== 1) return;
+  Const since = new Date(Date.now() - 3 * 24 * 36e5);
+  Const list = await Deposit.find({ at: { $gte: since }, status: 'pending' }).limit(50);
+  For (const d of list) {
+    Const id = String(d._id);
+    If (walletSent.has(id)) continue;
+    Try {
+      Const r = await fetch(WALLET_URL_ENV + '/api/site/deposit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': WALLET_KEY_ENV },
         body: JSON.stringify({
@@ -2029,48 +1948,12 @@ async function sendDepositsToWallet() {
         }),
         signal: AbortSignal.timeout(20000)
       });
-      if (r.ok || r.status === 409) walletSent.add(id);
-      else console.error('Wallet send failed', r.status, d.txid);
+      If (r.ok || r.status === 409) walletSent.add(id);
+      Else console.error('Wallet send failed', r.status, d.txid);
     } catch (e) {
-      console.error('Wallet send error', e.message);
+      Console.error('Wallet send error', e.message);
     }
   }
 }
 setTimeout(() => sendDepositsToWallet().catch(() => {}), 20000);
 setInterval(() => sendDepositsToWallet().catch(() => {}), 30000);
-
-app.get('/api/assistant/details', h(async (q, s) => {
-  const key = String(q.headers['x-assistant-key'] || '');
-  const expected = process.env.ASSISTANT_KEY || '';
-  if (!expected || !key || !same(key, expected)) return bad(s, 'অনুমতি নেই', 401);
-
-  const st = dayStart();
-  const deps = await Deposit.find({ status: 'pending' }).sort({ at: -1 }).limit(10).lean();
-  const depsToday = await Deposit.find({ at: { $gte: st } }).sort({ at: -1 }).limit(10).lean();
-  const wds = await Wd.find({ status: 'pending' }).sort({ at: -1 }).limit(10).lean();
-
-  const mapDep = d => ({
-    name: d.name,
-    amount: d.amount,
-    method: d.method,
-    trxId: d.txid,
-    lastDigits: d.lastDigits,
-    orderNo: d.serialNo,
-    package: d.pkgName,
-    status: d.status,
-    time: d.at
-  });
-
-  s.json({
-    ok: true,
-    pendingDeposits: deps.map(mapDep),
-    todayDeposits: depsToday.map(mapDep),
-    pendingWithdrawals: wds.map(x => ({
-      name: x.name,
-      amount: x.amount,
-      method: x.method,
-      number: x.phone,
-      time: x.at
-    }))
-  });
-}));
