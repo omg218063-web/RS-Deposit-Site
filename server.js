@@ -1,4 +1,4 @@
-const express = require('express');
+Const express = require('express');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 
@@ -926,7 +926,6 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
   <div style="font-size:12px;color:var(--mu);margin-bottom:14px">Navigation & Services</div>
   <div class="row" style="cursor:pointer" onclick="toggleSmmSidebar();go('emp')">🛒 New Order / Services</div>
   <div class="row" style="cursor:pointer" onclick="toggleSmmSidebar();go('home')">🏠 Home Dashboard</div>
-  <div class="row" style="cursor:pointer" onclick="toggleSmmSidebar();go('tasks')">📋 Micro Tasks</div>
   <div class="row" style="cursor:pointer" onclick="toggleSmmSidebar();go('acc')">👤 Account & Deposit ($)</div>
 </div>
 
@@ -1452,30 +1451,16 @@ function copyL(){(navigator.clipboard?navigator.clipboard.writeText(RL):Promise.
 
 function vHelp(){
   $('main').innerHTML=hb('help','💬','Support','আপনার যেকোনো সমস্যার দ্রুত সমাধান নিন।') +
-  '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">' +
-  '<button class="btn s" onclick="presetMsg(\\'আমার ডিপোজিট এখনো যুক্ত হয়নি, কি করব?\\')">💳 ডিপোজিট সমস্যা</button>' +
-  '<button class="btn s" onclick="presetMsg(\\'আমার উইথড্র পেন্ডিং আছে, কখন পাব?\\')">💸 উইথড্র সমস্যা</button>' +
-  '<button class="btn s" onclick="presetMsg(\\'টাস্ক কমপ্লিট করার নিয়ম সম্পর্কে জানতে চাই।\\')">📋 টাস্ক সমস্যা</button>' +
-  '<button class="btn s" onclick="presetMsg(\\'আর এস গ্যালারি শপ থেকে কিভাবে কেনাকাটা করব?\\')">🛍️ আর এস গ্যালারি শপ</button>' +
-  '</div>' +
   '<div class="chat" id="ch"></div><textarea id="st" rows="2" maxlength="500" placeholder="Describe your problem"></textarea><button class="btn" onclick="sendS()">Send</button>';
   loadSupportMsgs();
   if(window.SUP_TIMER) clearInterval(window.SUP_TIMER);
   window.SUP_TIMER = setInterval(loadSupportMsgs, 10000);
 }
 
-function presetMsg(txt){
-  var el = $('st');
-  if(el){
-    el.value = txt;
-    sendS();
-  }
-}
-
 function loadSupportMsgs(){
   api('support').then(function(a){
     var c=$('ch');if(!c)return;
-    c.innerHTML=a.length?a.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join(''):'<div class="m support">Hello! Write your message or select quick help above.</div>';
+    c.innerHTML=a.length?a.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join(''):'<div class="m support">Hello! Write your message below.</div>';
     c.scrollTop=c.scrollHeight;
   }).catch(function(){})
 }
@@ -1707,7 +1692,7 @@ function bk(p){var h='';
  else if(p==='hadith'){h=bkBack('menu')+'<h3>হাদিস</h3>'+HD.map(function(x){return '<div class="bkc">'+esc(x[0])+'<small>সূত্র: '+esc(x[1])+'</small></div>'}).join('')}
  $('main').innerHTML=h;$('main').scrollTop=0}
 
-var ATABS=[['ov','📊','ওভারভিউ'],['wd','💸','উত্তোলন'],['dep','💳','ডিপোজিট'],['ctask','📢','প্রমোশন'],['shop','🛍️','প্যাকেজ ও শপ'],['slider','🖼️','স্লাইডার কন্ট্রোল'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ']];
+var ATABS=[['ov','📊','ওভারভিউ'],['ctask','📢','প্রমোশন'],['shop','🛍️','প্যাকেজ ও শপ'],['slider','🖼️','স্লাইডার কন্ট্রোল'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ']];
 function ah(){return{'x-admin-pass':ADM}}
 
 function admOpen(){
@@ -1736,63 +1721,10 @@ function verifyAdminPass(){
 function admClose(){$('adm').className='adm'}
 function aErr(e){if(e.message==='Wrong admin password.'){toast(e.message);admClose()}else $('abody').innerHTML='<div class="row">'+esc(e.message)+'</div>'}
 function admGo(t){ATABS.forEach(function(x){var el=$('a_'+x[0]);if(el)el.className=x[0]===t?'on':''});$('abody').innerHTML='<div class="row">Loading...</div>';
- ({ov:aOv,wd:aWd,dep:aDep,ctask:aCTask,shop:aShopCtrl,slider:aSliderCtrl,sp:aSp,us:aUs})[t]()}
+ ({ov:aOv,ctask:aCTask,shop:aShopCtrl,slider:aSliderCtrl,sp:aSp,us:aUs})[t]()}
 function sc(a){return a.map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('')}
 function aOv(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
- $('abody').innerHTML='<h3>আজকের হিসাব</h3><div class="grid">'+sc([['মোট ইউজার',s.users],['আজ ঢুকেছে',s.active],['ডিপোজিট পেন্ডিং',s.depPending],['অপেক্ষমাণ টাস্ক',s.pendingTasks]])+'</div>'}).catch(aErr)}
-function decI(i,ok){var w=AD.wds[i];api('admin/wd/'+w._id,'POST',{ok:!!ok},ah()).then(aWd).catch(aErr)}
-
-function aWd(){
-  api('admin/wd-list','GET',null,ah()).then(function(d){
-    AD.wds = d.pending;
-    $('abody').innerHTML = '<h3>অপেক্ষমাণ উত্তোলন (Real-time & Copy)</h3>' +
-    (d.pending.length ? d.pending.map(function(w, i){
-      var timeStr = new Date(w.at).toLocaleTimeString();
-      return '<div class="th">' +
-      '<div class="hd"><span>'+esc(w.name)+'</span><span style="color:var(--gold)">৳'+money(w.amount)+'</span></div>' +
-      '<div style="font-size:13px">' +
-      'Method: <b>'+esc(w.method)+'</b><br>' +
-      'Phone: <b id="wdPhone'+i+'">'+esc(w.phone)+'</b> <button class="admin-copy-btn" onclick="copyAdminText(\\'wdPhone'+i+'\\')">Copy</button><br>' +
-      '<small style="color:var(--mu)">সময়: '+timeStr+'</small>' +
-      '</div>' +
-      '<div class="gap"><button class="btn s g" onclick="decI('+i+',1)">Success</button><button class="btn s r" onclick="decI('+i+',0)">Reject</button></div>' +
-      '</div>';
-    }).join('') : '<div class="row">কোনো পেন্ডিং উইথড্র নেই।</div>');
-  }).catch(aErr);
-}
-
-function decDep(i,ok){var d=AD.deps[i];api('admin/dep/'+d._id,'POST',{ok:!!ok},ah()).then(aDep).catch(aErr)}
-
-function aDep(){
-  api('admin/dep-list','GET',null,ah()).then(function(d){
-    AD.deps = d.pending;
-    $('abody').innerHTML = '<h3>অপেক্ষমাণ ডিপোজিট ও প্যাকেজ রিকোয়েস্ট (Real-time & Copy)</h3>' +
-    (d.pending.length ? d.pending.map(function(dep, i){
-      var timeStr = new Date(dep.at).toLocaleTimeString();
-      return '<div class="th">' +
-      '<div class="hd"><span>'+esc(dep.name)+'</span><span style="color:var(--gold)">৳'+money(dep.amount)+' ($'+(dep.amount/120).toFixed(2)+' USD)</span></div>' +
-      '<div style="font-size:13px">' +
-      'Method: <b>'+esc(dep.method)+'</b><br>' +
-      'Package/Type: <b style="color:var(--grn)">'+esc(dep.pkgName || 'Custom Deposit')+'</b><br>' +
-      'TrxID: <b id="depTrx'+i+'">'+esc(dep.txid)+'</b> <button class="admin-copy-btn" onclick="copyAdminText(\\'depTrx'+i+'\\')">Copy Trx</button><br>' +
-      'Last 3 Digits: <b>'+esc(dep.lastDigits)+'</b><br>' +
-      '<small style="color:var(--mu)">সময়: '+timeStr+' | Order: '+esc(dep.serialNo)+'</small>' +
-      '</div>' +
-      '<div class="gap"><button class="btn s g" onclick="decDep('+i+',1)">Approve & Add USD</button><button class="btn s r" onclick="decDep('+i+',0)">Reject</button></div>' +
-      '</div>';
-    }).join('') : '<div class="row">কোনো পেন্ডিং ডিপোজিট বা প্যাকেজ নেই।</div>');
-  }).catch(aErr);
-}
-
-function copyAdminText(elemId){
-  var el = $(elemId);
-  if(!el) return;
-  navigator.clipboard.writeText(el.innerText).then(function(){
-    toast('Copied: ' + el.innerText);
-  }).catch(function(){
-    toast('Copy failed');
-  });
-}
+ $('abody').innerHTML='<h3>আজকের হিসাব</h3><div class="grid">'+sc([['মোট ইউজার',s.users],['আজ ঢুকেছে',s.active],['অপেক্ষমাণ টাস্ক',s.pendingTasks]])+'</div>'}).catch(aErr)}
 
 function aShopCtrl(){
   api('admin/user-packages','GET',null,ah()).then(function(userPkgs){
