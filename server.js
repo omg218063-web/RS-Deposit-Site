@@ -102,7 +102,6 @@ const SliderSetting = mongoose.model('SliderSetting', new mongoose.Schema({
   active: { type: Boolean, default: true }
 }));
 
-// নতুন ক্যাটাগরি ও সাব-ক্যাটাগরি স্কিমা (স্ক্রিনশটের ওপর ভিত্তি করে)
 const CategoryModel = mongoose.model('Category', new mongoose.Schema({
   name: String,
   emoji: String,
@@ -576,7 +575,6 @@ app.post('/api/support', auth, h(async (q, s) => {
   s.json({ ok: true });
 }));
 
-// ক্যাটাগরি এপিআই এন্ডপয়েন্টসমূহ
 app.get('/api/admin/categories', admin, h(async (q, s) => {
   s.json(await CategoryModel.find({}));
 }));
@@ -923,7 +921,6 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .fc{font-size:10.5px;color:#64748b;text-align:center;margin-top:12px;border-top:1px solid #1e293b;padding-top:10px}
 .img-upload-btn{display:flex;align-items:center;justify-content:center;gap:6px;background:#1e293b;border:1px dashed var(--gold);color:var(--gold);padding:10px;border-radius:10px;cursor:pointer;font-size:13px;margin-top:6px;font-weight:bold}
 
-/* SMM Style Dashboard & Sidebar */
 .smm-welcome{background:linear-gradient(135deg,#311026,#131d38);border:1px solid rgba(239,68,68,0.4);border-radius:18px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .smm-services-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:14px}
 .smm-service-icon{background:#131d38;border:1px solid var(--line);border-radius:10px;padding:8px 4px;text-align:center;font-size:18px;cursor:pointer;transition:0.2s}
@@ -932,7 +929,6 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 .smm-sidebar{position:fixed;top:0;left:-280px;width:280px;height:100%;background:#0b1224;border-right:1px solid var(--line);z-index:160;transition:left 0.3s;padding:16px;overflow-y:auto}
 .smm-sidebar.on{left:0}
 
-/* Premium Animated Ad Button */
 .premium-ad-btn{position:relative;width:100%;background:linear-gradient(135deg,#38bdf8,#22c55e,#fbbf24);background-size:200% 200%;color:#000;font-weight:800;font-size:15px;padding:14px;border:none;border-radius:16px;cursor:pointer;box-shadow:0 0 20px rgba(56,189,248,0.5);animation:premiumGlow 3s ease infinite;transition:transform 0.2s;text-align:center;margin-top:12px}
 .premium-ad-btn:active{transform:scale(0.97)}
 @keyframes premiumGlow{0%{background-position:0% 50%;box-shadow:0 0 15px rgba(56,189,248,0.4)}50%{background-position:100% 50%;box-shadow:0 0 30px rgba(34,197,94,0.8)}100%{background-position:0% 50%;box-shadow:0 0 15px rgba(56,189,248,0.4)}}
@@ -949,7 +945,6 @@ pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#e2e8f0;line-
 </style></head><body>
 <div class="app">
 
-<!-- SMM Style Sidebar for Employer/Promotion -->
 <div id="smmOverlay" class="smm-sidebar-overlay" onclick="toggleSmmSidebar()"></div>
 <div id="smmSidebar" class="smm-sidebar">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -1763,7 +1758,6 @@ function sc(a){return a.map(function(x){return '<div class="stat"><b>'+x[1]+'</b
 function aOv(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
  $('abody').innerHTML='<h3>আজকের হিসাব</h3><div class="grid">'+sc([['মোট ইউজার',s.users],['আজ ঢুকেছে',s.active],['অপেক্ষমাণ টাস্ক',s.pendingTasks]])+'</div>'}).catch(aErr)}
 
-// নতুন ক্যাটাগরি ও সাব-ক্যাটাগরি ম্যানেজমেন্ট স্ক্রিন (স্ক্রিনশটের মতো হুহু ডিজাইন)
 function aCatCtrl(){
   api('admin/categories','GET',null,ah()).then(function(cats){
     $('abody').innerHTML='<h3>📁 Add Main Category</h3>' +
@@ -1956,7 +1950,7 @@ function decCTask(id, ok){
 
 function repI(i){var t=$('rp'+i).value.trim();if(!t)return;api('admin/reply','POST',{uid:AD.th[i].uid,text:t},ah()).then(aSp).catch(aErr)}
 function aSp(){api('admin/support','GET',null,ah()).then(function(d){AD.th=d;
- $('abody').innerHTML=d.length?d.map(function(t,i){return '<div class="th"><div class="hd"><span>'+esc(t.name)+'</span></div><div class="chat" style="max-height:30vh">'+t.msgs.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join('')+'</div><textarea id="rp'+i+'" rows="2" maxlength="500" placeholder="উত্তর লিখুন"></textarea><button class="btn s" style="margin-top:8px" onclick="repI('+i+\')">Send</button></div>'}).join(''):'<div class="row">কোনো মেসেজ নেই</div>'}).catch(aErr)}
+ $('abody').innerHTML=d.length?d.map(function(t,i){return '<div class="th"><div class="hd"><span>'+esc(t.name)+'</span></div><div class="chat" style="max-height:30vh">'+t.msgs.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join('')+'</div><textarea id="rp'+i+'" rows="2" maxlength="500" placeholder="উত্তর লিখুন"></textarea><button class="btn s" style="margin-top:8px" onclick="repI('+i+')">Send</button></div>'}).join(''):'<div class="row">কোনো মেসেজ নেই</div>'}).catch(aErr)}
 function aUs(){api('admin/users','GET',null,ah()).then(function(d){
  $('abody').innerHTML='<h3>অ্যাক্টিভ ইউজার</h3>'+(d.active.map(function(u){return '<div class="row"><div>'+esc(u.name)+' ('+esc(u.role)+')<small>'+esc(u.phone)+'</small></div></div>'}).join('')||'<div class="row">কেউ নেই</div>')}).catch(aErr)}
 
@@ -2062,7 +2056,7 @@ app.get('/api/assistant/details', h(async (q, s) => {
   const st = dayStart();
   const deps = await Deposit.find({ status: 'pending' }).sort({ at: -1 }).limit(10).lean();
   const depsToday = await Deposit.find({ at: { $gte: st } }).sort({ at: -1 }).limit(10).lean();
-  const wds = await Wd.find({ status: 'pending'}.sort({ at: -1 }).limit(10).lean();
+  const wds = await Wd.find({ status: 'pending' }).sort({ at: -1 }).limit(10).lean();
 
   const mapDep = d => ({
     name: d.name,
