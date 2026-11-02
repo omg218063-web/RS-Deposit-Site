@@ -102,6 +102,15 @@ const SliderSetting = mongoose.model('SliderSetting', new mongoose.Schema({
   active: { type: Boolean, default: true }
 }));
 
+// নতুন ক্যাটাগরি ও সাব-ক্যাটাগরি স্কিমা (স্ক্রিনশটের ওপর ভিত্তি করে)
+const CategoryModel = mongoose.model('Category', new mongoose.Schema({
+  name: String,
+  emoji: String,
+  image: { type: String, default: '' },
+  subcategories: [String],
+  active: { type: Boolean, default: true }
+}));
+
 const h = fn => (q, s) => fn(q, s).catch(e => {
   console.error('ERROR', q.method, q.path, e && e.code, e && e.message);
   if (e && e.code === 11000) return s.status(400).json({ error: 'This name or phone is already registered. Try a different name.' });
@@ -230,7 +239,7 @@ app.get('/api/sliders', auth, h(async (q, s) => {
   if (!sliders.length) {
     const defaultSliders = [
       { title: 'নামাজের স্মরণ', subtitle: 'নামাজ কি পড়েছেন?', description: 'নামাজ আমাদের জীবনের সবচেয়ে বড় আমানত। কাজের ফাঁকে ওয়াক্ত হলেই নামাজ আদায় করে নিন।', link: '#', bgClass: 's0', emoji: '🕌', timerSeconds: 6 },
-      { title: 'আমাদের সাইট ও পার্টনার', subtitle: 'RS Growth Matrix & RS Gallery', description: 'টাস্ক সম্পন্ন করে ইনকাম করুন এবং আমাদের অফিশিয়াল পার্টনার আর এস গ্যালারি শপ থেকে পছন্দের পোশাক অর্ডার করুন।', link: 'https://www.facebook.com/share/1CAK8sYqDw/', bgClass: 's1', emoji: '🛍️', timerSeconds: 6 },
+      { title: 'আমাদের সাইট ও পার্টনার', subtitle: 'RS Growth Matrix & RS Gallery', description: 'টাস্ক সম্পন্ন করে ইনকাম করুন এবং আমাদের অফিসিয়াল পার্টনার আর এস গ্যালারি শপ থেকে পছন্দের পোশাক অর্ডার করুন।', link: 'https://www.facebook.com/share/1CAK8sYqDw/', bgClass: 's1', emoji: '🛍️', timerSeconds: 6 },
       { title: 'টাস্ক ও অ্যাড আয়', subtitle: 'ডেইলি ক্যাশ রিওয়ার্ড', description: 'Tasks ট্যাবে গিয়ে টাস্ক সম্পন্ন করুন অথবা Watch Ads অপশনে গিয়ে অ্যাড দেখে ইনস্ট্যান্ট ক্যাশ আয় করুন।', link: '#', bgClass: 's2', emoji: '📱', timerSeconds: 6 },
       { title: 'সহজে উত্তোলন', subtitle: 'বিকাশ ও নগদ পেমেন্ট', description: 'Account থেকে Withdraw চেপে bKash বা Nagad নাম্বার দিন। উত্তোলন ৩০০ থেকে ৫০০০ টাকা পর্যন্ত করা যায়।', link: '#', bgClass: 's3', emoji: '💸', timerSeconds: 6 }
     ];
@@ -567,6 +576,30 @@ app.post('/api/support', auth, h(async (q, s) => {
   s.json({ ok: true });
 }));
 
+// ক্যাটাগরি এপিআই এন্ডপয়েন্টসমূহ
+app.get('/api/admin/categories', admin, h(async (q, s) => {
+  s.json(await CategoryModel.find({}));
+}));
+app.post('/api/admin/categories', admin, h(async (q, s) => {
+  const { name, emoji, image } = q.body || {};
+  if (!name) return bad(s, 'Category name is required.');
+  await CategoryModel.create({ name, emoji: emoji || '📁', image: image || '', subcategories: [] });
+  s.json({ ok: true });
+}));
+app.post('/api/admin/categories/sub/:id', admin, h(async (q, s) => {
+  const { subname } = q.body || {};
+  if (!subname) return bad(s, 'Subcategory name required.');
+  const cat = await CategoryModel.findById(q.params.id);
+  if (!cat) return bad(s, 'Category not found.');
+  cat.subcategories.push(subname);
+  await cat.save();
+  s.json({ ok: true });
+}));
+app.post('/api/admin/categories/delete/:id', admin, h(async (q, s) => {
+  await CategoryModel.findByIdAndDelete(q.params.id);
+  s.json({ ok: true });
+}));
+
 app.get('/api/admin/user-packages', admin, h(async (q, s) => {
   s.json(await UserPackage.find({}));
 }));
@@ -627,11 +660,11 @@ app.get('/api/admin/data', admin, h(async (q, s) => {
 }));
 
 app.get('/api/admin/wd-list', admin, h(async (q, s) => {
-  s.json({ pending: await Wd.find({ status: 'pending' }).sort({ at: 1 }).limit(100), done: await Wd.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20) });
+  s.json({ pending: await Wd.find({ status: 'pending' }).sort({ at: 1 }).limit(100), done: await Wd.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20) }));
 }));
 
 app.get('/api/admin/dep-list', admin, h(async (q, s) => {
-  s.json({ pending: await Deposit.find({ status: 'pending' }).sort({ at: 1 }).limit(100), done: await Deposit.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20) });
+  s.json({ pending: await Deposit.find({ status: 'pending' }).sort({ at: 1 }).limit(100), done: await Deposit.find({ status: { $ne: 'pending' } }).sort({ at: -1 }).limit(20) }));
 }));
 
 app.get('/api/admin/custom-tasks', admin, h(async (q, s) => {
@@ -1088,7 +1121,7 @@ function enter(m){
   $('landing').style.display='none';
   $('auth').style.display='none';
   var tbs = getTabs();
-  $('nav').innerHTML=tbs.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
+  $('nav').innerHTML=tbs.map(function(t){return '<div id="n_'+t[0]+'" onclick="go(\''+t[0]+'\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
   head();
   go(ME.role === 'employer' ? 'emp' : 'home');
   startGlobalSync();
@@ -1141,8 +1174,8 @@ function handleSlideClick(link){
 function foot(){var c=ME.ct||{},p=ME.pt||[],A=c.age||18;
  return '<div class="ft"><div class="ftl">'+logo(46)+'<div><b>'+esc(c.n)+'</b><small>টাস্কভিত্তিক রিওয়ার্ড প্ল্যাটফর্ম ও আর এস গ্যালারি কোলাবোরেশন</small></div></div>'+
  '<div class="fd">'+esc(c.d||'')+'</div>'+
- '<div class="fcols"><h5>প্ল্যাটফর্ম</h5><a onclick="go(\\'home\\')">Home</a><a onclick="go(\\'tasks\\')">Tasks</a><a onclick="go(\\'pkg\\')">Package</a><a onclick="go(\\'rank\\')">Ranking</a><a onclick="go(\\'ref\\')">Refer</a></div>'+
- '<div><h5>সহায়তা</h5><a onclick="go(\\'help\\')">Support</a><a onclick="go(\\'acc\\')">Account</a><a onclick="go(\\'book\\')">ইসলামিক বই</a></div></div>'+
+ '<div class="fcols"><h5>প্ল্যাটফর্ম</h5><a onclick="go(\'home\')">Home</a><a onclick="go(\'tasks\')">Tasks</a><a onclick="go(\'pkg\')">Package</a><a onclick="go(\'rank\')">Ranking</a><a onclick="go(\'ref\')">Refer</a></div>'+
+ '<div><h5>সহায়তা</h5><a onclick="go(\'help\')">Support</a><a onclick="go(\'acc\')">Account</a><a onclick="go(\'book\')">ইসলামিক বই</a></div></div>'+
  '<div class="fage"><span class="bd">'+A+'+</span><div>'+A+' বছরের নিচে কারও এই অ্যাকাউন্টে প্রবেশ করা নিষেধ।</div></div>'+
  '<div class="fc">© '+esc(c.y)+' '+esc(c.n)+'. সর্বস্বত্ব সংরক্ষিত।</div></div>'}
 
@@ -1154,8 +1187,8 @@ function vHome(){
     var timerSec = (sliders[0] && sliders[0].timerSeconds) ? (sliders[0].timerSeconds * 1000) : 6000;
     
     var sl = sliders.map(function(x,i){
-      var styleBg = x.bgImage ? 'background-image:linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.6)),url(\\''+esc(x.bgImage)+'\\');background-size:cover;' : '';
-      return '<div class="sl '+x.bgClass+(i===0?' on':'')+'" style="'+styleBg+'" onclick="handleSlideClick(\\''+esc(x.link)+'\\')"><span class="tag">'+esc(x.subtitle)+'</span><h4>'+esc(x.title)+'</h4><p>'+esc(x.description)+'</p><span class="em">'+x.emoji+'</span></div>';
+      var styleBg = x.bgImage ? 'background-image:linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.6)),url(\''+esc(x.bgImage)+'\');background-size:cover;' : '';
+      return '<div class="sl '+x.bgClass+(i===0?' on':'')+'" style="'+styleBg+'" onclick="handleSlideClick(\''+esc(x.link)+'\')"><span class="tag">'+esc(x.subtitle)+'</span><h4>'+esc(x.title)+'</h4><p>'+esc(x.description)+'</p><span class="em">'+x.emoji+'</span></div>';
     }).join('');
     var dt = sliders.map(function(x,i){
       return '<i class="'+(i===0?'on':'')+'" onclick="hsGo('+i+')"></i>';
@@ -1171,8 +1204,8 @@ function vHome(){
       '<button class="btn'+(sp?'':' dn')+'" style="margin-top:12px;width:100%" onclick="spinOpen()">'+(sp?'Spin Wheel Now':'Spin Completed ✅')+'</button></div></div>'+
 
       '<h3>আজকের বোনাস</h3><div class="bn">'+
-      '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\\'daily\\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
-      '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\\'checkin\\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
+      '<div class="bo"><div class="bi"><span class="ic">🎁</span><b>Login Bonus</b><small>+'+ME.d+' BDT</small><button class="btn'+(ok?'':' dn')+'" onclick="act(\'daily\')">'+(ok?'Claim':'Claimed ✅')+'</button></div></div>'+
+      '<div class="bo"><div class="bi"><span class="ic">📅</span><b>Check-in Bonus</b><small>+'+ME.c+' BDT</small><button class="btn'+(ME.checkedIn?' dn':'')+'" onclick="act(\'checkin\')">'+(ME.checkedIn?'Done ✅':'Check in')+'</button></div></div></div>'+foot();
       
       if(window.TIMER) clearInterval(window.TIMER);
       window.TIMER=setInterval(function(){if(!document.querySelector('.hs')){clearInterval(window.TIMER);return}hsGo((HSI+1)%HS_DATA.length)}, timerSec);
@@ -1204,9 +1237,9 @@ function closeSpin(){closeM();if(TAB==='home')vHome()}
 
 function vEmp(){
   api('promo-packages').then(packages => {
+    window.globalSmmPkgs = packages;
     var usdBal = (ME.balance / 120).toFixed(2);
     $('main').innerHTML=
-    // SMM Welcome Banner & USD Balance Header
     '<div class="smm-welcome">' +
       '<div>' +
         '<b style="color:#fff;font-size:14px">Welcome Back, '+esc(ME.name)+' 👋</b>' +
@@ -1221,15 +1254,13 @@ function vEmp(){
       '</div>' +
     '</div>' +
 
-    // Quick Connect Telegram & Support links
-    '<div class="row" style="cursor:pointer;background:linear-gradient(135deg,#0c2350,#0b1224)" onclick="window.open(\\'https://t.me/rkrana33\\',\\'_blank\\')">' +
+    '<div class="row" style="cursor:pointer;background:linear-gradient(135deg,#0c2350,#0b1224)" onclick="window.open(\'https://t.me/rkrana33\',\'_blank\')">' +
       '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:22px">✈️</span><div><b>Join Our Telegram Channel to Get Update</b><small style="color:var(--blu)">Connect Telegram &rsaquo;</small></div></div>' +
     '</div>' +
-    '<div class="row" style="cursor:pointer;background:linear-gradient(135deg,#0b3a1e,#0b1224)" onclick="go(\\'help\\')">' +
+    '<div class="row" style="cursor:pointer;background:linear-gradient(135deg,#0b3a1e,#0b1224)" onclick="go(\'help\')">' +
       '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:22px">💬</span><div><b>For Any Kind of Customer Support</b><small style="color:var(--grn)">Talk with us &rsaquo;</small></div></div>' +
     '</div>' +
 
-    // SMM Services Icons Grid
     '<h3 style="margin:10px 0 6px">All SMM Services</h3>' +
     '<div class="smm-services-grid">' +
       '<div class="smm-service-icon" title="Facebook">📘</div>' +
@@ -1240,13 +1271,11 @@ function vEmp(){
       '<div class="smm-service-icon" title="Telegram">✈️</div>' +
     '</div>' +
 
-    // Action buttons: New Order & Add Fund ($)
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
-      '<button class="btn r" style="margin-top:0;font-size:13px" onclick="toast(\\'Already in New Order section\\')">🛍️ New Order</button>' +
-      '<button class="btn g" style="margin-top:0;font-size:13px" onclick="go(\\'acc\\')">💳 Add Fund ($)</button>' +
+      '<button class="btn r" style="margin-top:0;font-size:13px" onclick="toast(\'Already in New Order section\')">🛍️ New Order</button>' +
+      '<button class="btn g" style="margin-top:0;font-size:13px" onclick="go(\'acc\')">💳 Add Fund ($)</button>' +
     '</div>' +
 
-    // Services Selection Card (SMM Style)
     '<div class="card" style="margin-bottom:12px">' +
       '<h3 style="color:var(--gold);margin-bottom:8px">⚙️ Services Order Form</h3>' +
       '<label>Type services ID / Search</label>' +
@@ -1263,7 +1292,6 @@ function vEmp(){
       '</select>' +
     '</div>' +
 
-    // Order Details Card
     '<div class="card">' +
       '<h3 style="color:var(--gold);margin-bottom:8px">📦 Order Details</h3>' +
       '<label>Link (URL)</label><input id="smmLink" placeholder="https://www.facebook.com/xxxx">' +
@@ -1274,7 +1302,6 @@ function vEmp(){
       '<button class="btn r" style="margin-top:14px" onclick="submitSmmOrder()">Submit Order</button>' +
     '</div>' +
 
-    // Service Info & Description Box
     '<div class="card" style="margin-top:12px">' +
       '<div class="seg"><div class="on">Service Info</div></div>' +
       '<div style="font-size:12px;line-height:1.7;color:var(--mu)" id="smmServiceDescBox">' +
@@ -1284,25 +1311,35 @@ function vEmp(){
   });
 }
 
-var globalSmmPkgs = [];
-function filterSmmService(val){
-  // Quick filter simulation
-}
-function updateSmmPricing(){
-  // Update charge calculation
+function updateSmmServiceDropdown() {}
+function updateSmmPricing() {
+  var sel = $('smmServSelect');
+  if(!sel || !window.globalSmmPkgs) return;
+  var idx = sel.value;
+  var pkg = window.globalSmmPkgs[idx];
+  if(pkg) {
+    var usd = (pkg.price / 120).toFixed(2);
+    $('smmChargeBox').innerHTML = '৳' + pkg.price + '.00 ($' + usd + ' USD)';
+  }
 }
 
 function submitSmmOrder(){
   var link = $('smmLink').value;
   var qty = $('smmQty').value;
+  var cat = $('smmCat').value;
+  var sel = $('smmServSelect');
+  var pkgIdx = sel ? sel.value : 0;
+  var selectedPkg = window.globalSmmPkgs ? window.globalSmmPkgs[pkgIdx] : null;
+
   if(!link) { toast('দয়া করে সঠিক লিংক দিন।'); return; }
   
   api('employer/task','POST',{
-    platform: 'facebook',
-    title: 'SMM Order: ' + qty + ' Followers',
+    platform: cat,
+    title: selectedPkg ? selectedPkg.title : ('SMM Order: ' + qty + ' Followers'),
     link: link,
-    reward: 1,
-    targetWorkers: Number(qty) || 100
+    packageId: selectedPkg ? selectedPkg._id : null,
+    reward: selectedPkg ? (selectedPkg.price / selectedPkg.followers) : 1,
+    targetWorkers: Number(qty) || (selectedPkg ? selectedPkg.followers : 100)
   }).then(r => {
     ME = r.me; head(); toast('অর্ডার সফলভাবে সাবমিট হয়েছে!'); vEmp();
   }).catch(e => toast(e.message));
@@ -1310,7 +1347,7 @@ function submitSmmOrder(){
 
 function vTasks(){
   $('main').innerHTML='<div class="thero"><div class="rg"><span class="r r1"></span><span class="r r2"></span><span class="r r3"></span>📋</div><div><b>Tasks & Watch Ads Dashboard</b><small>টাস্ক সম্পন্ন করুন এবং অর্জিত টাকা দিয়ে আর এস গ্যালারি থেকে শপিং করুন।</small></div></div>' +
-  '<div class="seg" style="margin-bottom:14px"><div id="subTask" class="on" onclick="switchTaskSub(\\'tasks\\')">📋 Offerwall Tasks</div><div id="subAd" onclick="switchTaskSub(\\'ads\\')">📺 Watch Ads</div></div>' +
+  '<div class="seg" style="margin-bottom:14px"><div id="subTask" class="on" onclick="switchTaskSub(\'tasks\')">📋 Offerwall Tasks</div><div id="subAd" onclick="switchTaskSub(\'ads\')">📺 Watch Ads</div></div>' +
   '<div id="taskSubContent"></div>';
   switchTaskSub('tasks');
 }
@@ -1422,7 +1459,7 @@ function vPkg(){
       '<b style="color:var(--gold);font-size:13px;display:block;margin-bottom:4px">'+esc(x.description)+'</b>' +
       '<div style="font-size:11px;color:var(--mu)">মূল্য: <b>'+x.price+' BDT</b></div>' +
       '<div style="font-size:12px;color:var(--grn);margin:4px 0 8px">মিনিটে: <b>'+formatCompact(x.coinsPerMin)+' RS Coins</b></div>' +
-      '<button class="btn s g" style="width:100%" onclick="go(\\'acc\\');depForm('+x.price+',\\''+esc(x.description)+'\\')">Buy Package</button>' +
+      '<button class="btn s g" style="width:100%" onclick="go(\'acc\');depForm('+x.price+',\''+esc(x.description)+'\')">Buy Package</button>' +
       '</div>';
     }).join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>') + '</div>';
   }).catch(function(e){$('main').innerHTML='<div class="row">'+e.message+'</div>'});
@@ -1587,7 +1624,7 @@ function wdForm(){
   
   '<div class="hold-circle-container">' +
   '<svg class="hold-circle-svg" viewBox="0 0 100 100"><defs><linearGradient id="circleGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#22c55e"/></linearGradient></defs><circle class="hold-bg-circle" cx="50" cy="50" r="48"/><circle id="circleProgress" class="hold-progress-circle" cx="50" cy="50" r="48"/></svg>' +
-  '<div class="hold-btn-inner" onmousedown="startCircleHold(\\'wd\\')" ontouchstart="startCircleHold(\\'wd\\')" onmouseup="cancelCircleHold()" ontouchend="cancelCircleHold()"><span id="circleBtnText">TAP & HOLD</span><small style="font-size:7px;opacity:0.9">TO SUBMIT</small></div>' +
+  '<div class="hold-btn-inner" onmousedown="startCircleHold(\'wd\')" ontouchstart="startCircleHold(\'wd\')" onmouseup="cancelCircleHold()" ontouchend="cancelCircleHold()"><span id="circleBtnText">TAP & HOLD</span><small style="font-size:7px;opacity:0.9">TO SUBMIT</small></div>' +
   '</div>' +
   
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:6px" onclick="closeM()">Close</button>');
@@ -1609,8 +1646,8 @@ function depForm(presetAmount, pkgName){
   '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--mu)">Date:</span><b>'+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</b></div>' +
   '</div>' +
   '<div style="display:flex;gap:10px;margin-bottom:10px">' +
-  '<div id="payBkash" style="flex:1;background:#131d38;border:2px solid var(--gold);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\\'bKash\\')"><b style="color:#e11d48">bKash</b></div>' +
-  '<div id="payNagad" style="flex:1;background:#131d38;border:2px solid var(--line);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\\'Nagad\\')"><b style="color:#f97316">Nagad</b></div>' +
+  '<div id="payBkash" style="flex:1;background:#131d38;border:2px solid var(--gold);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\'bKash\')"><b style="color:#e11d48">bKash</b></div>' +
+  '<div id="payNagad" style="flex:1;background:#131d38;border:2px solid var(--line);border-radius:12px;padding:8px;text-align:center;cursor:pointer" onclick="setDepMethod(\'Nagad\')"><b style="color:#f97316">Nagad</b></div>' +
   '</div>' +
   '<div class="tdw" style="text-align:center"><b>Official Number:</b> <span style="color:var(--grn);font-weight:bold" id="offNumText">01951639460</span> <button class="copy-btn-inline" onclick="copyDepNum()">Copy</button><br><small>1. Send money to this number.<br>2. Enter TrxID and Last 3 Digits below.</small></div>' +
   '<label>Deposit Amount (৳ BDT)</label><input id="da" type="number" value="'+(presetAmount||'')+'" placeholder="200 - 15000" oninput="calcUsdDep(this.value)">' +
@@ -1620,7 +1657,7 @@ function depForm(presetAmount, pkgName){
   
   '<div class="hold-circle-container">' +
   '<svg class="hold-circle-svg" viewBox="0 0 100 100"><defs><linearGradient id="circleGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#22c55e"/></linearGradient></defs><circle class="hold-bg-circle" cx="50" cy="50" r="48"/><circle id="circleProgress" class="hold-progress-circle" cx="50" cy="50" r="48"/></svg>' +
-  '<div class="hold-btn-inner" onmousedown="startCircleHold(\\'dep\\',\\''+(pkgName||'Custom Deposit')+'\\')" ontouchstart="startCircleHold(\\'dep\\',\\''+(pkgName||'Custom Deposit')+'\\')" onmouseup="cancelCircleHold()" ontouchend="cancelCircleHold()"><span id="circleBtnText">TAP & HOLD</span><small style="font-size:7px;opacity:0.9">TO SUBMIT</small></div>' +
+  '<div class="hold-btn-inner" onmousedown="startCircleHold(\'dep\',\''+(pkgName||'Custom Deposit')+'\')" ontouchstart="startCircleHold(\'dep\',\''+(pkgName||'Custom Deposit')+'\')" onmouseup="cancelCircleHold()" ontouchend="cancelCircleHold()"><span id="circleBtnText">TAP & HOLD</span><small style="font-size:7px;opacity:0.9">TO SUBMIT</small></div>' +
   '</div>' +
   
   '<button class="btn" style="background:#1e293b;color:#fff;margin-top:6px" onclick="closeM()">Close</button>');
@@ -1675,8 +1712,8 @@ var DUA=[
 ["৩. আত্তাহিয়্যাতু","التَّحِيَّاتُ لِلَّهِ","আত্তাহিয়্যাতু লিল্লাহি...","সমস্ত সম্মান আল্লাহর জন্য।"]];
 var RK=[["ফজর","২ রাকাত ফরজ"],["জোহর","৪ রাকাত ফরজ"],["আসর","৪ রাকাত ফরজ"],["মাগরিব","৩ রাকাত ফরজ"],["এশা","৪ রাকাত ফরজ"]];
 var HD=[["কাজ নিয়তের ওপর নির্ভরশীল।","সহিহ বুখারি ১"]];
-function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\\''+p+'\\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
-function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\\''+p+'\\')">&lsaquo; ফিরে যান</button>'}
+function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="bk(\''+p+'\')"><div>'+ic+' '+t+'<small>'+s+'</small></div><span style="color:var(--gold)">&rsaquo;</span></div>'}
+function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\''+p+'\')">&lsaquo; ফিরে যান</button>'}
 function vBook(){bk('menu')}
 function nmF(){var q=($('nq').value||'').trim().toLowerCase(),a=NML.filter(function(x){return !q||x.toLowerCase().indexOf(q)>=0});
  $('nl').innerHTML='<h3>'+a.length+'টি নাম</h3>'+(a.length?a.map(function(x){var p=x.split('|');return '<div class="bkc nm"><div><b>'+esc(p[0])+'</b><small>'+esc(p[2]||'')+'</small></div><div class="ar2">'+esc(p[1]||'')+'</div></div>'}).join(''):'<div class="row">কোনো নাম মেলেনি</div>')}
@@ -1692,7 +1729,7 @@ function bk(p){var h='';
  else if(p==='hadith'){h=bkBack('menu')+'<h3>হাদিস</h3>'+HD.map(function(x){return '<div class="bkc">'+esc(x[0])+'<small>সূত্র: '+esc(x[1])+'</small></div>'}).join('')}
  $('main').innerHTML=h;$('main').scrollTop=0}
 
-var ATABS=[['ov','📊','ওভারভিউ'],['ctask','📢','প্রমোশন'],['shop','🛍️','প্যাকেজ ও শপ'],['slider','🖼️','স্লাইডার কন্ট্রোল'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ']];
+var ATABS=[['ov','📊','ওভারভিউ'],['cat','📁','ক্যাটাগরি'],['ctask','📢','প্রমোশন'],['shop','🛍️','প্যাকেজ ও শপ'],['slider','🖼️','স্লাইডার কন্ট্রোল'],['sp','💬','সাপোর্ট'],['us','🟢','অ্যাক্টিভ']];
 function ah(){return{'x-admin-pass':ADM}}
 
 function admOpen(){
@@ -1710,7 +1747,7 @@ function verifyAdminPass(){
   api('admin/data','GET',null,ah()).then(function(){
     closeM();
     $('adm').className='adm on';
-    $('anav').innerHTML=ATABS.map(function(t){return '<div id="a_'+t[0]+'" onclick="admGo(\\''+t[0]+'\\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
+    $('anav').innerHTML=ATABS.map(function(t){return '<div id="a_'+t[0]+'" onclick="admGo(\''+t[0]+'\')"><i>'+t[1]+'</i>'+t[2]+'</div>'}).join('');
     admGo('ov');
   }).catch(function(){
     toast('Wrong admin password.');
@@ -1721,10 +1758,65 @@ function verifyAdminPass(){
 function admClose(){$('adm').className='adm'}
 function aErr(e){if(e.message==='Wrong admin password.'){toast(e.message);admClose()}else $('abody').innerHTML='<div class="row">'+esc(e.message)+'</div>'}
 function admGo(t){ATABS.forEach(function(x){var el=$('a_'+x[0]);if(el)el.className=x[0]===t?'on':''});$('abody').innerHTML='<div class="row">Loading...</div>';
- ({ov:aOv,ctask:aCTask,shop:aShopCtrl,slider:aSliderCtrl,sp:aSp,us:aUs})[t]()}
+ ({ov:aOv,cat:aCatCtrl,ctask:aCTask,shop:aShopCtrl,slider:aSliderCtrl,sp:aSp,us:aUs})[t]()}
 function sc(a){return a.map(function(x){return '<div class="stat"><b>'+x[1]+'</b><small>'+x[0]+'</small></div>'}).join('')}
 function aOv(){api('admin/data','GET',null,ah()).then(function(d){var s=d.stats;
  $('abody').innerHTML='<h3>আজকের হিসাব</h3><div class="grid">'+sc([['মোট ইউজার',s.users],['আজ ঢুকেছে',s.active],['অপেক্ষমাণ টাস্ক',s.pendingTasks]])+'</div>'}).catch(aErr)}
+
+// নতুন ক্যাটাগরি ও সাব-ক্যাটাগরি ম্যানেজমেন্ট স্ক্রিন (স্ক্রিনশটের মতো হুহু ডিজাইন)
+function aCatCtrl(){
+  api('admin/categories','GET',null,ah()).then(function(cats){
+    $('abody').innerHTML='<h3>📁 Add Main Category</h3>' +
+    '<div class="card" style="margin-bottom:12px">' +
+    '<label>Name (e.g. Beauty)</label><input id="catName" placeholder="Name (e.g. Beauty)">' +
+    '<label>Emoji</label><input id="catEmoji" placeholder="💄">' +
+    '<label>Image (optional, from gallery)</label>' +
+    '<input type="file" id="catFile" accept="image/*" style="display:none" onchange="uploadCatImg(this)">' +
+    '<div class="img-upload-btn" onclick="$(\'catFile\').click()">Choose File / No file chosen</div>' +
+    '<input id="catImgUrl" placeholder="Or Image URL" style="margin-top:6px">' +
+    '<button class="btn g" onclick="addMainCategory()">+ Add Category</button>' +
+    '</div>' +
+    '<h3>Existing Categories & Sub-categories</h3>' +
+    (cats.length ? cats.map(c => 
+      '<div class="th">' +
+        '<div class="hd"><span>'+esc(c.emoji)+' '+esc(c.name)+'</span><button class="btn s r" onclick="delCat(\''+c._id+'\')">Delete</button></div>' +
+        (c.subcategories && c.subcategories.length ? c.subcategories.map(sub => '<div style="font-size:12px;color:var(--mu);padding:2px 0">• '+esc(sub)+'</div>').join('') : '<small style="color:var(--mu)">No subcategories</small>') +
+        '<div style="display:flex;gap:6px;margin-top:8px">' +
+          '<input id="subInput_'+c._id+'" placeholder="New sub-category" style="margin-top:0">' +
+          '<button class="btn s g" onclick="addSubCategory(\''+c._id+'\')">+</button>' +
+        '</div>' +
+      '</div>'
+    ).join('') : '<div class="row">কোনো ক্যাটাগরি নেই।</div>');
+  }).catch(aErr);
+}
+
+function uploadCatImg(inp){
+  var f = inp.files[0]; if(!f) return;
+  var r = new FileReader();
+  r.onload = function(){
+    $('catImgUrl').value = r.result;
+    toast('ক্যাটাগরি ইমেজ সিলেক্ট হয়েছে!');
+  };
+  r.readAsDataURL(f);
+}
+
+function addMainCategory(){
+  api('admin/categories','POST',{
+    name: $('catName').value,
+    emoji: $('catEmoji').value,
+    image: $('catImgUrl').value
+  }, ah()).then(() => { toast('ক্যাটাগরি সফলভাবে যোগ হয়েছে!'); aCatCtrl(); }).catch(aErr);
+}
+
+function addSubCategory(id){
+  var subName = $('subInput_' + id).value;
+  if(!subName) return;
+  api('admin/categories/sub/' + id, 'POST', { subname: subName }, ah()).then(() => { toast('সাব-ক্যাটাগরি যুক্ত হয়েছে!'); aCatCtrl(); }).catch(aErr);
+}
+
+function delCat(id){
+  api('admin/categories/delete/' + id, 'POST', null, ah()).then(() => { toast('ক্যাটাগরি ডিলিট হয়েছে!'); aCatCtrl(); }).catch(aErr);
+}
 
 function aShopCtrl(){
   api('admin/user-packages','GET',null,ah()).then(function(userPkgs){
@@ -1734,15 +1826,15 @@ function aShopCtrl(){
       '<label>প্যাকেজ বিবরণ / নাম</label><input id="upDesc" placeholder="যেমন: Basic RS Coin Package">' +
       '<label>মূল্য (BDT)</label><input id="upPrice" type="number" placeholder="200">' +
       '<label>প্রতি মিনিটে কয়েন</label><input id="upCoins" type="number" placeholder="10">' +
-      '<label>প্যাকেজের ছবি আপলোড করুন (গ্যালারি বা প্লাস আইকন)</label>' +
+      '<label>প্যাকেজের ছবি আপলোড করুন</label>' +
       '<input type="file" id="upFile" accept="image/*" style="display:none" onchange="uploadUserPkgImg(this)">' +
-      '<div class="img-upload-btn" onclick="$(\\'upFile\\').click()">➕ গ্যালারি থেকে ছবি যোগ করুন</div>' +
+      '<div class="img-upload-btn" onclick="$(\'upFile\').click()">➕ গ্যালারি থেকে ছবি যোগ করুন</div>' +
       '<input id="upImgUrl" placeholder="বা সরাসরি ছবির URL" style="margin-top:6px">' +
       '<label>হট অফার (true/false)</label><input id="upHot" placeholder="false">' +
       '<button class="btn g" onclick="addUserPkg()">ইউজার প্যাকেজ যোগ করুন</button>' +
       '</div>' +
       '<h3>বিদ্যমান ইউজার প্যাকেজসমূহ</h3>' +
-      (userPkgs.length ? userPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.description)+'</span><span style="color:var(--gold)">৳'+p.price+'</span></div><small>Coins/Min: '+p.coinsPerMin+' | Hot: '+p.hot+'</small><button class="btn s r" style="margin-top:6px" onclick="delUserPkg(\\''+p._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>') +
+      (userPkgs.length ? userPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.description)+'</span><span style="color:var(--gold)">৳'+p.price+'</span></div><small>Coins/Min: '+p.coinsPerMin+' | Hot: '+p.hot+'</small><button class="btn s r" style="margin-top:6px" onclick="delUserPkg(\''+p._id+'\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>') +
       '<hr style="border-color:var(--line);margin:16px 0">' +
       '<h3>🛍️ আর এস গ্যালারি ও প্রমোশন প্যাকেজ কন্ট্রোল</h3>' +
       '<div class="card" style="margin-bottom:12px">' +
@@ -1750,15 +1842,15 @@ function aShopCtrl(){
       '<label>ক্যাটাগরি</label><input id="apCat" placeholder="RS Gallery / Social Media">' +
       '<label>পরিমাণ/ফলোয়ার</label><input id="apFol" type="number" placeholder="500">' +
       '<label>মূল্য (BDT)</label><input id="apPrice" type="number" placeholder="150">' +
-      '<label>প্যাকেজ পিকচার আপলোড করুন (গ্যালারি থেকে)</label>' +
+      '<label>প্যাকেজ পিকচার আপলোড করুন</label>' +
       '<input type="file" id="apFile" accept="image/*" style="display:none" onchange="uploadPkgImg(this)">' +
-      '<div class="img-upload-btn" onclick="$(\\'apFile\\').click()">➕ গ্যালারি থেকে ছবি যুক্ত করুন</div>' +
+      '<div class="img-upload-btn" onclick="$(\'apFile\').click()">➕ গ্যালারি থেকে ছবি যুক্ত করুন</div>' +
       '<input id="apIcon" placeholder="বা ছবির URL দিন" style="margin-top:6px">' +
       '<label>বিবরণ</label><input id="apDesc" placeholder="ছোট বিবরণ">' +
       '<button class="btn g" onclick="addPromoPkg()">প্রমোশন প্যাকেজ যোগ করুন</button>' +
       '</div>' +
       '<h3>বিদ্যমান প্যাকেজসমূহ</h3>' +
-      (promoPkgs.length ? promoPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.title)+'</span><span style="color:var(--gold)">৳'+p.price+'</span></div><small>Category: '+esc(p.category)+'</small><button class="btn s r" style="margin-top:6px" onclick="delPromoPkg(\\''+p._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>');
+      (promoPkgs.length ? promoPkgs.map(p => '<div class="th"><div class="hd"><span>'+esc(p.title)+'</span><span style="color:var(--gold)">৳'+p.price+'</span></div><small>Category: '+esc(p.category)+'</small><button class="btn s r" style="margin-top:6px" onclick="delPromoPkg(\''+p._id+'\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো প্যাকেজ নেই।</div>');
     }).catch(aErr);
   }).catch(aErr);
 }
@@ -1766,20 +1858,14 @@ function aShopCtrl(){
 function uploadUserPkgImg(inp){
   var f = inp.files[0]; if(!f) return;
   var r = new FileReader();
-  r.onload = function(){
-    $('upImgUrl').value = r.result;
-    toast('প্যাকেজ ছবি যুক্ত হয়েছে!');
-  };
+  r.onload = function(){ $('upImgUrl').value = r.result; toast('প্যাকেজ ছবি যুক্ত হয়েছে!'); };
   r.readAsDataURL(f);
 }
 
 function uploadPkgImg(inp){
   var f = inp.files[0]; if(!f) return;
   var r = new FileReader();
-  r.onload = function(){
-    $('apIcon').value = r.result;
-    toast('প্যাকেজ ছবি যুক্ত হয়েছে!');
-  };
+  r.onload = function(){ $('apIcon').value = r.result; toast('প্যাকেজ ছবি যুক্ত হয়েছে!'); };
   r.readAsDataURL(f);
 }
 
@@ -1793,24 +1879,21 @@ function aSliderCtrl(){
     '<label>কোলাবোরেশন বা এক্সটার্নাল লিংক (URL)</label><input id="slLink" placeholder="https://www.facebook.com/share/...">' +
     '<label>গ্যালারি থেকে ব্যাকগ্রাউন্ড ব্যানার ছবি থিম যোগ করুন</label>' +
     '<input type="file" id="slFile" accept="image/*" style="display:none" onchange="uploadSliderImg(this)">' +
-    '<div class="img-upload-btn" onclick="$(\\'slFile\\').click()">➕ প্লাস আইকন (গ্যালারি থেকে ছবি থিম সিলেক্ট করুন)</div>' +
+    '<div class="img-upload-btn" onclick="$(\'slFile\').click()">➕ প্লাস আইকন (গ্যালারি থেকে ছবি থিম সিলেক্ট করুন)</div>' +
     '<input id="slBgImg" placeholder="বা সরাসরি ছবি URL" style="margin-top:6px">' +
     '<label>ইমোজি বা আইকন</label><input id="slEmoji" placeholder="🛍️">' +
     '<label>পরিবর্তন সময় (স্লাইড টাইমার সেকেন্ডে, যেমন: ৬)</label><input id="slTimer" type="number" value="6">' +
     '<button class="btn g" onclick="addSlider()">স্লাইড ব্যানার যোগ করুন</button>' +
     '</div>' +
     '<h3>সক্রিয় স্লাইডার ব্যানারসমূহ</h3>' +
-    (sliders.length ? sliders.map(s => '<div class="th"><div class="hd"><span>'+esc(s.title)+'</span><span style="color:var(--gold)">টাইমার: '+s.timerSeconds+'s</span></div><small>Link: '+esc(s.link)+'</small><button class="btn s r" style="margin-top:6px" onclick="delSlider(\\''+s._id+'\\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো স্লাইডার নেই।</div>');
+    (sliders.length ? sliders.map(s => '<div class="th"><div class="hd"><span>'+esc(s.title)+'</span><span style="color:var(--gold)">টাইমার: '+s.timerSeconds+'s</span></div><small>Link: '+esc(s.link)+'</small><button class="btn s r" style="margin-top:6px" onclick="delSlider(\''+s._id+'\')">ডিলিট করুন</button></div>').join('') : '<div class="row">কোনো স্লাইডার নেই।</div>');
   }).catch(aErr);
 }
 
 function uploadSliderImg(inp){
   var f = inp.files[0]; if(!f) return;
   var r = new FileReader();
-  r.onload = function(){
-    $('slBgImg').value = r.result;
-    toast('স্লাইডার ব্যাকগ্রাউন্ড ছবি থিম হিসেবে সিলেক্ট হয়েছে!');
-  };
+  r.onload = function(){ $('slBgImg').value = r.result; toast('স্লাইডার ব্যাকগ্রাউন্ড ছবি থিম হিসেবে সিলেক্ট হয়েছে!'); };
   r.readAsDataURL(f);
 }
 
@@ -1863,7 +1946,7 @@ function aCTask(){
   api('admin/custom-tasks','GET',null,ah()).then(function(tasks){
     $('abody').innerHTML='<h3>অপেক্ষমাণ প্রমোশন টাস্কসমূহ</h3>' +
     (tasks.length ? tasks.map(function(t, i){
-      return '<div class="th"><div class="hd"><span>'+esc(t.title)+' ('+esc(t.platform)+')</span><span style="color:var(--gold)">Budget: '+t.totalBudget+' BDT</span></div><div style="font-size:13px">Link: <a href="'+esc(t.link)+'" target="_blank">'+esc(t.link)+'</a><br>Reward/Worker: '+t.reward+' BDT | Target: '+t.targetWorkers+'</div><div class="gap"><button class="btn s g" onclick="decCTask(\\''+t._id+'\\',1)">Approve</button><button class="btn s r" onclick="decCTask(\\''+t._id+'\\',0)">Reject</button></div></div>';
+      return '<div class="th"><div class="hd"><span>'+esc(t.title)+' ('+esc(t.platform)+')</span><span style="color:var(--gold)">Budget: '+t.totalBudget+' BDT</span></div><div style="font-size:13px">Link: <a href="'+esc(t.link)+'" target="_blank">'+esc(t.link)+'</a><br>Reward/Worker: '+t.reward+' BDT | Target: '+t.targetWorkers+'</div><div class="gap"><button class="btn s g" onclick="decCTask(\''+t._id+'\',1)">Approve</button><button class="btn s r" onclick="decCTask(\''+t._id+'\',0)">Reject</button></div></div>';
     }).join('') : '<div class="row">কোনো পেন্ডিং প্রমোশন টাস্ক নেই।</div>');
   }).catch(aErr);
 }
@@ -1873,7 +1956,7 @@ function decCTask(id, ok){
 
 function repI(i){var t=$('rp'+i).value.trim();if(!t)return;api('admin/reply','POST',{uid:AD.th[i].uid,text:t},ah()).then(aSp).catch(aErr)}
 function aSp(){api('admin/support','GET',null,ah()).then(function(d){AD.th=d;
- $('abody').innerHTML=d.length?d.map(function(t,i){return '<div class="th"><div class="hd"><span>'+esc(t.name)+'</span></div><div class="chat" style="max-height:30vh">'+t.msgs.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join('')+'</div><textarea id="rp'+i+'" rows="2" maxlength="500" placeholder="উত্তর লিখুন"></textarea><button class="btn s" style="margin-top:8px" onclick="repI('+i+')">Send</button></div>'}).join(''):'<div class="row">কোনো মেসেজ নেই</div>'}).catch(aErr)}
+ $('abody').innerHTML=d.length?d.map(function(t,i){return '<div class="th"><div class="hd"><span>'+esc(t.name)+'</span></div><div class="chat" style="max-height:30vh">'+t.msgs.map(function(m){return '<div class="m '+m.from+'">'+esc(m.text)+'</div>'}).join('')+'</div><textarea id="rp'+i+'" rows="2" maxlength="500" placeholder="উত্তর লিখুন"></textarea><button class="btn s" style="margin-top:8px" onclick="repI('+i+\')">Send</button></div>'}).join(''):'<div class="row">কোনো মেসেজ নেই</div>'}).catch(aErr)}
 function aUs(){api('admin/users','GET',null,ah()).then(function(d){
  $('abody').innerHTML='<h3>অ্যাক্টিভ ইউজার</h3>'+(d.active.map(function(u){return '<div class="row"><div>'+esc(u.name)+' ('+esc(u.role)+')<small>'+esc(u.phone)+'</small></div></div>'}).join('')||'<div class="row">কেউ নেই</div>')}).catch(aErr)}
 
@@ -1979,7 +2062,7 @@ app.get('/api/assistant/details', h(async (q, s) => {
   const st = dayStart();
   const deps = await Deposit.find({ status: 'pending' }).sort({ at: -1 }).limit(10).lean();
   const depsToday = await Deposit.find({ at: { $gte: st } }).sort({ at: -1 }).limit(10).lean();
-  const wds = await Wd.find({ status: 'pending' }).sort({ at: -1 }).limit(10).lean();
+  const wds = await Wd.find({ status: 'pending'}.sort({ at: -1 }).limit(10).lean();
 
   const mapDep = d => ({
     name: d.name,
