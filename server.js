@@ -1711,7 +1711,7 @@ function bkb(p,ic,t,s){return '<div class="row" style="cursor:pointer" onclick="
 function bkBack(p){return '<button class="btn s" style="margin-bottom:12px" onclick="bk(\''+p+'\')">&lsaquo; ফিরে যান</button>'}
 function vBook(){bk('menu')}
 function nmF(){var q=($('nq').value||'').trim().toLowerCase(),a=NML.filter(function(x){return !q||x.toLowerCase().indexOf(q)>=0});
- $('nl').innerHTML='<h3>'+a.length+'টি নাম</h3>'+(a.length?a.map(function(x){var p=x.split('|');return '<div class="bkc nm"><div><b>'+esc(p[0])+'</b><small>'+esc(p[2]||'')+'</small></div><div class="ar2">'+esc(p[1]||'')+'</div></div>'}).join(''):'<div class="row">কোনো নাম মেলেনি</div>')}
+ $('nl').innerHTML='<h3>'+a.length+'টি নাম</h3>'+(a.length?a.map(function(x){var p=x.split('|');return '<div class="bkc nm"><div><b>'+esc(p[0])+'</b><small>'+esc(p[2]||'')+'</small></div><div class="ar2">'+esc(p[1]||'')+'</div></div>'}).join(''):'<div class="row">কোনো নাম মেলেনিಗೊಳেনি</div>')}
 function bk(p){var h='';
  if(p==='menu'){h='<div class="bkh">'+mosque(230)+'<div class="t">ইসলামিক বই</div><div class="u">নাম, দোয়া ও হাদিস</div></div>'+
   bkb('names','🌙','ইসলামিক নাম','ছেলে ও মেয়েদের নাম')+bkb('dua','🤲','নামাজের দোয়া','নামাজে যা যা পড়তে হয়')+bkb('rakat','🕌','পাঁচ ওয়াক্ত নামাজ','ফরজ রাকাত')+bkb('hadith','📜','হাদিস','সহিহ হাদিস')}
@@ -1852,7 +1852,7 @@ function aShopCtrl(){
 function uploadUserPkgImg(inp){
   var f = inp.files[0]; if(!f) return;
   var r = new FileReader();
-  r.onload = function(){ $('upImgUrl').value = r.result; toast('প্যাকেজ ছবি যুক্ত হয়েছে!'); };
+  r.onload = function(){ $('upImgUrl').value = r.result; toast('প্যাকেজ ছবি যুক্ত হয়েছে করেছে!'); };
   r.readAsDataURL(f);
 }
 
