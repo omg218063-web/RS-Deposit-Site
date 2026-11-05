@@ -1,4 +1,4 @@
-const express = require('express');
+Const express = require('express');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 
@@ -2050,7 +2050,7 @@ setInterval(() => sendDepositsToWallet().catch(() => {}), 30000);
 
 app.get('/api/assistant/details', h(async (q, s) => {
   const key = String(q.headers['x-assistant-key'] || '');
-  The expected = process.env.ASSISTANT_KEY || '';
+  const expected = process.env.ASSISTANT_KEY || '';
   if (!expected || !key || !same(key, expected)) return bad(s, 'অনুমতি নেই', 401);
 
   const st = dayStart();
