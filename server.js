@@ -22,7 +22,12 @@ let dbState = 'not configured';
 if (process.env.MONGODB_URI) {
   mongoose
     .connect(process.env.MONGODB_URI)
-    .then(() => { dbState = 'connected'; })
+    .then(() => {
+      dbState = 'connected';
+      // একটা ফোন নাম্বারে একটাই অ্যাকাউন্ট (পুরনো ডুপ্লিকেট থাকলে ইনডেক্স হবে না, তবে নতুন রেজিস্ট্রেশন তবুও আটকাবে)
+      User.collection.createIndex({ phone: 1 }, { unique: true, sparse: true })
+        .catch((e) => console.error('[ফোন ইনডেক্স] তৈরি হয়নি, পুরনো ডুপ্লিকেট নাম্বার আছে: ' + e.message));
+    })
     .catch((e) => { dbState = 'error: ' + e.message; });
 }
 const ObjectId = mongoose.Schema.Types.ObjectId;
@@ -292,6 +297,8 @@ app.post('/api/register', needDb, limit(10, 60000), ah(async (req, res) => {
   if (!/^01\d{9}$/.test(String(phone))) return res.status(400).json({ ok: false, msg: 'সঠিক ১১ সংখ্যার ফোন নাম্বার দিন।' });
   if (String(password).length < 6) return res.status(400).json({ ok: false, msg: 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।' });
   if (!['smm', 'free'].includes(site)) return res.status(400).json({ ok: false, msg: 'সাইট বেছে নিন।' });
+  if (await User.exists({ username: un })) return res.status(409).json({ ok: false, msg: 'এই ইউজারনেম আগেই নেওয়া হয়েছে। অন্য নাম দিন।' });
+  if (await User.exists({ phone: String(phone) })) return res.status(409).json({ ok: false, msg: 'এই ফোন নাম্বার দিয়ে আগেই একটি অ্যাকাউন্ট খোলা হয়েছে। একটা নাম্বারে একটাই অ্যাকাউন্ট চলবে।' });
   let referredBy;
   if (site === 'free' && ref) {
     const rf = await User.findOne({ refCode: String(ref).trim().toUpperCase(), site: 'free' });
@@ -306,7 +313,8 @@ app.post('/api/register', needDb, limit(10, 60000), ah(async (req, res) => {
       return res.json({ ok: true, user: publicUser(u) });
     } catch (e) {
       if (e.code === 11000 && e.keyPattern && e.keyPattern.refCode) continue;
-      if (e.code === 11000) return res.status(409).json({ ok: false, msg: 'এই ইউজারনেম আগেই নেওয়া হয়েছে।' });
+      if (e.code === 11000 && e.keyPattern && e.keyPattern.phone) return res.status(409).json({ ok: false, msg: 'এই ফোন নাম্বার দিয়ে আগেই একটি অ্যাকাউন্ট খোলা হয়েছে। একটা নাম্বারে একটাই অ্যাকাউন্ট চলবে।' });
+      if (e.code === 11000) return res.status(409).json({ ok: false, msg: 'এই ইউজারনেম আগেই নেওয়া হয়েছে। অন্য নাম দিন।' });
       throw e;
     }
   }
@@ -494,7 +502,7 @@ app.get('/api/live', needDb, ah(async (req, res) => {
 }));
 
 // ================= Free Income: আয় (সব হিসাব সার্ভারে) =================
-// খাতায় লেখা + রেফারেল কমিশন
+// ব্যালেন্স বদলানো + খাতায় লেখা + রেফারেল কমিশন
 async function earnLog(userDoc, amount, kind, note) {
   await Ledger.create({ user: userDoc._id, delta: amount, kind, note, earn: true });
   if (userDoc.referredBy) {
